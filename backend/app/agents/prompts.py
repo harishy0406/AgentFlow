@@ -68,3 +68,111 @@ API Specification:
 
 Generate the Task Breakdown in Markdown format.
 """
+
+# ---------------------------------------------------------------------------
+# Phase 2: Regeneration-specific prompts
+# These are used during selective regeneration. They include the diff summary
+# (what changed upstream) and the prior content of the section being
+# regenerated, so the agent can make a targeted update rather than generating
+# from scratch.
+# ---------------------------------------------------------------------------
+
+BUSINESS_ANALYST_REGEN_PROMPT = """You are an expert Business Analyst.
+A section of the project brief has been updated. Your task is to update the corresponding section of the PRD to reflect the change.
+
+## What changed upstream
+{diff_summary}
+
+## Current section content (to be updated)
+{prior_content}
+
+## Full project brief (for reference)
+{project_brief}
+
+Produce ONLY the updated section content in Markdown format. Preserve any parts that are unaffected by the change.
+"""
+
+SYSTEM_DESIGNER_REGEN_PROMPT = """You are an expert System Designer.
+An upstream PRD section has changed. Your task is to update the corresponding SDD section to stay consistent.
+
+## What changed upstream
+{diff_summary}
+
+## Current SDD section content (to be updated)
+{prior_content}
+
+## Full current PRD (for reference)
+{prd}
+
+Produce ONLY the updated section content in Markdown format. Preserve any parts that are unaffected by the change.
+"""
+
+DATABASE_ARCHITECT_REGEN_PROMPT = """You are an expert Database Architect.
+An upstream SDD section has changed. Your task is to update the corresponding Database Schema section to stay consistent.
+
+## What changed upstream
+{diff_summary}
+
+## Current Database Schema section content (to be updated)
+{prior_content}
+
+## Full current SDD (for reference)
+{sdd}
+
+Produce ONLY the updated section content in Markdown format. Preserve any parts that are unaffected by the change.
+"""
+
+API_DESIGNER_REGEN_PROMPT = """You are an expert API Designer.
+An upstream section (SDD or Database Schema) has changed. Your task is to update the corresponding API Specification section to stay consistent.
+
+## What changed upstream
+{diff_summary}
+
+## Current API Spec section content (to be updated)
+{prior_content}
+
+## Full current SDD (for reference)
+{sdd}
+
+## Full current Database Schema (for reference)
+{db_schema}
+
+Produce ONLY the updated section content in Markdown format. Preserve any parts that are unaffected by the change.
+"""
+
+QA_ENGINEER_REGEN_PROMPT = """You are an expert QA Engineer and Product Owner.
+An upstream section (PRD or API Specification) has changed. Your task is to update the corresponding User Stories section to stay consistent.
+
+## What changed upstream
+{diff_summary}
+
+## Current User Stories section content (to be updated)
+{prior_content}
+
+## Full current PRD (for reference)
+{prd}
+
+## Full current API Specification (for reference)
+{api_spec}
+
+Produce ONLY the updated section content in Markdown format. Preserve any parts that are unaffected by the change.
+"""
+
+PROJECT_PLANNER_REGEN_PROMPT = """You are an expert Project Planner / Scrum Master.
+An upstream section (User Stories or API Specification) has changed. Your task is to update the corresponding Task Breakdown section to stay consistent.
+
+## What changed upstream
+{diff_summary}
+
+## Current Task Breakdown section content (to be updated)
+{prior_content}
+
+## Full current User Stories (for reference)
+{user_stories}
+
+## Full current API Specification (for reference)
+{api_spec}
+
+Produce ONLY the updated section content in Markdown format. Preserve any parts that are unaffected by the change.
+"""
+
