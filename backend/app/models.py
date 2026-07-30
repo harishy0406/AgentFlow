@@ -63,3 +63,39 @@ class ArtifactSection(Base):
         secondaryjoin=id==section_traces.c.upstream_section_id,
         backref="traced_by" # Upstream section is traced by these downstream sections
     )
+
+
+class ArtifactVersion(Base):
+    """Stores a snapshot of an artifact section before each regeneration,
+    enabling rollback to any prior version."""
+    __tablename__ = "artifact_versions"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    artifact_node_id = Column(UUID(as_uuid=True), ForeignKey("artifact_nodes.id"), nullable=False)
+    section_id = Column(UUID(as_uuid=True), ForeignKey("artifact_sections.id"), nullable=False)
+    version = Column(Integer, nullable=False)
+    content = Column(String, nullable=False)
+    content_hash = Column(String, nullable=False)
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+
+    artifact_node = relationship("ArtifactNode")
+    section = relationship("ArtifactSection")
+
+
+class GenerationLog(Base):
+    """Logs every generation / regeneration event for observability."""
+    __tablename__ = "generation_logs"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    project_id = Column(UUID(as_uuid=True), ForeignKey("projects.id"), nullable=False)
+    artifact_node_id = Column(UUID(as_uuid=True), ForeignKey("artifact_nodes.id"), nullable=False)
+    triggered_by = Column(String, nullable=False)  # 'initial_generation', 'selective_regeneration', 'micro_regeneration'
+    provider = Column(String, nullable=False)
+    model = Column(String, nullable=False)
+    tokens_used = Column(Integer, nullable=True)
+    cost_usd = Column(Float, nullable=True)
+    latency_ms = Column(Integer, nullable=True)
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+
+    project = relationship("Project")
+    artifact_node = relationship("ArtifactNode")
