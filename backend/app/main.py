@@ -1,17 +1,20 @@
 from fastapi import FastAPI, Depends, HTTPException
 from sqlalchemy.orm import Session
+from sqlalchemy import func
 from uuid import UUID
 from typing import List
 
 from . import models, schemas
 from .database import engine, get_db
-from .agents.graph_engine import ARTIFACT_DEPENDENCY_MAP
+from .agents.graph_engine import ARTIFACT_DEPENDENCY_MAP, TOPOLOGICAL_ORDER
 from .agents.orchestrator import handle_section_edit, rollback_section
+from .agents.provider_registry import PROVIDER_REGISTRY
+from .agents.router import route as route_model
 
 # Create database tables (in a real app, use alembic)
 models.Base.metadata.create_all(bind=engine)
 
-app = FastAPI(title="AgentFlow API", version="0.2.0")
+app = FastAPI(title="AgentFlow API", version="0.3.0")
 
 
 # ---------------------------------------------------------------------------
@@ -239,3 +242,116 @@ def trigger_regeneration(
                 combined_result["regenerated_artifacts"].append(art)
 
     return schemas.RegenerationResult(**combined_result)
+
+
+# ---------------------------------------------------------------------------
+# Phase 3: Metrics
+# ---------------------------------------------------------------------------
+
+@app.get("/projects/{project_id}/metrics", response_model=schemas.ProjectMetrics)
+def get_project_metrics(project_id: UUID, db: Session = Depends(get_db)):
+    """
+    Return cost, latency, quality-signal metrics per artifact type
+    for the project.
+    """
+    db_project = db.query(models.Project).filter(models.Project.id == project_id).first()
+    if db_project is None:
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    # Aggregate generation logs
+    total_cost = (
+        db.query(func.sum(models.GenerationLog.cost_usd))
+        .filter(models.GenerationLog.project_id == project_id)
+        .scalar()
+    )
+    total_gens = (
+        db.query(func.count(models.GenerationLog.id))
+        .filter(models.GenerationLog.project_id == project_id)
+        .scalar()
+    )
+
+    artifact_metrics = []
+    for art_type in TOPOLOGICAL_ORDER:
+        node = (
+            db.query(models.ArtifactNode)
+            .filter(
+                models.ArtifactNode.project_id == project_id,
+                models.ArtifactNode.artifact_type == art_type,
+            )
+            .first()
+        )
+        if node is None:
+            continue
+
+        gen_count = (
+            db.query(func.count(models.GenerationLog.id))
+            .filter(models.GenerationLog.artifact_node_id == node.id)
+            .scalar()
+        )
+        avg_latency = (
+            db.query(func.avg(models.GenerationLog.latency_ms))
+            .filter(models.GenerationLog.artifact_node_id == node.id)
+            .scalar()
+        )
+        total_art_cost = (
+            db.query(func.sum(models.GenerationLog.cost_usd))
+            .filter(models.GenerationLog.artifact_node_id == node.id)
+            .scalar()
+        )
+
+        artifact_metrics.append(schemas.ArtifactMetrics(
+            artifact_type=art_type,
+            avg_quality_signal=node.quality_signal_score,
+            total_generations=gen_count or 0,
+            total_cost_usd=float(total_art_cost) if total_art_cost else None,
+            avg_latency_ms=float(avg_latency) if avg_latency else None,
+            last_model_used=node.generated_by_model,
+        ))
+
+    return schemas.ProjectMetrics(
+        project_id=project_id,
+        total_cost_usd=float(total_cost) if total_cost else None,
+        total_generations=total_gens or 0,
+        artifact_metrics=artifact_metrics,
+    )
+
+
+# ---------------------------------------------------------------------------
+# Phase 3: Provider Registry
+# ---------------------------------------------------------------------------
+
+@app.get("/providers", response_model=List[schemas.ProviderOut])
+def list_providers():
+    """List all registered LLM providers and their models."""
+    result = []
+    for provider in PROVIDER_REGISTRY.all_providers():
+        models_out = [
+            schemas.ProviderModelOut(
+                provider=m.provider,
+                model_name=m.model_name,
+                cost_per_input_token=m.cost_per_input_token,
+                cost_per_output_token=m.cost_per_output_token,
+                max_context_tokens=m.max_context_tokens,
+            )
+            for m in provider.models
+        ]
+        result.append(schemas.ProviderOut(
+            name=provider.name,
+            is_available=provider.is_available(),
+            models=models_out,
+        ))
+    return result
+
+
+@app.get("/routing/preview/{artifact_type}", response_model=schemas.RoutingDecisionOut)
+def preview_routing(
+    artifact_type: str,
+    context_size: int = 1000,
+    db: Session = Depends(get_db),
+):
+    """
+    Preview what model the router would select for a given artifact type
+    without actually running a generation.
+    """
+    decision = route_model(artifact_type, context_size, db)
+    return schemas.RoutingDecisionOut(**decision.to_dict())

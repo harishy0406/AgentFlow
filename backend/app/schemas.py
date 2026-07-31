@@ -98,17 +98,6 @@ class RollbackResponse(BaseModel):
     content: str
 
 
-# ---------------------------------------------------------------------------
-# Phase 2: Selective regeneration response
-# ---------------------------------------------------------------------------
-
-class RegenerationResult(BaseModel):
-    """Returned by the section-edit endpoint to describe what was regenerated."""
-    edited_section_id: str
-    content_changed: bool
-    dirty_sections: List[str] = []
-    regenerated_artifacts: List[str] = []
-
 
 # ---------------------------------------------------------------------------
 # Phase 2: Dependency graph view
@@ -131,3 +120,62 @@ class DependencyGraphOut(BaseModel):
     """Full graph payload returned by GET /projects/{id}/graph."""
     nodes: List[GraphNodeOut]
     edges: List[GraphEdgeOut]
+
+
+# ---------------------------------------------------------------------------
+# Phase 3: Routing decisions
+# ---------------------------------------------------------------------------
+
+class RoutingDecisionOut(BaseModel):
+    """A single routing decision made by the Quality-Signal Router."""
+    artifact_type: str
+    chosen_provider: str
+    chosen_model: str
+    predicted_quality_signal: float
+    estimated_cost_usd: float
+    rationale: str
+
+
+class RegenerationResult(BaseModel):
+    """Returned by the section-edit endpoint to describe what was regenerated."""
+    edited_section_id: str
+    content_changed: bool
+    dirty_sections: List[str] = []
+    regenerated_artifacts: List[str] = []
+    routing_decisions: List[RoutingDecisionOut] = []
+
+
+# ---------------------------------------------------------------------------
+# Phase 3: Metrics
+# ---------------------------------------------------------------------------
+
+class ArtifactMetrics(BaseModel):
+    """Per-artifact-type metrics."""
+    artifact_type: str
+    avg_quality_signal: Optional[float] = None
+    total_generations: int = 0
+    total_cost_usd: Optional[float] = None
+    avg_latency_ms: Optional[float] = None
+    last_model_used: Optional[str] = None
+
+class ProjectMetrics(BaseModel):
+    """Per-project metrics response."""
+    project_id: UUID
+    total_cost_usd: Optional[float] = None
+    total_generations: int = 0
+    artifact_metrics: List[ArtifactMetrics] = []
+
+class ProviderModelOut(BaseModel):
+    """A model entry from the provider registry."""
+    provider: str
+    model_name: str
+    cost_per_input_token: float
+    cost_per_output_token: float
+    max_context_tokens: int
+
+class ProviderOut(BaseModel):
+    """A provider entry from the registry."""
+    name: str
+    is_available: bool
+    models: List[ProviderModelOut]
+
