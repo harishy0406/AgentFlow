@@ -1,20 +1,14 @@
 """
-Selective Regeneration Orchestrator — Phase 2
+Selective Regeneration Orchestrator — Phase 2 + Phase 3
 
-This module ties together the dependency graph engine and the agent nodes
-to perform diff-aware selective regeneration when a user edits a section.
+This module ties together the dependency graph engine, the quality-signal
+router, and the agent nodes to perform diff-aware selective regeneration
+when a user edits a section.
 
-Flow:
-1. User edits a section → PATCH endpoint calls `handle_section_edit`
-2. Compute new hash, check if content actually changed
-3. Save a version snapshot of the old content (for rollback)
-4. BFS the dependency graph to find all downstream dirty sections
-5. Mark dirty nodes as "stale"
-6. For each dirty section in topological order:
-   a. Compute the diff summary between old and new upstream content
-   b. Invoke the owning agent with the regen prompt
-   c. Update the section content + hash, bump version, mark fresh
-7. Return a summary of what was regenerated
+Phase 3 additions:
+- Uses the Quality-Signal Router to select the best model per artifact
+- Computes quality signals after each generation and stores them
+- Logs routing decisions alongside generation events
 """
 
 import time
@@ -24,7 +18,6 @@ from datetime import datetime, timezone
 
 from sqlalchemy.orm import Session
 from langchain_core.prompts import PromptTemplate
-from langchain_openai import ChatOpenAI
 
 from ..models import (
     ArtifactNode, ArtifactSection, ArtifactVersion, GenerationLog, Project
@@ -45,6 +38,8 @@ from .prompts import (
     QA_ENGINEER_REGEN_PROMPT,
     PROJECT_PLANNER_REGEN_PROMPT,
 )
+from .router import get_chat_model_for_artifact, RoutingDecision
+from .quality_signals import compute_quality_signal
 
 
 # Map artifact types to their regeneration prompts
@@ -56,11 +51,6 @@ REGEN_PROMPT_MAP = {
     "USER_STORIES": QA_ENGINEER_REGEN_PROMPT,
     "TASKS":        PROJECT_PLANNER_REGEN_PROMPT,
 }
-
-
-def _get_llm():
-    """Single-model provider for Phase 1/2. Phase 3 replaces this with the router."""
-    return ChatOpenAI(model="gpt-4o-mini", temperature=0)
 
 
 def _get_full_artifact_content(
@@ -139,19 +129,30 @@ def _build_regen_context(
     return ctx
 
 
+def _estimate_context_size(ctx: Dict[str, str]) -> int:
+    """Rough token estimate from the context dictionary (4 chars ≈ 1 token)."""
+    total_chars = sum(len(v) for v in ctx.values())
+    return max(total_chars // 4, 100)
+
+
 def _log_generation(
     project_id: UUID,
     node_id: UUID,
     latency_ms: int,
+    decision: RoutingDecision,
+    tokens_used: Optional[int],
+    cost_usd: Optional[float],
     db: Session,
 ) -> None:
-    """Log a selective regeneration event."""
+    """Log a generation event with the routing decision details."""
     log = GenerationLog(
         project_id=project_id,
         artifact_node_id=node_id,
         triggered_by="selective_regeneration",
-        provider="openai",
-        model="gpt-4o-mini",
+        provider=decision.chosen_provider,
+        model=decision.chosen_model,
+        tokens_used=tokens_used,
+        cost_usd=cost_usd,
         latency_ms=latency_ms,
     )
     db.add(log)
@@ -168,13 +169,17 @@ def handle_section_edit(
     db: Session,
 ) -> Dict[str, Any]:
     """
-    Main entry point for Phase 2 selective regeneration.
+    Main entry point for selective regeneration (Phase 2 + Phase 3).
 
     1. Validate the edit
     2. Snapshot the old version
     3. Update the section
     4. BFS to find dirty downstream sections
-    5. Regenerate each dirty section in topological order
+    5. For each dirty section (topological order):
+       a. Route to the best model via Quality-Signal Router
+       b. Invoke the LLM with the regen prompt
+       c. Compute and store the quality signal
+       d. Log the routing decision + generation metrics
     6. Return a summary
 
     Returns a dict with keys:
@@ -182,6 +187,7 @@ def handle_section_edit(
       - content_changed: bool
       - dirty_sections: list of regenerated section ids
       - regenerated_artifacts: list of artifact types that were touched
+      - routing_decisions: list of routing decision dicts (Phase 3)
     """
     section = db.query(ArtifactSection).get(section_id)
     if section is None:
@@ -198,6 +204,7 @@ def handle_section_edit(
             "content_changed": False,
             "dirty_sections": [],
             "regenerated_artifacts": [],
+            "routing_decisions": [],
         }
 
     # --- Step 1: snapshot the old version ---
@@ -210,12 +217,10 @@ def handle_section_edit(
     db.commit()
 
     # --- Step 3: find downstream dirty sections ---
-    # We exclude the edited section itself — it was already updated by the user
     all_dirty = recompute_subgraph(section_id, db)
     downstream_dirty = [sid for sid in all_dirty if sid != section_id]
 
     if not downstream_dirty:
-        # The edit only affects the edited section (leaf node); no propagation needed
         node = db.query(ArtifactNode).get(section.artifact_node_id)
         if node:
             node.version += 1
@@ -225,6 +230,7 @@ def handle_section_edit(
             "content_changed": True,
             "dirty_sections": [],
             "regenerated_artifacts": [],
+            "routing_decisions": [],
         }
 
     # --- Step 4: mark downstream as stale ---
@@ -232,7 +238,7 @@ def handle_section_edit(
 
     # --- Step 5: regenerate each dirty section in topological order ---
     regenerated_artifacts = []
-    llm = _get_llm()
+    routing_decisions = []
 
     diff_summary = compute_diff_summary(old_content, new_content)
 
@@ -262,6 +268,13 @@ def handle_section_edit(
             db,
         )
 
+        # Phase 3: Route to the best model
+        context_size = _estimate_context_size(ctx)
+        llm, decision = get_chat_model_for_artifact(
+            artifact_type, context_size, db
+        )
+        routing_decisions.append(decision.to_dict())
+
         # Invoke LLM
         prompt = PromptTemplate.from_template(prompt_template_str)
         chain = prompt | llm
@@ -276,15 +289,33 @@ def handle_section_edit(
         dirty_section.content_hash = compute_content_hash(new_regen_content)
         dirty_section.updated_at = datetime.now(timezone.utc)
 
+        # Phase 3: Compute and store quality signal
+        quality_score = compute_quality_signal(
+            artifact_type, new_regen_content, dirty_node.project_id, db
+        )
+        dirty_node.quality_signal_score = quality_score
+        dirty_node.generated_by_model = f"{decision.chosen_provider}/{decision.chosen_model}"
+
         # Bump version on the parent node
         dirty_node.version += 1
         dirty_node.status = "fresh"
 
-        # Log the generation
+        # Extract token usage from response metadata if available
+        tokens_used = None
+        cost_usd = None
+        if hasattr(response, 'response_metadata'):
+            usage = response.response_metadata.get('token_usage', {})
+            if usage:
+                tokens_used = usage.get('total_tokens')
+
+        # Log the generation with routing decision
         _log_generation(
             dirty_node.project_id,
             dirty_node.id,
             end_ms - start_ms,
+            decision,
+            tokens_used,
+            cost_usd,
             db,
         )
 
@@ -298,6 +329,7 @@ def handle_section_edit(
         "content_changed": True,
         "dirty_sections": [str(sid) for sid in downstream_dirty],
         "regenerated_artifacts": regenerated_artifacts,
+        "routing_decisions": routing_decisions,
     }
 
 
