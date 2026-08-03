@@ -99,3 +99,26 @@ class GenerationLog(Base):
 
     project = relationship("Project")
     artifact_node = relationship("ArtifactNode")
+
+
+class DriftRecord(Base):
+    """Logs cross-artifact consistency drift detected by the Auditor (Phase 4)."""
+    __tablename__ = "drift_records"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    project_id = Column(UUID(as_uuid=True), ForeignKey("projects.id"), nullable=False)
+    check_name = Column(String, nullable=False)  # e.g. 'requirement_coverage', 'schema_endpoint_mapping'
+    artifact_a_id = Column(UUID(as_uuid=True), ForeignKey("artifact_nodes.id"), nullable=False)
+    artifact_b_id = Column(UUID(as_uuid=True), ForeignKey("artifact_nodes.id"), nullable=False)
+    section_a_id = Column(UUID(as_uuid=True), ForeignKey("artifact_sections.id"), nullable=True)
+    section_b_id = Column(UUID(as_uuid=True), ForeignKey("artifact_sections.id"), nullable=True)
+    description = Column(String, nullable=False)
+    severity = Column(String, nullable=False, default="medium")  # 'low', 'medium', 'high'
+    status = Column(String, nullable=False, default="open")  # 'open', 'auto_fixed', 'dismissed'
+    detected_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    resolved_at = Column(DateTime(timezone=True), nullable=True)
+
+    project = relationship("Project")
+    artifact_a = relationship("ArtifactNode", foreign_keys=[artifact_a_id])
+    artifact_b = relationship("ArtifactNode", foreign_keys=[artifact_b_id])
+
