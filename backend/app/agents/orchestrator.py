@@ -1,5 +1,5 @@
 """
-Selective Regeneration Orchestrator — Phase 2 + Phase 3
+Selective Regeneration Orchestrator — Phase 2 + Phase 3 + Phase 4
 
 This module ties together the dependency graph engine, the quality-signal
 router, and the agent nodes to perform diff-aware selective regeneration
@@ -9,6 +9,10 @@ Phase 3 additions:
 - Uses the Quality-Signal Router to select the best model per artifact
 - Computes quality signals after each generation and stores them
 - Logs routing decisions alongside generation events
+
+Phase 4 additions:
+- Runs the Consistency Auditor after every regeneration event
+- Audit results are returned alongside the regeneration summary
 """
 
 import time
@@ -40,6 +44,7 @@ from .prompts import (
 )
 from .router import get_chat_model_for_artifact, RoutingDecision
 from .quality_signals import compute_quality_signal
+from .auditor import run_audit
 
 
 # Map artifact types to their regeneration prompts
@@ -324,12 +329,24 @@ def handle_section_edit(
 
     db.commit()
 
+    # --- Phase 4: Post-regeneration audit ---
+    # Determine the project_id from the edited section's node
+    edited_node = db.query(ArtifactNode).get(section.artifact_node_id)
+    audit_results = []
+    if edited_node:
+        try:
+            audit_results = run_audit(edited_node.project_id, db)
+        except Exception:
+            # Audit failures should not block the regeneration response
+            audit_results = [{"rule": "audit_error", "status": "error"}]
+
     return {
         "edited_section_id": str(section_id),
         "content_changed": True,
         "dirty_sections": [str(sid) for sid in downstream_dirty],
         "regenerated_artifacts": regenerated_artifacts,
         "routing_decisions": routing_decisions,
+        "audit_results": audit_results,
     }
 
 
