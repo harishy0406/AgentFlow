@@ -1,8 +1,8 @@
-from fastapi import FastAPI, Depends, HTTPException
+from fastapi import FastAPI, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from uuid import UUID
-from typing import List
+from typing import List, Optional
 
 from . import models, schemas
 from .database import engine, get_db
@@ -10,11 +10,13 @@ from .agents.graph_engine import ARTIFACT_DEPENDENCY_MAP, TOPOLOGICAL_ORDER
 from .agents.orchestrator import handle_section_edit, rollback_section
 from .agents.provider_registry import PROVIDER_REGISTRY
 from .agents.router import route as route_model
+from .agents.auditor import run_audit, list_open_drifts, resolve_drift_record
+from .agents.micro_regen import fix_drift
 
 # Create database tables (in a real app, use alembic)
 models.Base.metadata.create_all(bind=engine)
 
-app = FastAPI(title="AgentFlow API", version="0.3.0")
+app = FastAPI(title="AgentFlow API", version="0.4.0")
 
 
 # ---------------------------------------------------------------------------
@@ -355,3 +357,87 @@ def preview_routing(
     """
     decision = route_model(artifact_type, context_size, db)
     return schemas.RoutingDecisionOut(**decision.to_dict())
+
+
+# ---------------------------------------------------------------------------
+# Phase 4: Consistency Auditor
+# ---------------------------------------------------------------------------
+
+@app.post("/projects/{project_id}/audit", response_model=schemas.AuditResult)
+def trigger_audit(
+    project_id: UUID,
+    db: Session = Depends(get_db),
+):
+    """
+    Run the full Consistency Auditor on a project. Checks all 5 cross-artifact
+    validation rules and persists any detected drifts.
+    """
+    db_project = db.query(models.Project).filter(models.Project.id == project_id).first()
+    if db_project is None:
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    results = run_audit(project_id, db)
+
+    rule_results = [schemas.AuditRuleResult(**r) for r in results]
+    total_drifts = sum(r.get("drifts_found", 0) for r in results)
+
+    return schemas.AuditResult(
+        project_id=project_id,
+        total_rules_checked=len(results),
+        total_drifts_found=total_drifts,
+        rules=rule_results,
+    )
+
+
+@app.get("/projects/{project_id}/drifts", response_model=List[schemas.DriftRecordOut])
+def get_project_drifts(
+    project_id: UUID,
+    status: Optional[str] = Query(None, description="Filter by status: open, auto_fixed, dismissed"),
+    db: Session = Depends(get_db),
+):
+    """List all drift records for a project, optionally filtered by status."""
+    db_project = db.query(models.Project).filter(models.Project.id == project_id).first()
+    if db_project is None:
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    drifts = list_open_drifts(project_id, db, status_filter=status)
+    return drifts
+
+
+@app.post(
+    "/projects/{project_id}/drifts/{drift_id}/fix",
+    response_model=schemas.DriftFixResult,
+)
+def auto_fix_drift(
+    project_id: UUID,
+    drift_id: UUID,
+    db: Session = Depends(get_db),
+):
+    """
+    Trigger micro-regeneration to auto-fix a specific drift.
+    The system will regenerate the minimum section needed, then re-run
+    the validation rule to verify the fix.
+    """
+    try:
+        result = fix_drift(drift_id, db)
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+
+    return schemas.DriftFixResult(**result)
+
+
+@app.post(
+    "/projects/{project_id}/drifts/{drift_id}/dismiss",
+    response_model=schemas.DriftRecordOut,
+)
+def dismiss_drift(
+    project_id: UUID,
+    drift_id: UUID,
+    db: Session = Depends(get_db),
+):
+    """Dismiss a drift record (human override — marking it as not needing a fix)."""
+    record = resolve_drift_record(drift_id, "dismissed", db)
+    if record is None:
+        raise HTTPException(status_code=404, detail="Drift record not found")
+    return record
+
