@@ -176,3 +176,39 @@ An upstream section (User Stories or API Specification) has changed. Your task i
 Produce ONLY the updated section content in Markdown format. Preserve any parts that are unaffected by the change.
 """
 
+
+# ---------------------------------------------------------------------------
+# Phase 4: Micro-Regeneration Prompt (for drift auto-fix)
+# ---------------------------------------------------------------------------
+
+MICRO_REGEN_PROMPT = """You are an expert technical writer performing a **targeted micro-correction**.
+
+The Consistency Auditor has detected the following cross-artifact drift:
+
+## Drift Description
+{drift_description}
+
+## Validation Rule
+{rule_name}: {rule_description}
+
+## Artifact A ({artifact_type_a}) — Current Content
+{content_a}
+
+## Artifact B ({artifact_type_b}) — Current Content
+{content_b}
+
+## Section To Fix
+The section below (from **{target_artifact_type}**) needs to be corrected to resolve the drift.
+Current content of the section:
+{section_content}
+
+## Instructions
+1. Fix ONLY the specific inconsistency described in the drift description.
+2. Make the MINIMUM change necessary — do not rewrite the entire section.
+3. Ensure the fix resolves the cross-artifact inconsistency.
+4. Preserve all existing content that is unrelated to the drift.
+
+Produce ONLY the corrected section content in Markdown format.
+"""
+
+
