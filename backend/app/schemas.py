@@ -179,3 +179,59 @@ class ProviderOut(BaseModel):
     is_available: bool
     models: List[ProviderModelOut]
 
+
+# ---------------------------------------------------------------------------
+# Phase 4: Consistency Auditor & Drift Records
+# ---------------------------------------------------------------------------
+
+class DriftRecordOut(BaseModel):
+    """Response model for a drift record."""
+    id: UUID
+    project_id: UUID
+    check_name: str
+    artifact_a_id: UUID
+    artifact_b_id: UUID
+    section_a_id: Optional[UUID] = None
+    section_b_id: Optional[UUID] = None
+    description: str
+    severity: str
+    status: str
+    detected_at: datetime
+    resolved_at: Optional[datetime] = None
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class AuditRuleResult(BaseModel):
+    """Result of running a single validation rule."""
+    rule: str
+    status: str
+    severity: Optional[str] = None
+    artifact_a: Optional[str] = None
+    artifact_b: Optional[str] = None
+    drifts_found: int = 0
+    stale_cleared: Optional[int] = None
+    drift_descriptions: List[str] = []
+    reason: Optional[str] = None
+
+
+class AuditResult(BaseModel):
+    """Summary of a full audit run."""
+    project_id: UUID
+    total_rules_checked: int
+    total_drifts_found: int
+    rules: List[AuditRuleResult]
+
+
+class DriftFixResult(BaseModel):
+    """Result of a micro-regeneration auto-fix attempt."""
+    drift_id: str
+    status: str
+    target_artifact: Optional[str] = None
+    target_section_id: Optional[str] = None
+    fix_verified: Optional[bool] = None
+    latency_ms: Optional[int] = None
+    model_used: Optional[str] = None
+    message: Optional[str] = None
+
+
