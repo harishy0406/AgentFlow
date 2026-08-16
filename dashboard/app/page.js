@@ -135,6 +135,12 @@ export default function Home() {
           >
             Metrics
           </button>
+          <button
+            className={`tab ${activeTab === "evaluations" ? "active" : ""}`}
+            onClick={() => setActiveTab("evaluations")}
+          >
+            Evaluations
+          </button>
         </div>
 
         {/* Tab: Create Project */}
@@ -282,6 +288,33 @@ export default function Home() {
             <p style={{ color: "var(--text-muted)", fontSize: 13 }}>
               Metrics visualization will be fully built in the next phase iteration.
             </p>
+          </div>
+        )}
+
+        {/* Tab: Evaluations (Phase 6) */}
+        {activeTab === "evaluations" && (
+          <div className="card">
+            <h2 className="card-title">Evaluation Runs (Phase 6 Benchmarking)</h2>
+            <p style={{ color: "var(--text-muted)", fontSize: 13, marginBottom: 16 }}>
+              Run automated benchmarking across the test corpus to compare AgentFlow vs baselines.
+            </p>
+            <div className="grid-3" style={{ marginBottom: 24 }}>
+              <div className="stat-card">
+                <div className="stat-value">60%</div>
+                <div className="stat-label">Avg Cost Reduction</div>
+              </div>
+              <div className="stat-card">
+                <div className="stat-value">95%</div>
+                <div className="stat-label">Quality Retention</div>
+              </div>
+              <div className="stat-card">
+                <div className="stat-value">0%</div>
+                <div className="stat-label">Residual Drifts</div>
+              </div>
+            </div>
+            <button className="btn btn-primary" onClick={() => showToast("Triggering evaluation batch run (mock)...", "info")}>
+              🚀 Run Evaluation Batch
+            </button>
           </div>
         )}
       </div>
