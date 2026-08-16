@@ -114,7 +114,7 @@ class DriftRecord(Base):
     section_b_id = Column(UUID(as_uuid=True), ForeignKey("artifact_sections.id"), nullable=True)
     description = Column(String, nullable=False)
     severity = Column(String, nullable=False, default="medium")  # 'low', 'medium', 'high'
-    status = Column(String, nullable=False, default="open")  # 'open', 'auto_fixed', 'dismissed'
+    status = Column(String, nullable=False, default="open") # open, auto_fixed, dismissed
     detected_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
     resolved_at = Column(DateTime(timezone=True), nullable=True)
 
@@ -122,3 +122,36 @@ class DriftRecord(Base):
     artifact_a = relationship("ArtifactNode", foreign_keys=[artifact_a_id])
     artifact_b = relationship("ArtifactNode", foreign_keys=[artifact_b_id])
 
+
+# ---------------------------------------------------------------------------
+# Phase 6: Evaluation Harness
+# ---------------------------------------------------------------------------
+
+class EvalRun(Base):
+    __tablename__ = "eval_runs"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    run_name = Column(String, nullable=False) # e.g. "batch-1-agentflow"
+    baseline_type = Column(String, nullable=False) # 'single-llm', 'multi-agent-no-graph', 'agentflow'
+    total_cost_usd = Column(Float, default=0.0)
+    total_latency_ms = Column(Integer, default=0)
+    avg_quality_score = Column(Float, nullable=True)
+    total_drifts = Column(Integer, default=0)
+    completed_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+
+    results = relationship("EvalResult", back_populates="run", cascade="all, delete-orphan")
+
+
+class EvalResult(Base):
+    __tablename__ = "eval_results"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    eval_run_id = Column(UUID(as_uuid=True), ForeignKey("eval_runs.id"), nullable=False)
+    project_id = Column(UUID(as_uuid=True), ForeignKey("projects.id"), nullable=False)
+    scenario_type = Column(String, nullable=False) # 'full_generation' or 'mid_project_edit'
+    cost_usd = Column(Float, default=0.0)
+    latency_ms = Column(Integer, default=0)
+    quality_score = Column(Float, nullable=True)
+    drifts_detected = Column(Integer, default=0)
+
+    run = relationship("EvalRun", back_populates="results")
