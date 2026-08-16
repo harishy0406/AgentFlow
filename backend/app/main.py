@@ -441,3 +441,30 @@ def dismiss_drift(
         raise HTTPException(status_code=404, detail="Drift record not found")
     return record
 
+
+# ---------------------------------------------------------------------------
+# Phase 6: Evaluation API
+# ---------------------------------------------------------------------------
+
+from .eval.runner import run_evaluation_batch
+
+@app.post("/eval/run", response_model=schemas.EvalRunOut)
+def trigger_eval_run(
+    run_name: str,
+    baseline_type: str,
+    limit: int = 5,
+    db: Session = Depends(get_db)
+):
+    """Trigger an evaluation run against the test corpus."""
+    try:
+        run = run_evaluation_batch(run_name, baseline_type, db, limit)
+        return run
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/eval/runs", response_model=List[schemas.EvalRunOut])
+def list_eval_runs(db: Session = Depends(get_db)):
+    """List all evaluation runs and their results."""
+    return db.query(models.EvalRun).order_by(models.EvalRun.completed_at.desc()).all()
+
+

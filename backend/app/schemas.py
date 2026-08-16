@@ -235,3 +235,34 @@ class DriftFixResult(BaseModel):
     message: Optional[str] = None
 
 
+# ---------------------------------------------------------------------------
+# Phase 6: Evaluation
+# ---------------------------------------------------------------------------
+
+class EvalResultOut(BaseModel):
+    id: UUID
+    project_id: UUID
+    scenario_type: str
+    cost_usd: float
+    latency_ms: int
+    quality_score: Optional[float] = None
+    drifts_detected: int
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class EvalRunOut(BaseModel):
+    id: UUID
+    run_name: str
+    baseline_type: str
+    total_cost_usd: float
+    total_latency_ms: int
+    avg_quality_score: Optional[float] = None
+    total_drifts: int
+    completed_at: datetime
+    results: List[EvalResultOut] = []
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+
