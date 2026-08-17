@@ -34,7 +34,8 @@ AgentFlow is an adaptive multi-agent workflow orchestration platform that automa
   - Implement the LangGraph orchestrator.
   - Create the 6 base agent nodes (Business Analyst, System Designer, Database Architect, API Designer, QA Engineer, Project Planner).
   - Define the Pydantic schemas for their input/output contracts.
-- **Generation Logic:**
+- **Generation Logic & HITL:**
+  - Implement a Human-in-the-Loop (HITL) interactive step: an agent reads the project brief and outputs 3-5 clarifying questions for the user to answer *before* generation starts.
   - Implement the single-model provider abstraction.
   - Build the initial full-pipeline generation flow (PRD → SDD → Schema → API → Stories → Tasks).
 
