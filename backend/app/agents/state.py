@@ -5,6 +5,7 @@ class AgentFlowState(BaseModel):
     project_id: str
     project_name: str
     project_brief: str
+    clarifications: Optional[str] = None
     
     # Artifacts stored as strings or dicts depending on complexity
     prd: Optional[str] = None

@@ -44,7 +44,10 @@ def business_analyst_node(state: AgentFlowState) -> AgentFlowState:
     prompt = PromptTemplate.from_template(BUSINESS_ANALYST_PROMPT)
     chain = prompt | llm
 
-    response = chain.invoke({"project_brief": state.project_brief})
+    response = chain.invoke({
+        "project_brief": state.project_brief,
+        "clarifications": state.clarifications or "None provided."
+    })
     state.prd = response.content
     return state
 

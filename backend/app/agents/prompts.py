@@ -1,11 +1,25 @@
 # Prompts for each AgentFlow agent
 
+CLARIFICATION_PROMPT = """You are an expert Business Analyst.
+The user has provided a brief for a new software project.
+Your task is to review the brief and generate 3 to 5 critical, clarifying questions that need to be answered to write a comprehensive Product Requirements Document (PRD).
+Focus on missing requirements, ambiguous features, or target audience details.
+
+Project Brief:
+{project_brief}
+
+Output ONLY the questions as a numbered list.
+"""
+
 BUSINESS_ANALYST_PROMPT = """You are an expert Business Analyst.
-Your task is to generate a comprehensive Product Requirements Document (PRD) based on the provided project brief.
+Your task is to generate a comprehensive Product Requirements Document (PRD) based on the provided project brief and user clarifications.
 The PRD should clearly outline the problem statement, goals, user personas, scope, and functional requirements.
 
 Project Brief:
 {project_brief}
+
+User Clarifications (Q&A):
+{clarifications}
 
 Generate the PRD in Markdown format.
 """
