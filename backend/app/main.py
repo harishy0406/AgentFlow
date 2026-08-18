@@ -32,9 +32,25 @@ def read_root():
 # Projects
 # ---------------------------------------------------------------------------
 
+from .agents.provider_registry import generate_text
+from .agents.prompts import CLARIFICATION_PROMPT
+
+@app.post("/projects/clarify")
+def clarify_project(req: schemas.ClarifyRequest):
+    """Phase 1: HITL step. Returns clarifying questions for a project brief."""
+    prompt = CLARIFICATION_PROMPT.format(project_brief=req.brief)
+    # Using the default model for clarification
+    questions_text = generate_text(prompt, "claude-3-haiku") 
+    return {"questions": questions_text}
+
+
 @app.post("/projects/", response_model=schemas.Project)
 def create_project(project: schemas.ProjectCreate, db: Session = Depends(get_db)):
-    db_project = models.Project(name=project.name, brief=project.brief)
+    db_project = models.Project(
+        name=project.name, 
+        brief=project.brief,
+        clarifications=project.clarifications
+    )
     db.add(db_project)
     db.commit()
     db.refresh(db_project)

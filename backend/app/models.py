@@ -12,6 +12,7 @@ class Project(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     name = Column(String, nullable=False)
     brief = Column(String, nullable=False)
+    clarifications = Column(String, nullable=True) # JSON string or plain text of Q&A
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
 
     artifact_nodes = relationship("ArtifactNode", back_populates="project", cascade="all, delete-orphan")

@@ -59,6 +59,7 @@ class ArtifactNode(ArtifactNodeBase):
 class ProjectBase(BaseModel):
     name: str
     brief: str
+    clarifications: Optional[str] = None
 
 class ProjectCreate(ProjectBase):
     pass
@@ -69,6 +70,11 @@ class Project(ProjectBase):
     artifact_nodes: List[ArtifactNode] = []
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class ClarifyRequest(BaseModel):
+    brief: str
+
 
 
 # ---------------------------------------------------------------------------
