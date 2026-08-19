@@ -374,16 +374,97 @@ export default function Home() {
           </div>
         )}
 
-        {/* Tab: Drifts (placeholder) */}
+        {/* Tab: Drifts (Phase 4 — Full Implementation) */}
         {activeTab === "drifts" && currentProject && (
           <div className="card">
             <h2 className="card-title">Consistency Drifts</h2>
-            <p style={{ color: "var(--text-muted)", fontSize: 13 }}>
-              Run an audit to detect cross-artifact inconsistencies.
+            <p style={{ color: "var(--text-muted)", fontSize: 13, marginBottom: 16 }}>
+              Run an audit to detect cross-artifact inconsistencies. Fix or dismiss individual drifts.
             </p>
-            <button className="btn btn-primary" style={{ marginTop: 12 }}>
-              🔍 Run Audit
-            </button>
+            <div style={{ display: "flex", gap: 12, marginBottom: 24 }}>
+              <button
+                className="btn btn-primary"
+                disabled={driftLoading}
+                onClick={async () => {
+                  setDriftLoading(true);
+                  try {
+                    await triggerAudit(currentProject.id);
+                    const d = await listDrifts(currentProject.id);
+                    setDrifts(d);
+                    showToast(`Audit complete. ${d.length} drift(s) found.`, d.length > 0 ? "warning" : "success");
+                  } catch (err) {
+                    showToast(err.message, "error");
+                  } finally {
+                    setDriftLoading(false);
+                  }
+                }}
+              >
+                {driftLoading ? (<><span className="spinner" /> Auditing...</>) : "🔍 Run Audit"}
+              </button>
+              <button
+                className="btn btn-secondary"
+                onClick={async () => {
+                  try {
+                    const d = await listDrifts(currentProject.id);
+                    setDrifts(d);
+                  } catch (err) { showToast(err.message, "error"); }
+                }}
+              >
+                🔄 Refresh List
+              </button>
+            </div>
+
+            {drifts.length === 0 ? (
+              <p style={{ color: "var(--text-muted)", fontSize: 13 }}>
+                No drifts detected yet. Run an audit to check for inconsistencies.
+              </p>
+            ) : (
+              drifts.map((d) => (
+                <div key={d.id} className="drift-item" style={{ marginBottom: 12 }}>
+                  <div className="drift-item-body">
+                    <div>
+                      <span className={`badge badge-${d.severity === "high" ? "drifted" : d.severity === "medium" ? "stale" : "fresh"}`}>
+                        {d.severity}
+                      </span>
+                      <strong style={{ marginLeft: 8 }}>{d.description}</strong>
+                    </div>
+                    <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 4 }}>
+                      Status: <strong>{d.status}</strong> • Detected: {new Date(d.detected_at).toLocaleString()}
+                    </div>
+                  </div>
+                  {d.status === "open" && (
+                    <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
+                      <button
+                        className="btn btn-primary btn-sm"
+                        onClick={async () => {
+                          try {
+                            await fixDrift(currentProject.id, d.id);
+                            const updated = await listDrifts(currentProject.id);
+                            setDrifts(updated);
+                            showToast("Drift auto-fixed via micro-regeneration!", "success");
+                          } catch (err) { showToast(err.message, "error"); }
+                        }}
+                      >
+                        🔧 Auto-Fix
+                      </button>
+                      <button
+                        className="btn btn-secondary btn-sm"
+                        onClick={async () => {
+                          try {
+                            await dismissDrift(currentProject.id, d.id);
+                            const updated = await listDrifts(currentProject.id);
+                            setDrifts(updated);
+                            showToast("Drift dismissed.", "info");
+                          } catch (err) { showToast(err.message, "error"); }
+                        }}
+                      >
+                        ✕ Dismiss
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ))
+            )}
           </div>
         )}
 
