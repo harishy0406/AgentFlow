@@ -550,23 +550,92 @@ export default function Home() {
             <p style={{ color: "var(--text-muted)", fontSize: 13, marginBottom: 16 }}>
               Run automated benchmarking across the test corpus to compare AgentFlow vs baselines.
             </p>
-            <div className="grid-3" style={{ marginBottom: 24 }}>
-              <div className="stat-card">
-                <div className="stat-value">60%</div>
-                <div className="stat-label">Avg Cost Reduction</div>
-              </div>
-              <div className="stat-card">
-                <div className="stat-value">95%</div>
-                <div className="stat-label">Quality Retention</div>
-              </div>
-              <div className="stat-card">
-                <div className="stat-value">0%</div>
-                <div className="stat-label">Residual Drifts</div>
-              </div>
+
+            {/* Trigger Buttons */}
+            <div style={{ display: "flex", gap: 12, marginBottom: 24, flexWrap: "wrap" }}>
+              {["agentflow", "single-llm", "multi-agent-no-graph"].map((bt) => (
+                <button
+                  key={bt}
+                  className="btn btn-primary"
+                  onClick={async () => {
+                    try {
+                      showToast(`Starting ${bt} evaluation run...`, "info");
+                      await triggerEvalRun(`run-${Date.now()}`, bt, 5);
+                      const runs = await listEvalRuns();
+                      setEvalRuns(runs);
+                      showToast(`${bt} evaluation completed!`, "success");
+                    } catch (err) { showToast(err.message, "error"); }
+                  }}
+                >
+                  🚀 Run: {bt}
+                </button>
+              ))}
+              <button
+                className="btn btn-secondary"
+                onClick={async () => {
+                  try {
+                    const runs = await listEvalRuns();
+                    setEvalRuns(runs);
+                  } catch (err) { showToast(err.message, "error"); }
+                }}
+              >
+                🔄 Load Past Runs
+              </button>
             </div>
-            <button className="btn btn-primary" onClick={() => showToast("Triggering evaluation batch run (mock)...", "info")}>
-              🚀 Run Evaluation Batch
-            </button>
+
+            {/* Results Table */}
+            {evalRuns.length > 0 && (
+              <div style={{ overflowX: "auto" }}>
+                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+                  <thead>
+                    <tr style={{ borderBottom: "1px solid var(--border)", color: "var(--text-secondary)" }}>
+                      <th style={{ padding: "8px 12px", textAlign: "left" }}>Run Name</th>
+                      <th style={{ padding: "8px 12px", textAlign: "left" }}>Baseline</th>
+                      <th style={{ padding: "8px 12px", textAlign: "center" }}>Cost (USD)</th>
+                      <th style={{ padding: "8px 12px", textAlign: "center" }}>Latency (ms)</th>
+                      <th style={{ padding: "8px 12px", textAlign: "center" }}>Avg Quality</th>
+                      <th style={{ padding: "8px 12px", textAlign: "center" }}>Drifts</th>
+                      <th style={{ padding: "8px 12px", textAlign: "center" }}>Projects</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {evalRuns.map((run) => (
+                      <tr key={run.id} style={{ borderBottom: "1px solid var(--border)" }}>
+                        <td style={{ padding: "8px 12px", fontWeight: 600 }}>{run.run_name}</td>
+                        <td style={{ padding: "8px 12px" }}>
+                          <span className={`badge badge-${run.baseline_type === "agentflow" ? "fresh" : "stale"}`}>
+                            {run.baseline_type}
+                          </span>
+                        </td>
+                        <td style={{ padding: "8px 12px", textAlign: "center" }}>
+                          ${run.total_cost_usd?.toFixed(3) || "0.000"}
+                        </td>
+                        <td style={{ padding: "8px 12px", textAlign: "center" }}>
+                          {run.total_latency_ms?.toLocaleString() || "—"}
+                        </td>
+                        <td style={{ padding: "8px 12px", textAlign: "center" }}>
+                          {run.avg_quality_score != null
+                            ? `${(run.avg_quality_score * 100).toFixed(0)}%`
+                            : "—"}
+                        </td>
+                        <td style={{ padding: "8px 12px", textAlign: "center" }}>
+                          {run.total_drifts}
+                        </td>
+                        <td style={{ padding: "8px 12px", textAlign: "center" }}>
+                          {run.results?.length || 0}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+
+            {evalRuns.length === 0 && (
+              <p style={{ color: "var(--text-muted)", fontSize: 13 }}>
+                No evaluation runs yet. Trigger a run above to benchmark.
+              </p>
+            )}
           </div>
         )}
       </div>
