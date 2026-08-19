@@ -28,10 +28,17 @@ async function request(endpoint, options = {}) {
 // Projects
 // ---------------------------------------------------------------------------
 
-export async function createProject(name, brief) {
-  return request("/projects", {
+export async function createProject(name, brief, clarifications = null) {
+  return request("/projects/", {
     method: "POST",
-    body: JSON.stringify({ name, brief }),
+    body: JSON.stringify({ name, brief, clarifications }),
+  });
+}
+
+export async function clarifyProject(brief) {
+  return request("/projects/clarify", {
+    method: "POST",
+    body: JSON.stringify({ brief }),
   });
 }
 
@@ -121,3 +128,19 @@ export async function getProviders() {
 export async function previewRouting(artifactType, contextSize = 1000) {
   return request(`/routing/preview/${artifactType}?context_size=${contextSize}`);
 }
+
+// ---------------------------------------------------------------------------
+// Evaluation (Phase 6)
+// ---------------------------------------------------------------------------
+
+export async function triggerEvalRun(runName, baselineType, limit = 5) {
+  return request(
+    `/eval/run?run_name=${encodeURIComponent(runName)}&baseline_type=${encodeURIComponent(baselineType)}&limit=${limit}`,
+    { method: "POST" }
+  );
+}
+
+export async function listEvalRuns() {
+  return request("/eval/runs");
+}
+
