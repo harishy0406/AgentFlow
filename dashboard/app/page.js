@@ -4,9 +4,16 @@ import { useState, useCallback } from "react";
 import DependencyGraph from "./components/DependencyGraph";
 import {
   createProject,
+  clarifyProject,
   generateArtifacts,
   getArtifacts,
   listProjects,
+  triggerAudit,
+  listDrifts,
+  fixDrift,
+  dismissDrift,
+  triggerEvalRun,
+  listEvalRuns,
 } from "./lib/api";
 
 export default function Home() {
@@ -20,29 +27,89 @@ export default function Home() {
   const [toast, setToast] = useState(null);
   const [projects, setProjects] = useState([]);
 
+  // HITL clarification state
+  const [clarifyStep, setClarifyStep] = useState("brief"); // 'brief' | 'questions' | 'generating'
+  const [clarifyQuestions, setClarifyQuestions] = useState("");
+  const [clarifyAnswers, setClarifyAnswers] = useState("");
+
+  // Drift state
+  const [drifts, setDrifts] = useState([]);
+  const [driftLoading, setDriftLoading] = useState(false);
+
+  // Eval state
+  const [evalRuns, setEvalRuns] = useState([]);
+
   const showToast = useCallback((message, type = "info") => {
     setToast({ message, type });
     setTimeout(() => setToast(null), 3000);
   }, []);
 
-  const handleCreateProject = async (e) => {
+  // ---- HITL: Step 1 — Get clarification questions ----
+  const handleClarify = async (e) => {
     e.preventDefault();
     if (!projectName.trim() || !projectBrief.trim()) return;
 
     setLoading(true);
     try {
-      const project = await createProject(projectName, projectBrief);
+      const res = await clarifyProject(projectBrief);
+      setClarifyQuestions(res.questions);
+      setClarifyStep("questions");
+      showToast("Agent has a few questions before proceeding.", "info");
+    } catch (err) {
+      showToast(err.message, "error");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // ---- HITL: Step 2 — Submit answers & generate ----
+  const handleCreateWithClarifications = async () => {
+    setLoading(true);
+    setClarifyStep("generating");
+    try {
+      const clarifications = `Questions:\n${clarifyQuestions}\n\nAnswers:\n${clarifyAnswers}`;
+      const project = await createProject(projectName, projectBrief, clarifications);
       setCurrentProject(project);
       showToast("Project created! Generating artifacts...", "success");
 
-      // Auto-trigger generation
       await generateArtifacts(project.id);
       const arts = await getArtifacts(project.id);
       setArtifacts(arts);
       setActiveTab("graph");
+      setClarifyStep("brief");
+      setProjectName("");
+      setProjectBrief("");
+      setClarifyQuestions("");
+      setClarifyAnswers("");
       showToast("All artifacts generated successfully!", "success");
     } catch (err) {
       showToast(err.message, "error");
+      setClarifyStep("questions");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // ---- Skip clarification and generate directly ----
+  const handleSkipClarify = async () => {
+    setLoading(true);
+    setClarifyStep("generating");
+    try {
+      const project = await createProject(projectName, projectBrief);
+      setCurrentProject(project);
+      showToast("Skipped clarifications. Generating artifacts...", "info");
+
+      await generateArtifacts(project.id);
+      const arts = await getArtifacts(project.id);
+      setArtifacts(arts);
+      setActiveTab("graph");
+      setClarifyStep("brief");
+      setProjectName("");
+      setProjectBrief("");
+      showToast("All artifacts generated successfully!", "success");
+    } catch (err) {
+      showToast(err.message, "error");
+      setClarifyStep("brief");
     } finally {
       setLoading(false);
     }
@@ -82,7 +149,7 @@ export default function Home() {
       <nav className="navbar">
         <div className="navbar-brand">
           <h1>⚡ AgentFlow</h1>
-          <span className="navbar-version">v0.4.0</span>
+          <span className="navbar-version">v0.5.0</span>
         </div>
         {currentProject && (
           <div style={{ fontSize: 13, color: "var(--text-secondary)" }}>
@@ -143,46 +210,85 @@ export default function Home() {
           </button>
         </div>
 
-        {/* Tab: Create Project */}
+        {/* Tab: Create Project (with HITL Clarification) */}
         {activeTab === "create" && (
           <div className="card">
             <h2 className="card-title">Create New Project</h2>
-            <form onSubmit={handleCreateProject}>
-              <div className="form-group">
-                <label className="form-label">Project Name</label>
-                <input
-                  type="text"
-                  className="form-input"
-                  placeholder="e.g. E-Commerce Platform"
-                  value={projectName}
-                  onChange={(e) => setProjectName(e.target.value)}
-                  required
-                />
+
+            {/* Step 1: Brief Input */}
+            {clarifyStep === "brief" && (
+              <form onSubmit={handleClarify}>
+                <div className="form-group">
+                  <label className="form-label">Project Name</label>
+                  <input
+                    type="text"
+                    className="form-input"
+                    placeholder="e.g. E-Commerce Platform"
+                    value={projectName}
+                    onChange={(e) => setProjectName(e.target.value)}
+                    required
+                  />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Project Brief</label>
+                  <textarea
+                    className="form-textarea"
+                    placeholder="Describe what you want to build. The more detail you provide, the better the generated artifacts will be..."
+                    value={projectBrief}
+                    onChange={(e) => setProjectBrief(e.target.value)}
+                    required
+                  />
+                </div>
+                <div style={{ display: "flex", gap: 12 }}>
+                  <button type="submit" className="btn btn-primary" disabled={loading}>
+                    {loading ? (<><span className="spinner" /> Thinking...</>) : "🧠 Get Clarifying Questions"}
+                  </button>
+                  <button type="button" className="btn btn-secondary" disabled={loading} onClick={handleSkipClarify}>
+                    ⚡ Skip & Generate Directly
+                  </button>
+                </div>
+              </form>
+            )}
+
+            {/* Step 2: Clarification Q&A */}
+            {clarifyStep === "questions" && (
+              <div>
+                <div className="form-group">
+                  <label className="form-label">🤖 Agent's Clarifying Questions</label>
+                  <div className="artifact-content" style={{ marginBottom: 16, whiteSpace: "pre-wrap" }}>
+                    {clarifyQuestions}
+                  </div>
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Your Answers</label>
+                  <textarea
+                    className="form-textarea"
+                    placeholder="Answer each question. e.g.&#10;1. We target mobile users aged 18-35...&#10;2. We need Stripe and PayPal..."
+                    value={clarifyAnswers}
+                    onChange={(e) => setClarifyAnswers(e.target.value)}
+                    rows={8}
+                  />
+                </div>
+                <div style={{ display: "flex", gap: 12 }}>
+                  <button className="btn btn-primary" disabled={loading} onClick={handleCreateWithClarifications}>
+                    {loading ? (<><span className="spinner" /> Generating...</>) : "🚀 Create & Generate"}
+                  </button>
+                  <button className="btn btn-secondary" onClick={() => setClarifyStep("brief")}>
+                    ← Back
+                  </button>
+                </div>
               </div>
-              <div className="form-group">
-                <label className="form-label">Project Brief</label>
-                <textarea
-                  className="form-textarea"
-                  placeholder="Describe what you want to build. The more detail you provide, the better the generated artifacts will be..."
-                  value={projectBrief}
-                  onChange={(e) => setProjectBrief(e.target.value)}
-                  required
-                />
+            )}
+
+            {/* Step 3: Generating */}
+            {clarifyStep === "generating" && (
+              <div style={{ textAlign: "center", padding: 40 }}>
+                <span className="spinner" style={{ width: 32, height: 32 }} />
+                <p style={{ color: "var(--text-secondary)", marginTop: 16 }}>
+                  Generating all 6 artifacts through the pipeline...
+                </p>
               </div>
-              <button
-                type="submit"
-                className="btn btn-primary"
-                disabled={loading}
-              >
-                {loading ? (
-                  <>
-                    <span className="spinner" /> Generating...
-                  </>
-                ) : (
-                  "🚀 Create & Generate"
-                )}
-              </button>
-            </form>
+            )}
           </div>
         )}
 
