@@ -1,8 +1,9 @@
-from fastapi import FastAPI, Depends, HTTPException, Query
+from fastapi import FastAPI, Depends, HTTPException, Query, WebSocket, WebSocketDisconnect
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from uuid import UUID
 from typing import List, Optional
+import json
 
 from . import models, schemas
 from .database import engine, get_db
@@ -16,7 +17,44 @@ from .agents.micro_regen import fix_drift
 # Create database tables (in a real app, use alembic)
 models.Base.metadata.create_all(bind=engine)
 
-app = FastAPI(title="AgentFlow API", version="0.4.0")
+app = FastAPI(title="AgentFlow API", version="0.5.0")
+
+
+# ---------------------------------------------------------------------------
+# WebSocket Connection Manager (Phase 5: Real-time Updates)
+# ---------------------------------------------------------------------------
+
+class ConnectionManager:
+    """Manages active WebSocket connections per project for real-time status broadcasts."""
+
+    def __init__(self):
+        # { project_id_str: [websocket1, websocket2, ...] }
+        self.active_connections: dict[str, list[WebSocket]] = {}
+
+    async def connect(self, project_id: str, websocket: WebSocket):
+        await websocket.accept()
+        if project_id not in self.active_connections:
+            self.active_connections[project_id] = []
+        self.active_connections[project_id].append(websocket)
+
+    def disconnect(self, project_id: str, websocket: WebSocket):
+        if project_id in self.active_connections:
+            self.active_connections[project_id].remove(websocket)
+            if not self.active_connections[project_id]:
+                del self.active_connections[project_id]
+
+    async def broadcast(self, project_id: str, message: dict):
+        """Send a JSON message to all clients watching a given project."""
+        if project_id in self.active_connections:
+            payload = json.dumps(message)
+            for connection in self.active_connections[project_id]:
+                try:
+                    await connection.send_text(payload)
+                except Exception:
+                    pass  # Client may have disconnected
+
+
+ws_manager = ConnectionManager()
 
 
 # ---------------------------------------------------------------------------
@@ -484,3 +522,24 @@ def list_eval_runs(db: Session = Depends(get_db)):
     return db.query(models.EvalRun).order_by(models.EvalRun.completed_at.desc()).all()
 
 
+# ---------------------------------------------------------------------------
+# WebSocket: Real-time artifact status updates (Phase 5)
+# ---------------------------------------------------------------------------
+
+@app.websocket("/ws/{project_id}")
+async def websocket_endpoint(websocket: WebSocket, project_id: str):
+    """
+    WebSocket endpoint for real-time artifact status updates.
+    Clients connect with: ws://localhost:8000/ws/<project_id>
+    The server broadcasts status changes whenever an artifact transitions
+    between states (fresh, stale, regenerating, drifted).
+    """
+    await ws_manager.connect(project_id, websocket)
+    try:
+        while True:
+            # Keep the connection alive; listen for client pings
+            data = await websocket.receive_text()
+            # Echo back as acknowledgement
+            await websocket.send_text(json.dumps({"type": "ack", "data": data}))
+    except WebSocketDisconnect:
+        ws_manager.disconnect(project_id, websocket)
