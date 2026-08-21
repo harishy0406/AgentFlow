@@ -17,7 +17,7 @@ from .agents.micro_regen import fix_drift
 # Create database tables (in a real app, use alembic)
 models.Base.metadata.create_all(bind=engine)
 
-app = FastAPI(title="AgentFlow API", version="0.5.0")
+
 
 
 # ---------------------------------------------------------------------------
