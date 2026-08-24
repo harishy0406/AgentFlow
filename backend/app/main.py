@@ -114,15 +114,45 @@ def read_project(project_id: UUID, db: Session = Depends(get_db)):
 
 
 @app.post("/projects/{project_id}/generate", response_model=List[schemas.ArtifactNode])
-def generate_project_artifacts(project_id: UUID, db: Session = Depends(get_db)):
-    """Trigger the full LangGraph pipeline to generate all 6 software artifacts."""
+async def generate_project_artifacts(project_id: UUID, db: Session = Depends(get_db)):
+    """Trigger the full LangGraph pipeline to generate all 6 software artifacts with real-time WebSocket updates."""
     project = db.query(models.Project).filter(models.Project.id == project_id).first()
     if project is None:
         raise HTTPException(status_code=404, detail="Project not found")
+
+    await ws_manager.broadcast(str(project_id), {
+        "type": "pipeline_started",
+        "project_id": str(project_id),
+        "message": "Generating software engineering artifacts..."
+    })
+
+    def _on_status_change(art_type: str, status: str):
+        import asyncio
+        try:
+            loop = asyncio.get_event_loop()
+            if loop.is_running():
+                asyncio.create_task(ws_manager.broadcast(str(project_id), {
+                    "type": "artifact_status",
+                    "artifact_type": art_type,
+                    "status": status,
+                }))
+        except Exception:
+            pass
+
     try:
-        nodes = run_pipeline(project_id, db)
+        nodes = run_pipeline(project_id, db, status_callback=_on_status_change)
+        await ws_manager.broadcast(str(project_id), {
+            "type": "pipeline_completed",
+            "project_id": str(project_id),
+            "message": "All artifacts generated successfully!"
+        })
         return nodes
     except Exception as e:
+        await ws_manager.broadcast(str(project_id), {
+            "type": "pipeline_error",
+            "project_id": str(project_id),
+            "error": str(e)
+        })
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -200,7 +230,7 @@ def get_artifact(project_id: UUID, artifact_type: str, db: Session = Depends(get
     "/projects/{project_id}/artifacts/{artifact_type}/sections/{section_id}",
     response_model=schemas.RegenerationResult,
 )
-def edit_section(
+async def edit_section(
     project_id: UUID,
     artifact_type: str,
     section_id: UUID,
@@ -222,7 +252,26 @@ def edit_section(
     if node is None or str(node.project_id) != str(project_id) or node.artifact_type != artifact_type:
         raise HTTPException(status_code=404, detail="Section does not belong to the specified artifact/project")
 
+    await ws_manager.broadcast(str(project_id), {
+        "type": "regeneration_started",
+        "edited_artifact": artifact_type,
+        "section_id": str(section_id)
+    })
+
     result = handle_section_edit(section_id, body.content, db)
+
+    for art in result.get("regenerated_artifacts", []):
+        await ws_manager.broadcast(str(project_id), {
+            "type": "artifact_status",
+            "artifact_type": art,
+            "status": "fresh"
+        })
+
+    await ws_manager.broadcast(str(project_id), {
+        "type": "regeneration_completed",
+        "regenerated_artifacts": result.get("regenerated_artifacts", [])
+    })
+
     return schemas.RegenerationResult(**result)
 
 
@@ -493,7 +542,7 @@ def get_project_drifts(
     "/projects/{project_id}/drifts/{drift_id}/fix",
     response_model=schemas.DriftFixResult,
 )
-def auto_fix_drift(
+async def auto_fix_drift(
     project_id: UUID,
     drift_id: UUID,
     db: Session = Depends(get_db),
@@ -503,8 +552,17 @@ def auto_fix_drift(
     The system will regenerate the minimum section needed, then re-run
     the validation rule to verify the fix.
     """
+    await ws_manager.broadcast(str(project_id), {
+        "type": "drift_fix_started",
+        "drift_id": str(drift_id)
+    })
     try:
         result = fix_drift(drift_id, db)
+        await ws_manager.broadcast(str(project_id), {
+            "type": "drift_fix_completed",
+            "drift_id": str(drift_id),
+            "status": result.get("status")
+        })
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
 
