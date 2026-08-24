@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import DependencyGraph from "./components/DependencyGraph";
 import {
   createProject,
@@ -43,6 +43,46 @@ export default function Home() {
     setToast({ message, type });
     setTimeout(() => setToast(null), 3000);
   }, []);
+
+  // Real-time WebSocket connection for live graph status transitions
+  useEffect(() => {
+    if (!currentProject?.id) return;
+
+    const wsBase = process.env.NEXT_PUBLIC_WS_URL || "ws://localhost:8000";
+    const wsUrl = `${wsBase}/ws/${currentProject.id}`;
+    let ws;
+    try {
+      ws = new WebSocket(wsUrl);
+
+      ws.onmessage = (event) => {
+        try {
+          const msg = JSON.parse(event.data);
+          if (msg.type === "artifact_status") {
+            setArtifacts((prev) =>
+              prev.map((art) =>
+                art.artifact_type === msg.artifact_type
+                  ? { ...art, status: msg.status }
+                  : art
+              )
+            );
+          } else if (msg.type === "pipeline_completed" || msg.type === "regeneration_completed") {
+            getArtifacts(currentProject.id).then((arts) => setArtifacts(arts)).catch(() => {});
+            if (msg.message) showToast(msg.message, "success");
+          } else if (msg.type === "pipeline_error") {
+            showToast(msg.error || "Generation error", "error");
+          }
+        } catch (e) {
+          console.error("WS message parse error:", e);
+        }
+      };
+    } catch (e) {
+      console.warn("WebSocket connection notice:", e);
+    }
+
+    return () => {
+      if (ws) ws.close();
+    };
+  }, [currentProject?.id, showToast]);
 
   // ---- HITL: Step 1 — Get clarification questions ----
   const handleClarify = async (e) => {
