@@ -283,10 +283,14 @@ async def edit_section(
     "/projects/{project_id}/artifacts/{artifact_type}/sections/{section_id}/versions",
     response_model=List[schemas.ArtifactVersionOut],
 )
+@app.get(
+    "/sections/{section_id}/versions",
+    response_model=List[schemas.ArtifactVersionOut],
+)
 def list_section_versions(
-    project_id: UUID,
-    artifact_type: str,
     section_id: UUID,
+    project_id: Optional[UUID] = None,
+    artifact_type: Optional[str] = None,
     db: Session = Depends(get_db),
 ):
     """List all prior version snapshots for a given section."""
@@ -303,11 +307,15 @@ def list_section_versions(
     "/projects/{project_id}/artifacts/{artifact_type}/sections/{section_id}/rollback",
     response_model=schemas.RollbackResponse,
 )
+@app.post(
+    "/sections/{section_id}/rollback",
+    response_model=schemas.RollbackResponse,
+)
 def rollback_section_endpoint(
-    project_id: UUID,
-    artifact_type: str,
     section_id: UUID,
     body: schemas.RollbackRequest,
+    project_id: Optional[UUID] = None,
+    artifact_type: Optional[str] = None,
     db: Session = Depends(get_db),
 ):
     """
@@ -319,6 +327,45 @@ def rollback_section_endpoint(
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
     return schemas.RollbackResponse(**result)
+
+
+@app.patch(
+    "/sections/{section_id}",
+    response_model=schemas.RegenerationResult,
+)
+async def edit_section_direct(
+    section_id: UUID,
+    body: schemas.ArtifactSectionUpdate,
+    db: Session = Depends(get_db),
+):
+    """Direct alias for editing a section by its ID."""
+    section = db.query(models.ArtifactSection).get(section_id)
+    if section is None:
+        raise HTTPException(status_code=404, detail="Section not found")
+    node = db.query(models.ArtifactNode).get(section.artifact_node_id)
+    project_id = node.project_id if node else None
+
+    if project_id:
+        await ws_manager.broadcast(str(project_id), {
+            "type": "regeneration_started",
+            "section_id": str(section_id)
+        })
+
+    result = handle_section_edit(section_id, body.content, db)
+
+    if project_id:
+        for art in result.get("regenerated_artifacts", []):
+            await ws_manager.broadcast(str(project_id), {
+                "type": "artifact_status",
+                "artifact_type": art,
+                "status": "fresh"
+            })
+        await ws_manager.broadcast(str(project_id), {
+            "type": "regeneration_completed",
+            "regenerated_artifacts": result.get("regenerated_artifacts", [])
+        })
+
+    return schemas.RegenerationResult(**result)
 
 
 # ---------------------------------------------------------------------------

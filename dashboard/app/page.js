@@ -14,6 +14,9 @@ import {
   dismissDrift,
   triggerEvalRun,
   listEvalRuns,
+  updateSection,
+  getSectionVersions,
+  rollbackSection,
 } from "./lib/api";
 
 export default function Home() {
@@ -38,6 +41,14 @@ export default function Home() {
 
   // Eval state
   const [evalRuns, setEvalRuns] = useState([]);
+
+  // Section editing & version history state
+  const [activeArtifactType, setActiveArtifactType] = useState("PRD");
+  const [editingSectionId, setEditingSectionId] = useState(null);
+  const [editingContent, setEditingContent] = useState("");
+  const [savingSection, setSavingSection] = useState(false);
+  const [sectionVersions, setSectionVersions] = useState([]);
+  const [historySectionId, setHistorySectionId] = useState(null);
 
   const showToast = useCallback((message, type = "info") => {
     setToast({ message, type });
@@ -387,30 +398,277 @@ export default function Home() {
           </div>
         )}
 
-        {/* Tab: Artifacts (placeholder for full implementation) */}
+        {/* Tab: Artifacts (Phase 2 + 5 — Full Implementation) */}
         {activeTab === "artifacts" && currentProject && (
           <div className="card">
-            <h2 className="card-title">Artifacts</h2>
-            <div className="grid-2">
-              {artifacts.map((a) => (
-                <div key={a.id} className="stat-card" style={{ textAlign: "left" }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                    <strong>{a.artifact_type.replace("_", " ")}</strong>
-                    <span className={`badge badge-${a.status}`}>{a.status}</span>
-                  </div>
-                  <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 8 }}>
-                    Version: {a.version} • Quality: {a.quality_signal_score != null
-                      ? `${(a.quality_signal_score * 100).toFixed(0)}%`
-                      : "N/A"}
-                  </div>
-                  {a.generated_by_model && (
-                    <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 4 }}>
-                      Model: {a.generated_by_model}
+            <h2 className="card-title">Artifacts & Section Editor</h2>
+            <p style={{ color: "var(--text-muted)", fontSize: 13, marginBottom: 16 }}>
+              Select an artifact below to inspect sections, perform edits that trigger selective regeneration, or rollback to previous versions.
+            </p>
+
+            {/* Artifact Sub-Navigation Pills */}
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 20 }}>
+              {["PRD", "SDD", "DB_SCHEMA", "API_SPEC", "USER_STORIES", "TASKS"].map((type) => {
+                const node = artifacts.find((a) => a.artifact_type === type);
+                const isSelected = activeArtifactType === type;
+                return (
+                  <button
+                    key={type}
+                    onClick={() => {
+                      setActiveArtifactType(type);
+                      setEditingSectionId(null);
+                      setHistorySectionId(null);
+                    }}
+                    className={`tab ${isSelected ? "active" : ""}`}
+                    style={{ padding: "6px 14px", fontSize: 12, borderRadius: 20 }}
+                  >
+                    {type.replace("_", " ")}
+                    {node && (
+                      <span
+                        className={`badge badge-${node.status}`}
+                        style={{ marginLeft: 8, fontSize: 10 }}
+                      >
+                        v{node.version}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Selected Artifact Node Details */}
+            {(() => {
+              const currentArt = artifacts.find((a) => a.artifact_type === activeArtifactType);
+              if (!currentArt) {
+                return (
+                  <p style={{ color: "var(--text-muted)", fontSize: 13 }}>
+                    No content generated for {activeArtifactType.replace("_", " ")} yet.
+                  </p>
+                );
+              }
+
+              return (
+                <div>
+                  {/* Artifact Meta Header */}
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      background: "var(--bg-secondary)",
+                      padding: "12px 16px",
+                      borderRadius: 8,
+                      marginBottom: 20,
+                      border: "1px solid var(--border)",
+                    }}
+                  >
+                    <div>
+                      <strong style={{ fontSize: 15, color: "var(--text-primary)" }}>
+                        {currentArt.artifact_type.replace("_", " ")}
+                      </strong>
+                      <span className={`badge badge-${currentArt.status}`} style={{ marginLeft: 10 }}>
+                        {currentArt.status}
+                      </span>
                     </div>
+                    <div style={{ fontSize: 12, color: "var(--text-secondary)" }}>
+                      Version: <strong>v{currentArt.version}</strong> • Quality:{" "}
+                      <strong>
+                        {currentArt.quality_signal_score != null
+                          ? `${(currentArt.quality_signal_score * 100).toFixed(0)}%`
+                          : "N/A"}
+                      </strong>{" "}
+                      • Model: <span style={{ color: "var(--accent-purple)" }}>{currentArt.generated_by_model || "claude-3-haiku"}</span>
+                    </div>
+                  </div>
+
+                  {/* Sections List */}
+                  {currentArt.sections && currentArt.sections.length > 0 ? (
+                    currentArt.sections.map((sec) => {
+                      const isEditing = editingSectionId === sec.id;
+                      const isViewingHistory = historySectionId === sec.id;
+
+                      return (
+                        <div
+                          key={sec.id}
+                          className="stat-card"
+                          style={{ textAlign: "left", marginBottom: 16, border: isEditing ? "1px solid var(--accent-blue)" : "1px solid var(--border)" }}
+                        >
+                          <div
+                            style={{
+                              display: "flex",
+                              justifyContent: "space-between",
+                              alignItems: "center",
+                              marginBottom: 10,
+                            }}
+                          >
+                            <div>
+                              <span
+                                style={{
+                                  background: "var(--bg-hover)",
+                                  color: "var(--accent-blue)",
+                                  padding: "3px 8px",
+                                  borderRadius: 4,
+                                  fontFamily: "monospace",
+                                  fontSize: 12,
+                                  fontWeight: 600,
+                                }}
+                              >
+                                § {sec.section_key}
+                              </span>
+                              <span style={{ fontSize: 11, color: "var(--text-muted)", marginLeft: 10 }}>
+                                Hash: {sec.content_hash?.substring(0, 10)}...
+                              </span>
+                            </div>
+                            <div style={{ display: "flex", gap: 8 }}>
+                              {!isEditing && (
+                                <button
+                                  className="btn btn-secondary btn-sm"
+                                  onClick={() => {
+                                    setEditingSectionId(sec.id);
+                                    setEditingContent(sec.content);
+                                    setHistorySectionId(null);
+                                  }}
+                                >
+                                  ✏️ Edit
+                                </button>
+                              )}
+                              <button
+                                className="btn btn-secondary btn-sm"
+                                onClick={async () => {
+                                  if (isViewingHistory) {
+                                    setHistorySectionId(null);
+                                  } else {
+                                    try {
+                                      const hist = await getSectionVersions(sec.id);
+                                      setSectionVersions(hist);
+                                      setHistorySectionId(sec.id);
+                                    } catch (err) {
+                                      showToast(err.message, "error");
+                                    }
+                                  }
+                                }}
+                              >
+                                {isViewingHistory ? "✕ Close History" : "📜 History"}
+                              </button>
+                            </div>
+                          </div>
+
+                          {/* Inline Section Editor */}
+                          {isEditing ? (
+                            <div>
+                              <textarea
+                                className="form-textarea"
+                                value={editingContent}
+                                onChange={(e) => setEditingContent(e.target.value)}
+                                rows={10}
+                                style={{ fontFamily: "monospace", fontSize: 13, marginBottom: 12 }}
+                              />
+                              <div style={{ display: "flex", gap: 10 }}>
+                                <button
+                                  className="btn btn-primary btn-sm"
+                                  disabled={savingSection}
+                                  onClick={async () => {
+                                    setSavingSection(true);
+                                    try {
+                                      await updateSection(sec.id, editingContent);
+                                      const updated = await getArtifacts(currentProject.id);
+                                      setArtifacts(updated);
+                                      setEditingSectionId(null);
+                                      showToast("Section updated! Selective regeneration completed.", "success");
+                                    } catch (err) {
+                                      showToast(err.message, "error");
+                                    } finally {
+                                      setSavingSection(false);
+                                    }
+                                  }}
+                                >
+                                  {savingSection ? (<><span className="spinner" /> Regenerating downstream...</>) : "⚡ Save & Trigger Selective Regeneration"}
+                                </button>
+                                <button
+                                  className="btn btn-secondary btn-sm"
+                                  onClick={() => setEditingSectionId(null)}
+                                >
+                                  Cancel
+                                </button>
+                              </div>
+                            </div>
+                          ) : (
+                            <div
+                              className="artifact-content"
+                              style={{ maxHeight: 250, overflowY: "auto", fontSize: 13, whiteSpace: "pre-wrap" }}
+                            >
+                              {sec.content}
+                            </div>
+                          )}
+
+                          {/* Version History Sub-Panel */}
+                          {isViewingHistory && (
+                            <div
+                              style={{
+                                marginTop: 14,
+                                paddingTop: 14,
+                                borderTop: "1px solid var(--border)",
+                                background: "var(--bg-secondary)",
+                                padding: 12,
+                                borderRadius: 6,
+                              }}
+                            >
+                              <h4 style={{ fontSize: 13, fontWeight: 700, marginBottom: 10, color: "var(--text-secondary)" }}>
+                                📜 Version Snapshots for § {sec.section_key}
+                              </h4>
+                              {sectionVersions.length === 0 ? (
+                                <p style={{ fontSize: 12, color: "var(--text-muted)" }}>
+                                  No prior snapshots recorded yet.
+                                </p>
+                              ) : (
+                                sectionVersions.map((v) => (
+                                  <div
+                                    key={v.id}
+                                    style={{
+                                      display: "flex",
+                                      justifyContent: "space-between",
+                                      alignItems: "center",
+                                      padding: "8px 0",
+                                      borderBottom: "1px solid var(--border)",
+                                    }}
+                                  >
+                                    <div>
+                                      <strong style={{ fontSize: 12 }}>Snapshot v{v.version}</strong>
+                                      <span style={{ fontSize: 11, color: "var(--text-muted)", marginLeft: 10 }}>
+                                        {new Date(v.created_at).toLocaleString()}
+                                      </span>
+                                    </div>
+                                    <button
+                                      className="btn btn-secondary btn-sm"
+                                      style={{ fontSize: 11, padding: "3px 8px" }}
+                                      onClick={async () => {
+                                        try {
+                                          await rollbackSection(sec.id, v.version);
+                                          const updated = await getArtifacts(currentProject.id);
+                                          setArtifacts(updated);
+                                          setHistorySectionId(null);
+                                          showToast(`Rolled back § ${sec.section_key} to v${v.version}!`, "success");
+                                        } catch (err) {
+                                          showToast(err.message, "error");
+                                        }
+                                      }}
+                                    >
+                                      ↩️ Rollback
+                                    </button>
+                                  </div>
+                                ))
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })
+                  ) : (
+                    <div className="artifact-content">No sections found for this artifact.</div>
                   )}
                 </div>
-              ))}
-            </div>
+              );
+            })()}
           </div>
         )}
 
