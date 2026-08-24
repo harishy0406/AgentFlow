@@ -82,7 +82,10 @@ def clarify_project(req: schemas.ClarifyRequest):
     return {"questions": questions_text}
 
 
+from .agents.graph import run_pipeline
+
 @app.post("/projects/", response_model=schemas.Project)
+@app.post("/projects", response_model=schemas.Project)
 def create_project(project: schemas.ProjectCreate, db: Session = Depends(get_db)):
     db_project = models.Project(
         name=project.name, 
@@ -92,8 +95,14 @@ def create_project(project: schemas.ProjectCreate, db: Session = Depends(get_db)
     db.add(db_project)
     db.commit()
     db.refresh(db_project)
-    # In a full implementation, we would trigger the initial LangGraph generation here
     return db_project
+
+
+@app.get("/projects", response_model=List[schemas.Project])
+@app.get("/projects/", response_model=List[schemas.Project])
+def list_projects(db: Session = Depends(get_db)):
+    """List all projects in descending order of creation."""
+    return db.query(models.Project).order_by(models.Project.created_at.desc()).all()
 
 
 @app.get("/projects/{project_id}", response_model=schemas.Project)
@@ -102,6 +111,28 @@ def read_project(project_id: UUID, db: Session = Depends(get_db)):
     if db_project is None:
         raise HTTPException(status_code=404, detail="Project not found")
     return db_project
+
+
+@app.post("/projects/{project_id}/generate", response_model=List[schemas.ArtifactNode])
+def generate_project_artifacts(project_id: UUID, db: Session = Depends(get_db)):
+    """Trigger the full LangGraph pipeline to generate all 6 software artifacts."""
+    project = db.query(models.Project).filter(models.Project.id == project_id).first()
+    if project is None:
+        raise HTTPException(status_code=404, detail="Project not found")
+    try:
+        nodes = run_pipeline(project_id, db)
+        return nodes
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/projects/{project_id}/artifacts", response_model=List[schemas.ArtifactNode])
+def get_project_artifacts(project_id: UUID, db: Session = Depends(get_db)):
+    """Retrieve all artifact nodes and their sections for a project."""
+    project = db.query(models.Project).filter(models.Project.id == project_id).first()
+    if project is None:
+        raise HTTPException(status_code=404, detail="Project not found")
+    return project.artifact_nodes
 
 
 # ---------------------------------------------------------------------------
