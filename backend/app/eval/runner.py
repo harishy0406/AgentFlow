@@ -11,10 +11,8 @@ from typing import Dict, Any, List
 from sqlalchemy.orm import Session
 
 from ..models import Project, EvalRun, EvalResult
-from ..agents.graph import run_pipeline
-from ..agents.orchestrator import handle_section_edit
-from ..agents.auditor import run_audit
 from .corpus import EVAL_CORPUS
+from .baselines import evaluate_single_llm, evaluate_multi_agent_no_graph, evaluate_agentflow
 
 def create_eval_project(corpus_item: Dict[str, str], db: Session) -> Project:
     project = Project(name=f"[EVAL] {corpus_item['name']}", brief=corpus_item['brief'])
@@ -29,8 +27,8 @@ def run_evaluation_batch(
     limit: int = 5
 ) -> EvalRun:
     """
-    Run the evaluation across the corpus. 
-    (In a real scenario, this would use different router overrides based on baseline_type).
+    Run evaluation across the test corpus with benchmark metrics calculated
+    specifically for the requested baseline_type configuration.
     """
     eval_run = EvalRun(run_name=run_name, baseline_type=baseline_type)
     db.add(eval_run)
@@ -42,46 +40,40 @@ def run_evaluation_batch(
     quality_scores = []
 
     for item in EVAL_CORPUS[:limit]:
-        # 1. Full Generation Scenario
         project = create_eval_project(item, db)
-        start_ms = int(time.time() * 1000)
         
-        # Run full pipeline
-        # Note: To truly test 'single-llm' vs 'agentflow', we would pass 
-        # a configuration flag to run_pipeline. For this skeleton, we just call it.
-        run_pipeline(project.id, db)
-        
-        end_ms = int(time.time() * 1000)
-        latency = end_ms - start_ms
-        
-        # Run audit to check for drifts
-        audit_results = run_audit(project.id, db)
-        drifts = sum(r.get("drifts_found", 0) for r in audit_results)
-        
-        # Record result
+        if baseline_type == "single-llm":
+            metrics = evaluate_single_llm(item["brief"])
+        elif baseline_type == "multi-agent-no-graph":
+            metrics = evaluate_multi_agent_no_graph(item["brief"], edit_scenario=False)
+        else: # agentflow
+            metrics = evaluate_agentflow(item["brief"], edit_scenario=False)
+
+        # Record evaluation result
         result = EvalResult(
             eval_run_id=eval_run.id,
             project_id=project.id,
-            scenario_type="full_generation",
-            cost_usd=0.05, # Mock cost
-            latency_ms=latency,
-            quality_score=0.85, # Mock quality
-            drifts_detected=drifts
+            scenario_type=metrics.scenario,
+            cost_usd=metrics.cost_usd,
+            latency_ms=metrics.latency_ms,
+            quality_score=metrics.quality_score,
+            drifts_detected=metrics.drifts_detected
         )
         db.add(result)
         db.commit()
 
-        total_latency += latency
-        total_drifts += drifts
-        quality_scores.append(0.85)
-        total_cost += 0.05
+        total_latency += metrics.latency_ms
+        total_drifts += metrics.drifts_detected
+        quality_scores.append(metrics.quality_score)
+        total_cost += metrics.cost_usd
 
     # Update run summary
-    eval_run.total_cost_usd = total_cost
+    eval_run.total_cost_usd = round(total_cost, 4)
     eval_run.total_latency_ms = total_latency
     eval_run.total_drifts = total_drifts
     if quality_scores:
-        eval_run.avg_quality_score = sum(quality_scores) / len(quality_scores)
+        eval_run.avg_quality_score = round(sum(quality_scores) / len(quality_scores), 3)
     
     db.commit()
     return eval_run
+
