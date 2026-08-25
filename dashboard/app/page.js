@@ -17,6 +17,7 @@ import {
   updateSection,
   getSectionVersions,
   rollbackSection,
+  getExportUrl,
 } from "./lib/api";
 
 export default function Home() {
@@ -200,11 +201,33 @@ export default function Home() {
       <nav className="navbar">
         <div className="navbar-brand">
           <h1>⚡ AgentFlow</h1>
-          <span className="navbar-version">v0.5.0</span>
+          <span className="navbar-version">v0.6.0</span>
         </div>
         {currentProject && (
-          <div style={{ fontSize: 13, color: "var(--text-secondary)" }}>
-            Project: <strong style={{ color: "var(--text-primary)" }}>{currentProject.name}</strong>
+          <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+            <div style={{ fontSize: 13, color: "var(--text-secondary)" }}>
+              Project: <strong style={{ color: "var(--text-primary)" }}>{currentProject.name}</strong>
+            </div>
+            <div style={{ display: "flex", gap: 8 }}>
+              <a
+                href={getExportUrl(currentProject.id, "markdown")}
+                target="_blank"
+                rel="noreferrer"
+                className="btn btn-secondary btn-sm"
+                style={{ textDecoration: "none", fontSize: 12, padding: "5px 10px" }}
+              >
+                📥 Export Specs (.md)
+              </a>
+              <a
+                href={getExportUrl(currentProject.id, "json")}
+                target="_blank"
+                rel="noreferrer"
+                className="btn btn-secondary btn-sm"
+                style={{ textDecoration: "none", fontSize: 12, padding: "5px 10px" }}
+              >
+                📥 JSON
+              </a>
+            </div>
           </div>
         )}
       </nav>

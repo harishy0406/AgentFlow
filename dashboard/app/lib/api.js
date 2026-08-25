@@ -144,3 +144,17 @@ export async function listEvalRuns() {
   return request("/eval/runs");
 }
 
+// ---------------------------------------------------------------------------
+// Export Specifications Bundle
+// ---------------------------------------------------------------------------
+
+export function getExportUrl(projectId, format = "markdown") {
+  const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+  return `${API_BASE}/projects/${projectId}/export?format=${format}`;
+}
+
+export async function exportProjectJson(projectId) {
+  return request(`/projects/${projectId}/export?format=json`);
+}
+
+
