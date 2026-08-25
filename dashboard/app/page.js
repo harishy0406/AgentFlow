@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useEffect } from "react";
 import DependencyGraph from "./components/DependencyGraph";
+import DiffViewer from "./components/DiffViewer";
 import {
   createProject,
   clarifyProject,
@@ -50,6 +51,7 @@ export default function Home() {
   const [savingSection, setSavingSection] = useState(false);
   const [sectionVersions, setSectionVersions] = useState([]);
   const [historySectionId, setHistorySectionId] = useState(null);
+  const [diffTargetSnapshot, setDiffTargetSnapshot] = useState(null);
 
   const showToast = useCallback((message, type = "info") => {
     setToast({ message, type });
@@ -648,36 +650,64 @@ export default function Home() {
                                   <div
                                     key={v.id}
                                     style={{
-                                      display: "flex",
-                                      justifyContent: "space-between",
-                                      alignItems: "center",
                                       padding: "8px 0",
                                       borderBottom: "1px solid var(--border)",
                                     }}
                                   >
-                                    <div>
-                                      <strong style={{ fontSize: 12 }}>Snapshot v{v.version}</strong>
-                                      <span style={{ fontSize: 11, color: "var(--text-muted)", marginLeft: 10 }}>
-                                        {new Date(v.created_at).toLocaleString()}
-                                      </span>
-                                    </div>
-                                    <button
-                                      className="btn btn-secondary btn-sm"
-                                      style={{ fontSize: 11, padding: "3px 8px" }}
-                                      onClick={async () => {
-                                        try {
-                                          await rollbackSection(sec.id, v.version);
-                                          const updated = await getArtifacts(currentProject.id);
-                                          setArtifacts(updated);
-                                          setHistorySectionId(null);
-                                          showToast(`Rolled back § ${sec.section_key} to v${v.version}!`, "success");
-                                        } catch (err) {
-                                          showToast(err.message, "error");
-                                        }
+                                    <div
+                                      style={{
+                                        display: "flex",
+                                        justifyContent: "space-between",
+                                        alignItems: "center",
                                       }}
                                     >
-                                      ↩️ Rollback
-                                    </button>
+                                      <div>
+                                        <strong style={{ fontSize: 12 }}>Snapshot v{v.version}</strong>
+                                        <span style={{ fontSize: 11, color: "var(--text-muted)", marginLeft: 10 }}>
+                                          {new Date(v.created_at).toLocaleString()}
+                                        </span>
+                                      </div>
+                                      <div style={{ display: "flex", gap: 8 }}>
+                                        <button
+                                          className={`btn btn-secondary btn-sm ${diffTargetSnapshot?.id === v.id ? "active" : ""}`}
+                                          style={{ fontSize: 11, padding: "3px 8px" }}
+                                          onClick={() =>
+                                            setDiffTargetSnapshot(diffTargetSnapshot?.id === v.id ? null : v)
+                                          }
+                                        >
+                                          {diffTargetSnapshot?.id === v.id ? "✕ Hide Diff" : "🔍 Diff"}
+                                        </button>
+                                        <button
+                                          className="btn btn-secondary btn-sm"
+                                          style={{ fontSize: 11, padding: "3px 8px" }}
+                                          onClick={async () => {
+                                            try {
+                                              await rollbackSection(sec.id, v.version);
+                                              const updated = await getArtifacts(currentProject.id);
+                                              setArtifacts(updated);
+                                              setHistorySectionId(null);
+                                              setDiffTargetSnapshot(null);
+                                              showToast(`Rolled back § ${sec.section_key} to v${v.version}!`, "success");
+                                            } catch (err) {
+                                              showToast(err.message, "error");
+                                            }
+                                          }}
+                                        >
+                                          ↩️ Rollback
+                                        </button>
+                                      </div>
+                                    </div>
+
+                                    {/* Inline visual diff comparison */}
+                                    {diffTargetSnapshot?.id === v.id && (
+                                      <DiffViewer
+                                        oldContent={v.content}
+                                        newContent={sec.content}
+                                        oldLabel={`Snapshot v${v.version}`}
+                                        newLabel={`Current v${currentArt.version}`}
+                                        onClose={() => setDiffTargetSnapshot(null)}
+                                      />
+                                    )}
                                   </div>
                                 ))
                               )}
