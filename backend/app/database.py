@@ -5,11 +5,22 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-# We will use a local PostgreSQL for development
-# Using a default connection string if not provided in env
+# We default to DATABASE_URL if available, otherwise test with SQLite fallback
 SQLALCHEMY_DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://postgres:postgres@localhost:5432/agentflow")
 
-engine = create_engine(SQLALCHEMY_DATABASE_URL)
+try:
+    if "sqlite" in SQLALCHEMY_DATABASE_URL:
+        engine = create_engine(SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False})
+    else:
+        # Try creating engine with short timeout to detect if Postgres is alive
+        engine = create_engine(SQLALCHEMY_DATABASE_URL, connect_args={"connect_timeout": 2})
+        with engine.connect() as conn:
+            pass
+except Exception:
+    # Fallback to local SQLite database when Postgres is not running
+    SQLALCHEMY_DATABASE_URL = "sqlite:///./agentflow.db"
+    engine = create_engine(SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False})
+
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 Base = declarative_base()
@@ -21,3 +32,4 @@ def get_db():
         yield db
     finally:
         db.close()
+

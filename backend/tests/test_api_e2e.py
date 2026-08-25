@@ -1,0 +1,116 @@
+"""
+End-to-End API Integration Tests
+
+Tests all core REST API endpoints:
+1. Health check (GET /)
+2. HITL project clarification (POST /projects/clarify)
+3. Project CRUD (POST /projects/, GET /projects, GET /projects/{id})
+4. Provider Registry & Model Routing Preview (GET /providers, GET /routing/preview/{artifact_type})
+5. Evaluation Runs API (POST /eval/run, GET /eval/runs)
+"""
+
+import pytest
+from fastapi.testclient import TestClient
+from app.main import app
+
+client = TestClient(app)
+
+
+class TestHealthAndClarification:
+    def test_health_check(self):
+        """Root endpoint should return operational status."""
+        response = client.get("/")
+        assert response.status_code == 200
+        data = response.json()
+        assert data["status"] == "ok"
+        assert "AgentFlow API" in data["message"]
+
+    def test_clarify_project(self):
+        """HITL clarify endpoint should return 3-5 clarifying questions for a brief."""
+        payload = {
+            "brief": "A decentralized peer-to-peer cryptocurrency lending protocol with automated collateral liquidations."
+        }
+        response = client.post("/projects/clarify", json=payload)
+        assert response.status_code == 200
+        data = response.json()
+        assert "questions" in data
+        assert len(data["questions"]) > 0
+
+
+class TestProjectLifecycle:
+    def test_create_and_read_project(self):
+        """Create a new project and retrieve it by ID."""
+        payload = {
+            "name": "Integration Test Project",
+            "brief": "A fast food delivery app with driver dispatching.",
+            "clarifications": "Q1: Target audience? A1: Urban commuters."
+        }
+        create_res = client.post("/projects/", json=payload)
+        assert create_res.status_code == 200
+        project_data = create_res.json()
+        assert project_data["name"] == "Integration Test Project"
+        assert project_data["clarifications"] == "Q1: Target audience? A1: Urban commuters."
+        assert "id" in project_data
+
+        project_id = project_data["id"]
+
+        # Read back by ID
+        get_res = client.get(f"/projects/{project_id}")
+        assert get_res.status_code == 200
+        fetched = get_res.json()
+        assert fetched["id"] == project_id
+        assert fetched["name"] == "Integration Test Project"
+
+    def test_list_projects(self):
+        """List all projects."""
+        res = client.get("/projects")
+        assert res.status_code == 200
+        projects = res.json()
+        assert isinstance(projects, list)
+
+    def test_nonexistent_project_returns_404(self):
+        """Requesting an invalid UUID should return 404."""
+        res = client.get("/projects/00000000-0000-0000-0000-000000000000")
+        assert res.status_code == 404
+
+
+class TestProviderRegistryAndRouting:
+    def test_list_providers(self):
+        """Should return available LLM providers (Anthropic, OpenAI, etc.)."""
+        res = client.get("/providers")
+        assert res.status_code == 200
+        providers = res.json()
+        assert len(providers) > 0
+        names = [p["name"] for p in providers]
+        assert "openai" in names or "anthropic" in names
+
+    def test_preview_routing(self):
+        """Preview routing decision for PRD artifact."""
+        res = client.get("/routing/preview/PRD?context_size=1500")
+        assert res.status_code == 200
+        decision = res.json()
+        assert decision["artifact_type"] == "PRD"
+        assert "chosen_provider" in decision
+        assert "chosen_model" in decision
+        assert "predicted_quality_signal" in decision
+        assert "rationale" in decision
+
+
+class TestEvaluationAPI:
+    def test_trigger_and_list_eval_runs(self):
+        """Trigger an automated evaluation run and verify it is logged."""
+        run_name = "test-ci-eval-batch"
+        res = client.post(f"/eval/run?run_name={run_name}&baseline_type=agentflow&limit=2")
+        assert res.status_code == 200
+        run_data = res.json()
+        assert run_data["run_name"] == run_name
+        assert run_data["baseline_type"] == "agentflow"
+        assert "total_cost_usd" in run_data
+        assert "total_latency_ms" in run_data
+        assert len(run_data["results"]) == 2
+
+        # Verify listing
+        list_res = client.get("/eval/runs")
+        assert list_res.status_code == 200
+        runs = list_res.json()
+        assert any(r["run_name"] == run_name for r in runs)

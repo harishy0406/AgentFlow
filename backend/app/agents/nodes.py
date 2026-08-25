@@ -8,7 +8,6 @@ initial full-pipeline generation picks the best model per artifact type.
 
 from typing import Dict, Any
 from langchain_core.prompts import PromptTemplate
-from langchain_openai import ChatOpenAI
 
 from .state import AgentFlowState
 from .prompts import (
@@ -32,7 +31,7 @@ def _get_llm_for_artifact(artifact_type: str):
     candidates = PROVIDER_REGISTRY.models_for(artifact_type)
     if not candidates:
         # Fallback
-        return ChatOpenAI(model="gpt-4o-mini", temperature=0)
+        return PROVIDER_REGISTRY.get_chat_model("openai", "gpt-4o-mini")
 
     # On first generation there's no history — pick cheapest available
     cheapest = min(candidates, key=lambda m: m.avg_cost_per_token)
