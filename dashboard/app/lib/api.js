@@ -157,4 +157,18 @@ export async function exportProjectJson(projectId) {
   return request(`/projects/${projectId}/export?format=json`);
 }
 
+// ---------------------------------------------------------------------------
+// Phase 7: Code Generation & ZIP Download
+// ---------------------------------------------------------------------------
+
+export function getDownloadZipUrl(projectId) {
+  const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+  return `${API_BASE}/projects/${projectId}/download-zip`;
+}
+
+export async function getCodeFiles(projectId) {
+  return request(`/projects/${projectId}/code-files`);
+}
+
+
 
