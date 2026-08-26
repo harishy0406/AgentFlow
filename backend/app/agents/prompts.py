@@ -226,3 +226,63 @@ Produce ONLY the corrected section content in Markdown format.
 """
 
 
+# ---------------------------------------------------------------------------
+# Phase 7: Code Generation Prompts
+# ---------------------------------------------------------------------------
+
+CODE_GENERATION_PROMPT = """You are a Principal Software Engineer.
+Your task is to generate complete, production-ready application source code files based on the provided Database Schema, API Specification, and Engineering Tasks.
+
+## Database Schema:
+{db_schema}
+
+## API Specification:
+{api_spec}
+
+## Engineering Tasks:
+{tasks}
+
+## Instructions:
+Generate complete, modular source files for the project. For each file, format your output strictly as:
+
+### File: <relative_path_to_file>
+```<language>
+<complete_file_content>
+```
+
+Include:
+1. `backend/models.py` (ORM models matching the database schema)
+2. `backend/routes.py` (API route handlers matching the OpenAPI spec)
+3. `backend/main.py` (FastAPI / web server entrypoint)
+4. `frontend/src/App.jsx` or `frontend/src/api.js` (UI / client calling the API endpoints)
+5. `README.md` (Setup and run instructions)
+
+Ensure all files are complete with zero placeholder comments.
+"""
+
+CODE_GENERATION_REGEN_PROMPT = """You are a Principal Software Engineer performing a targeted code update.
+An upstream specification (DB Schema, API Spec, or Tasks) has changed. Your task is to update the affected code files to remain strictly synchronized.
+
+## What changed upstream:
+{diff_summary}
+
+## Current Code Content:
+{prior_content}
+
+## Full Current API Spec:
+{api_spec}
+
+## Full Current DB Schema:
+{db_schema}
+
+## Instructions:
+Output ONLY the updated code files in the format:
+### File: <relative_path_to_file>
+```<language>
+<complete_file_content>
+```
+Preserve all unaffected files and logic.
+"""
+
+
+

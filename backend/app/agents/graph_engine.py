@@ -26,12 +26,13 @@ from ..models import ArtifactNode, ArtifactSection, section_traces
 #   PRD → SDD → DB_SCHEMA → API_SPEC → USER_STORIES → TASKS
 #   PRD ──────────────────────────────→ USER_STORIES
 ARTIFACT_DEPENDENCY_MAP: Dict[str, List[str]] = {
-    "PRD":          [],
-    "SDD":          ["PRD"],
-    "DB_SCHEMA":    ["SDD"],
-    "API_SPEC":     ["SDD", "DB_SCHEMA"],
-    "USER_STORIES": ["PRD", "API_SPEC"],
-    "TASKS":        ["USER_STORIES", "API_SPEC"],
+    "PRD":              [],
+    "SDD":              ["PRD"],
+    "DB_SCHEMA":        ["SDD"],
+    "API_SPEC":         ["SDD", "DB_SCHEMA"],
+    "USER_STORIES":     ["PRD", "API_SPEC"],
+    "TASKS":            ["USER_STORIES", "API_SPEC"],
+    "CODE_GENERATION":  ["DB_SCHEMA", "API_SPEC", "TASKS"],
 }
 
 # Reverse: artifact_type → list of downstream artifact types
@@ -42,7 +43,7 @@ for _child, _parents in ARTIFACT_DEPENDENCY_MAP.items():
 
 # Topological order for the fixed graph (used for ordering regeneration)
 TOPOLOGICAL_ORDER: List[str] = [
-    "PRD", "SDD", "DB_SCHEMA", "API_SPEC", "USER_STORIES", "TASKS"
+    "PRD", "SDD", "DB_SCHEMA", "API_SPEC", "USER_STORIES", "TASKS", "CODE_GENERATION"
 ]
 
 

@@ -41,6 +41,7 @@ from .prompts import (
     API_DESIGNER_REGEN_PROMPT,
     QA_ENGINEER_REGEN_PROMPT,
     PROJECT_PLANNER_REGEN_PROMPT,
+    CODE_GENERATION_REGEN_PROMPT,
 )
 from .router import get_chat_model_for_artifact, RoutingDecision
 from .quality_signals import compute_quality_signal
@@ -49,12 +50,13 @@ from .auditor import run_audit
 
 # Map artifact types to their regeneration prompts
 REGEN_PROMPT_MAP = {
-    "PRD":          BUSINESS_ANALYST_REGEN_PROMPT,
-    "SDD":          SYSTEM_DESIGNER_REGEN_PROMPT,
-    "DB_SCHEMA":    DATABASE_ARCHITECT_REGEN_PROMPT,
-    "API_SPEC":     API_DESIGNER_REGEN_PROMPT,
-    "USER_STORIES": QA_ENGINEER_REGEN_PROMPT,
-    "TASKS":        PROJECT_PLANNER_REGEN_PROMPT,
+    "PRD":              BUSINESS_ANALYST_REGEN_PROMPT,
+    "SDD":              SYSTEM_DESIGNER_REGEN_PROMPT,
+    "DB_SCHEMA":        DATABASE_ARCHITECT_REGEN_PROMPT,
+    "API_SPEC":         API_DESIGNER_REGEN_PROMPT,
+    "USER_STORIES":     QA_ENGINEER_REGEN_PROMPT,
+    "TASKS":            PROJECT_PLANNER_REGEN_PROMPT,
+    "CODE_GENERATION":  CODE_GENERATION_REGEN_PROMPT,
 }
 
 
@@ -130,6 +132,10 @@ def _build_regen_context(
     elif artifact_type == "TASKS":
         ctx["user_stories"] = _get_full_artifact_content(project_id, "USER_STORIES", db)
         ctx["api_spec"] = _get_full_artifact_content(project_id, "API_SPEC", db)
+    elif artifact_type == "CODE_GENERATION":
+        ctx["db_schema"] = _get_full_artifact_content(project_id, "DB_SCHEMA", db)
+        ctx["api_spec"] = _get_full_artifact_content(project_id, "API_SPEC", db)
+        ctx["tasks"] = _get_full_artifact_content(project_id, "TASKS", db)
 
     return ctx
 

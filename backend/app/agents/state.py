@@ -14,6 +14,8 @@ class AgentFlowState(BaseModel):
     api_spec: Optional[str] = None
     user_stories: Optional[str] = None
     tasks: Optional[str] = None
+    code_generation: Optional[str] = None
     
     # Track the current active model provider (simplified for Phase 1)
     current_model: str = "openai"
+
