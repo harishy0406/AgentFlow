@@ -106,9 +106,9 @@ class TestDependencyMap:
         assert "SDD" in deps
         assert "DB_SCHEMA" in deps
 
-    def test_tasks_is_terminal(self):
-        """TASKS should have no downstream dependents."""
-        assert len(ARTIFACT_DOWNSTREAM_MAP.get("TASKS", [])) == 0
+    def test_code_generation_is_terminal(self):
+        """CODE_GENERATION should have no downstream dependents."""
+        assert len(ARTIFACT_DOWNSTREAM_MAP.get("CODE_GENERATION", [])) == 0
 
     def test_prd_has_downstream(self):
         """PRD should have SDD and USER_STORIES as downstream."""
@@ -117,16 +117,16 @@ class TestDependencyMap:
         assert "USER_STORIES" in downstream
 
     def test_topological_order_length(self):
-        """Topological order must contain all 6 artifact types."""
-        assert len(TOPOLOGICAL_ORDER) == 6
+        """Topological order must contain all 7 artifact types."""
+        assert len(TOPOLOGICAL_ORDER) == 7
 
     def test_topological_order_prd_first(self):
         """PRD must be the first element in topological order."""
         assert TOPOLOGICAL_ORDER[0] == "PRD"
 
-    def test_topological_order_tasks_last(self):
-        """TASKS must be the last element in topological order."""
-        assert TOPOLOGICAL_ORDER[-1] == "TASKS"
+    def test_topological_order_code_generation_last(self):
+        """CODE_GENERATION must be the last element in topological order."""
+        assert TOPOLOGICAL_ORDER[-1] == "CODE_GENERATION"
 
     def test_all_artifact_types_in_order(self):
         """All keys in the dependency map must appear in the topological order."""

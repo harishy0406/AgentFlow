@@ -114,3 +114,42 @@ class TestEvaluationAPI:
         assert list_res.status_code == 200
         runs = list_res.json()
         assert any(r["run_name"] == run_name for r in runs)
+
+
+class TestCodeExportAndPackaging:
+    def test_code_files_and_zip_download(self):
+        """Create project, generate artifacts, and test code-files + download-zip endpoints."""
+        # 1. Create project
+        create_res = client.post(
+            "/projects/",
+            json={
+                "name": "Zip Export Test App",
+                "brief": "A simple task tracking application with REST endpoints and SQLite database.",
+                "clarifications": "1. SQLite\n2. FastAPI",
+            },
+        )
+        assert create_res.status_code == 200
+        project_id = create_res.json()["id"]
+
+        # 2. Generate artifacts (runs all 7 nodes including CODE_GENERATION)
+        gen_res = client.post(f"/projects/{project_id}/generate")
+        assert gen_res.status_code == 200
+        artifacts = gen_res.json()
+        assert len(artifacts) == 7
+        assert any(a["artifact_type"] == "CODE_GENERATION" for a in artifacts)
+
+        # 3. Test GET /projects/{id}/code-files
+        code_res = client.get(f"/projects/{project_id}/code-files")
+        assert code_res.status_code == 200
+        code_data = code_res.json()
+        assert code_data["project_name"] == "Zip Export Test App"
+        assert code_data["file_count"] >= 1
+        assert len(code_data["files"]) >= 1
+
+        # 4. Test GET /projects/{id}/download-zip
+        zip_res = client.get(f"/projects/{project_id}/download-zip")
+        assert zip_res.status_code == 200
+        assert zip_res.headers["content-type"] == "application/zip"
+        assert "attachment; filename=" in zip_res.headers["content-disposition"]
+        assert len(zip_res.content) > 100  # Non-empty zip file
+
