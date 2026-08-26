@@ -102,17 +102,33 @@ AgentFlow is an adaptive multi-agent workflow orchestration platform that automa
   - Aggregate metrics (cost, latency, quality scores, drift percentage) into the `eval_runs` and `eval_results` tables.
   - Extend the dashboard to support side-by-side comparison of AgentFlow vs. baselines.
 
+### Phase 7: Automated Code Generation, Local Storage & ZIP Export
+
+**Objective:** Bridge the specification-to-code gap by adding a downstream Code Generator Agent that scaffolds runnable project files directly on local disk and provides one-click ZIP packaging.
+
+- **Code Generator Agent (7th Node in DAG):**
+  - Extend the LangGraph dependency graph: `PRD → SDD → DB_SCHEMA → API_SPEC → USER_STORIES → TASKS → CODE_GENERATION`.
+  - Ingest the DB Schema (SQL DDL), API Specification (OpenAPI routes), and Task breakdown to generate complete application source code (backend models, API route handlers, frontend components, and project configuration).
+- **Local Disk Storage (`generated_projects/<project_slug>/`):**
+  - Scaffold generated repositories directly into a local folder on disk for immediate developer access in IDEs (VS Code / Cursor).
+  - Implement selective diff-aware file patching: editing an upstream API route or DB table updates *only* the affected code file on disk rather than re-generating the whole codebase.
+- **ZIP Export & Dashboard Action:**
+  - Add backend streaming archive endpoint (`GET /projects/{project_id}/download-zip`) to package the active codebase on-the-fly.
+  - Add an interactive **"📥 Download Project (.zip)"** button in the Next.js Dashboard.
+
 ---
 
 ## Verification Plan
 
 ### Automated Tests
-- **Unit Tests:** `pytest` for graph traversal logic (affected subgraph computation), router scoring math, and Pydantic schema validation.
-- **Integration Tests:** End-to-end API tests validating the REST endpoints for project creation and artifact updates using mocked LLM responses.
-- **Evaluation Scripts:** The Phase 6 evaluation harness will serve as the ultimate system-level automated verification.
+- **Unit Tests:** `pytest` for graph traversal logic (affected subgraph computation), router scoring math, schema validation, and code scaffolding parser.
+- **Integration Tests:** End-to-end API tests validating the REST endpoints for project creation, artifact updates, code generation, and ZIP streaming.
+- **Evaluation Scripts:** The Phase 6 evaluation harness will serve as the system-level automated verification benchmark.
 
 ### Manual Verification
 - Deploying the full stack via `docker-compose` locally.
-- Submitting a sample project brief via the Next.js dashboard.
-- Modifying an upstream artifact (e.g., PRD) via the UI and visually verifying that only the correct downstream nodes enter the `regenerating` state in React Flow.
-- Simulating a manual drift introduction and verifying that the Consistency Auditor flags it in the UI and successfully auto-fixes it via micro-regeneration.
+- Submitting a sample project brief via the Next.js dashboard and verifying all 7 nodes execute.
+- Inspecting the local `generated_projects/<project_slug>/` directory to verify source code files are created and runnable.
+- Modifying an upstream artifact (e.g., API Spec) via the UI and visually verifying that only the affected downstream code files are patched.
+- Downloading the `.zip` archive from the dashboard and extracting it to run locally.
+
