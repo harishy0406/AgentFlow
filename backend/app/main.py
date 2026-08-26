@@ -1,11 +1,15 @@
 from fastapi import FastAPI, Depends, HTTPException, Query, WebSocket, WebSocketDisconnect
-from fastapi.responses import Response, PlainTextResponse
+from fastapi.responses import Response, PlainTextResponse, StreamingResponse
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from uuid import UUID
 from typing import List, Optional
 from datetime import datetime, timezone
 import json
+import io
+import zipfile
+import os
+from pathlib import Path
 
 from . import models, schemas
 from .database import engine, get_db
@@ -15,6 +19,7 @@ from .agents.provider_registry import PROVIDER_REGISTRY
 from .agents.router import route as route_model
 from .agents.auditor import run_audit, list_open_drifts, resolve_drift_record
 from .agents.micro_regen import fix_drift
+from .agents.scaffolder import parse_code_files, sanitize_project_slug
 
 # Create database tables (in a real app, use alembic)
 models.Base.metadata.create_all(bind=engine)
@@ -240,6 +245,129 @@ def export_project_specifications(
         headers={
             "Content-Disposition": f"attachment; filename={safe_name}_specs.md"
         }
+    )
+
+
+# ---------------------------------------------------------------------------
+# Phase 7: Code Files & ZIP Archive Download
+# ---------------------------------------------------------------------------
+
+@app.get("/projects/{project_id}/code-files")
+def get_project_code_files(project_id: UUID, db: Session = Depends(get_db)):
+    """
+    Returns the list of generated source code files, paths, and contents.
+    Reads from local disk (generated_projects/<slug>/) or DB artifact.
+    """
+    project = db.query(models.Project).filter(models.Project.id == project_id).first()
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    slug = sanitize_project_slug(project.name)
+    local_dir = Path("generated_projects") / slug
+
+    files_list = []
+    if local_dir.exists():
+        for root, _, filenames in os.walk(local_dir):
+            for filename in filenames:
+                file_path = Path(root) / filename
+                rel_path = str(file_path.relative_to(local_dir)).replace("\\", "/")
+                try:
+                    with open(file_path, "r", encoding="utf-8") as f:
+                        content = f.read()
+                    files_list.append({"path": rel_path, "content": content})
+                except Exception:
+                    pass
+    else:
+        # Fallback to DB artifact node
+        code_node = (
+            db.query(models.ArtifactNode)
+            .filter(
+                models.ArtifactNode.project_id == project_id,
+                models.ArtifactNode.artifact_type == "CODE_GENERATION",
+            )
+            .first()
+        )
+        if code_node:
+            for sec in code_node.sections:
+                parsed = parse_code_files(sec.content)
+                for path, content in parsed.items():
+                    files_list.append({"path": path, "content": content})
+
+    return {
+        "project_id": str(project.id),
+        "project_name": project.name,
+        "project_slug": slug,
+        "local_path": str(local_dir.resolve()),
+        "file_count": len(files_list),
+        "files": files_list,
+    }
+
+
+@app.get("/projects/{project_id}/download-zip")
+def download_project_zip(project_id: UUID, db: Session = Depends(get_db)):
+    """
+    Streams a complete in-memory .zip archive containing:
+    1. All scaffolded application source code files.
+    2. A /docs directory containing PRD, SDD, DB Schema, API Spec, Stories & Tasks.
+    """
+    project = db.query(models.Project).filter(models.Project.id == project_id).first()
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    slug = sanitize_project_slug(project.name)
+    local_dir = Path("generated_projects") / slug
+
+    buffer = io.BytesIO()
+    with zipfile.ZipFile(buffer, "w", zipfile.ZIP_DEFLATED) as zip_file:
+        # 1. Add Code files
+        if local_dir.exists():
+            for root, _, filenames in os.walk(local_dir):
+                for filename in filenames:
+                    file_path = Path(root) / filename
+                    arcname = str(file_path.relative_to(local_dir)).replace("\\", "/")
+                    zip_file.write(file_path, arcname=arcname)
+        else:
+            # Fallback: extract code from CODE_GENERATION artifact
+            code_node = (
+                db.query(models.ArtifactNode)
+                .filter(
+                    models.ArtifactNode.project_id == project_id,
+                    models.ArtifactNode.artifact_type == "CODE_GENERATION",
+                )
+                .first()
+            )
+            if code_node:
+                for sec in code_node.sections:
+                    parsed = parse_code_files(sec.content)
+                    for path, content in parsed.items():
+                        zip_file.writestr(path, content)
+
+        # 2. Add documentation specs under docs/
+        for node in project.artifact_nodes:
+            if node.artifact_type == "CODE_GENERATION":
+                continue
+            doc_content = "\n\n".join(s.content for s in node.sections)
+            ext = ".sql" if node.artifact_type == "DB_SCHEMA" else ".md"
+            doc_filename = f"docs/{node.artifact_type.lower()}{ext}"
+            zip_file.writestr(doc_filename, doc_content)
+
+        # 3. Add Project Metadata / manifest
+        manifest = {
+            "project_name": project.name,
+            "project_brief": project.brief,
+            "clarifications": project.clarifications,
+            "created_at": str(project.created_at),
+            "generated_by": "AgentFlow Orchestrator v0.6.0",
+        }
+        zip_file.writestr("agentflow.json", json.dumps(manifest, indent=2))
+
+    buffer.seek(0)
+    return StreamingResponse(
+        buffer,
+        media_type="application/zip",
+        headers={
+            "Content-Disposition": f"attachment; filename={slug}_codebase.zip"
+        },
     )
 
 
