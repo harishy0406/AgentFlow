@@ -17,8 +17,10 @@ from .prompts import (
     API_DESIGNER_PROMPT,
     QA_ENGINEER_PROMPT,
     PROJECT_PLANNER_PROMPT,
+    CODE_GENERATION_PROMPT,
 )
 from .provider_registry import PROVIDER_REGISTRY
+from .scaffolder import scaffold_project_files
 
 
 def _get_llm_for_artifact(artifact_type: str):
@@ -108,3 +110,30 @@ def project_planner_node(state: AgentFlowState) -> AgentFlowState:
     })
     state.tasks = response.content
     return state
+
+
+def code_generator_node(state: AgentFlowState) -> AgentFlowState:
+    """
+    Phase 7: Generates complete, runnable application source code
+    and automatically scaffolds the files on local disk under generated_projects/.
+    """
+    llm = _get_llm_for_artifact("CODE_GENERATION")
+    prompt = PromptTemplate.from_template(CODE_GENERATION_PROMPT)
+    chain = prompt | llm
+
+    response = chain.invoke({
+        "db_schema": state.db_schema or "",
+        "api_spec": state.api_spec or "",
+        "tasks": state.tasks or "",
+    })
+    code_text = response.content if hasattr(response, "content") else str(response)
+    state.code_generation = code_text
+
+    # Write files locally to generated_projects/<project_slug>/
+    try:
+        scaffold_project_files(state.project_name, code_text)
+    except Exception:
+        pass
+
+    return state
+
