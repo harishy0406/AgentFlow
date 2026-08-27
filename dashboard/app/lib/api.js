@@ -177,6 +177,15 @@ export async function updateCodeFile(projectId, path, content) {
   });
 }
 
+// ---------------------------------------------------------------------------
+// Project Health & Readiness Scorecard
+// ---------------------------------------------------------------------------
+
+export async function getProjectHealth(projectId) {
+  return request(`/projects/${projectId}/health`);
+}
+
+
 
 
 

@@ -173,6 +173,93 @@ def get_project_artifacts(project_id: UUID, db: Session = Depends(get_db)):
     return project.artifact_nodes
 
 
+@app.get("/projects/{project_id}/health", response_model=schemas.ProjectHealthOut)
+def get_project_health(project_id: UUID, db: Session = Depends(get_db)):
+    """
+    Computes a real-time project health and implementation readiness scorecard.
+    """
+    project = db.query(models.Project).filter(models.Project.id == project_id).first()
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    total_expected = len(TOPOLOGICAL_ORDER)
+    nodes = project.artifact_nodes
+    generated_count = len(nodes)
+    artifact_completion_pct = round((generated_count / total_expected) * 100, 1)
+
+    quality_scores = [n.quality_signal_score for n in nodes if n.quality_signal_score is not None]
+    avg_quality = round((sum(quality_scores) / len(quality_scores)) if quality_scores else 0.85, 2)
+
+    open_drifts = (
+        db.query(models.DriftRecord)
+        .filter(
+            models.DriftRecord.project_id == project_id,
+            models.DriftRecord.status == "open",
+        )
+        .count()
+    )
+    consistency_pct = max(0.0, round(100.0 - (open_drifts * 15.0), 1))
+
+    slug = sanitize_project_slug(project.name)
+    local_dir = Path("generated_projects") / slug
+    has_code = any(n.artifact_type == "CODE_GENERATION" for n in nodes) or local_dir.exists()
+    if local_dir.exists() and any(local_dir.glob("**/*.py")):
+        code_status = "Scaffolded & Ready"
+        code_pct = 100.0
+    elif has_code:
+        code_status = "Generated (Database)"
+        code_pct = 85.0
+    else:
+        code_status = "Not Generated"
+        code_pct = 0.0
+
+    overall_readiness = round(
+        (artifact_completion_pct * 0.35)
+        + (consistency_pct * 0.30)
+        + (min(avg_quality * 100, 100.0) * 0.20)
+        + (code_pct * 0.15),
+        1
+    )
+
+    if overall_readiness >= 90:
+        label = "Production Ready"
+    elif overall_readiness >= 70:
+        label = "Stable Development"
+    elif overall_readiness >= 40:
+        label = "In Progress"
+    else:
+        label = "Early Draft"
+
+    summary = []
+    if generated_count == total_expected:
+        summary.append("All 7 artifact specifications and code generated.")
+    else:
+        summary.append(f"{generated_count}/{total_expected} artifact specifications generated.")
+
+    if open_drifts == 0:
+        summary.append("Zero cross-artifact consistency drifts detected.")
+    else:
+        summary.append(f"{open_drifts} active drift(s) require auto-fix or review.")
+
+    if code_pct > 0:
+        summary.append(f"Application codebase is {code_status.lower()}.")
+
+    return schemas.ProjectHealthOut(
+        project_id=project.id,
+        project_name=project.name,
+        overall_readiness_pct=overall_readiness,
+        readiness_label=label,
+        artifact_completion_pct=artifact_completion_pct,
+        artifacts_generated=generated_count,
+        total_expected_artifacts=total_expected,
+        consistency_score_pct=consistency_pct,
+        open_drifts_count=open_drifts,
+        avg_quality_score=avg_quality,
+        codebase_status=code_status,
+        health_summary=summary,
+    )
+
+
 @app.get("/projects/{project_id}/export")
 def export_project_specifications(
     project_id: UUID,

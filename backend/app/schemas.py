@@ -287,5 +287,25 @@ class CodeFileUpdateOut(BaseModel):
     message: str
 
 
+# ---------------------------------------------------------------------------
+# Project Health & Readiness Scorecard
+# ---------------------------------------------------------------------------
+
+class ProjectHealthOut(BaseModel):
+    project_id: UUID
+    project_name: str
+    overall_readiness_pct: float
+    readiness_label: str
+    artifact_completion_pct: float
+    artifacts_generated: int
+    total_expected_artifacts: int
+    consistency_score_pct: float
+    open_drifts_count: int
+    avg_quality_score: float
+    codebase_status: str
+    health_summary: List[str] = []
+
+
+
 
 

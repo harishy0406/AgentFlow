@@ -166,4 +166,16 @@ class TestCodeExportAndPackaging:
         assert up_data["status"] == "success"
         assert up_data["path"] == "backend/routes.py"
 
+        # 6. Test GET /projects/{id}/health (real-time scorecard)
+        health_res = client.get(f"/projects/{project_id}/health")
+        assert health_res.status_code == 200
+        health_data = health_res.json()
+        assert health_data["project_name"] == "Zip Export Test App"
+        assert health_data["overall_readiness_pct"] > 0
+        assert health_data["artifact_completion_pct"] == 100.0
+        assert health_data["artifacts_generated"] == 7
+        assert "readiness_label" in health_data
+        assert isinstance(health_data["health_summary"], list)
+
+
 

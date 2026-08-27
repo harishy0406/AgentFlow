@@ -22,6 +22,7 @@ import {
   getDownloadZipUrl,
   getCodeFiles,
   updateCodeFile,
+  getProjectHealth,
 } from "./lib/api";
 
 export default function Home() {
@@ -54,6 +55,9 @@ export default function Home() {
   const [isEditingCode, setIsEditingCode] = useState(false);
   const [editingCodeContent, setEditingCodeContent] = useState("");
   const [savingCode, setSavingCode] = useState(false);
+
+  // Health Scorecard state
+  const [projectHealth, setProjectHealth] = useState(null);
 
   // Section editing & version history state
   const [activeArtifactType, setActiveArtifactType] = useState("PRD");
@@ -108,6 +112,17 @@ export default function Home() {
       if (ws) ws.close();
     };
   }, [currentProject?.id, showToast]);
+
+  // Load project health whenever active project, artifacts, or drifts update
+  useEffect(() => {
+    if (currentProject) {
+      getProjectHealth(currentProject.id)
+        .then(setProjectHealth)
+        .catch(() => {});
+    } else {
+      setProjectHealth(null);
+    }
+  }, [currentProject, artifacts, drifts]);
 
   // ---- HITL: Step 1 — Get clarification questions ----
   const handleClarify = async (e) => {
@@ -218,8 +233,28 @@ export default function Home() {
         </div>
         {currentProject && (
           <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-            <div style={{ fontSize: 13, color: "var(--text-secondary)" }}>
-              Project: <strong style={{ color: "var(--text-primary)" }}>{currentProject.name}</strong>
+            <div style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 13, color: "var(--text-secondary)" }}>
+              <span>Project: <strong style={{ color: "var(--text-primary)" }}>{currentProject.name}</strong></span>
+              {projectHealth && (
+                <span
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 6,
+                    background: projectHealth.overall_readiness_pct >= 80 ? "rgba(46, 160, 67, 0.15)" : "rgba(210, 153, 34, 0.15)",
+                    border: `1px solid ${projectHealth.overall_readiness_pct >= 80 ? "#2ea043" : "#d29922"}`,
+                    borderRadius: 12,
+                    padding: "2px 8px",
+                    fontSize: 11,
+                    fontWeight: 600,
+                    color: projectHealth.overall_readiness_pct >= 80 ? "#3fb950" : "#d29922",
+                  }}
+                  title={`Consistency: ${projectHealth.consistency_score_pct}% | Artifacts: ${projectHealth.artifact_completion_pct}%`}
+                >
+                  <span style={{ fontSize: 8 }}>●</span>
+                  {projectHealth.overall_readiness_pct}% ({projectHealth.readiness_label})
+                </span>
+              )}
             </div>
             <div style={{ display: "flex", gap: 8 }}>
               <a
@@ -1108,10 +1143,66 @@ export default function Home() {
         {/* Tab: Metrics (Phase 3 — Full Implementation) */}
         {activeTab === "metrics" && currentProject && (
           <div className="card">
-            <h2 className="card-title">Project Metrics</h2>
+            <h2 className="card-title">Project Health & Metrics</h2>
             <p style={{ color: "var(--text-muted)", fontSize: 13, marginBottom: 20 }}>
-              Per-artifact cost, quality signals, and model routing decisions.
+              Per-artifact cost, quality signals, and automated readiness scorecard.
             </p>
+
+            {/* Health Scorecard Widget */}
+            {projectHealth && (
+              <div
+                style={{
+                  background: "var(--bg-secondary)",
+                  border: "1px solid var(--border)",
+                  borderRadius: 8,
+                  padding: 16,
+                  marginBottom: 24,
+                  display: "grid",
+                  gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
+                  gap: 16,
+                }}
+              >
+                <div>
+                  <div style={{ fontSize: 11, color: "var(--text-muted)", textTransform: "uppercase", fontWeight: 700 }}>
+                    Readiness Score
+                  </div>
+                  <div style={{ fontSize: 24, fontWeight: 800, color: projectHealth.overall_readiness_pct >= 80 ? "#3fb950" : "#d29922", marginTop: 4 }}>
+                    {projectHealth.overall_readiness_pct}%
+                  </div>
+                  <div style={{ fontSize: 12, color: "var(--text-secondary)" }}>{projectHealth.readiness_label}</div>
+                </div>
+
+                <div>
+                  <div style={{ fontSize: 11, color: "var(--text-muted)", textTransform: "uppercase", fontWeight: 700 }}>
+                    Artifact Pipeline
+                  </div>
+                  <div style={{ fontSize: 24, fontWeight: 800, color: "var(--text-primary)", marginTop: 4 }}>
+                    {projectHealth.artifacts_generated}/{projectHealth.total_expected_artifacts}
+                  </div>
+                  <div style={{ fontSize: 12, color: "var(--text-secondary)" }}>{projectHealth.artifact_completion_pct}% complete</div>
+                </div>
+
+                <div>
+                  <div style={{ fontSize: 11, color: "var(--text-muted)", textTransform: "uppercase", fontWeight: 700 }}>
+                    Consistency Index
+                  </div>
+                  <div style={{ fontSize: 24, fontWeight: 800, color: projectHealth.consistency_score_pct >= 90 ? "#3fb950" : "#f85149", marginTop: 4 }}>
+                    {projectHealth.consistency_score_pct}%
+                  </div>
+                  <div style={{ fontSize: 12, color: "var(--text-secondary)" }}>{projectHealth.open_drifts_count} open drift(s)</div>
+                </div>
+
+                <div>
+                  <div style={{ fontSize: 11, color: "var(--text-muted)", textTransform: "uppercase", fontWeight: 700 }}>
+                    Codebase Status
+                  </div>
+                  <div style={{ fontSize: 20, fontWeight: 800, color: "var(--accent-blue)", marginTop: 6 }}>
+                    {projectHealth.codebase_status}
+                  </div>
+                  <div style={{ fontSize: 12, color: "var(--text-secondary)" }}>Scaffolded in disk</div>
+                </div>
+              </div>
+            )}
 
             {/* Summary Stats */}
             <div className="grid-3" style={{ marginBottom: 24 }}>
