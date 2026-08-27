@@ -9,6 +9,7 @@ import json
 import io
 import zipfile
 import os
+import hashlib
 from pathlib import Path
 
 from . import models, schemas
@@ -301,6 +302,66 @@ def get_project_code_files(project_id: UUID, db: Session = Depends(get_db)):
         "file_count": len(files_list),
         "files": files_list,
     }
+
+
+@app.put("/projects/{project_id}/code-files", response_model=schemas.CodeFileUpdateOut)
+async def update_project_code_file(
+    project_id: UUID,
+    payload: schemas.CodeFileUpdate,
+    db: Session = Depends(get_db)
+):
+    """
+    Updates a specific generated code file on disk and syncs it with the CODE_GENERATION artifact in the DB.
+    """
+    project = db.query(models.Project).filter(models.Project.id == project_id).first()
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    slug = sanitize_project_slug(project.name)
+    local_dir = Path("generated_projects") / slug
+    target_file = local_dir / payload.path.lstrip("/")
+
+    # Ensure directory exists and write file to local disk
+    target_file.parent.mkdir(parents=True, exist_ok=True)
+    with open(target_file, "w", encoding="utf-8") as f:
+        f.write(payload.content)
+
+    # Sync into DB artifact
+    code_node = (
+        db.query(models.ArtifactNode)
+        .filter(
+            models.ArtifactNode.project_id == project_id,
+            models.ArtifactNode.artifact_type == "CODE_GENERATION"
+        )
+        .first()
+    )
+    if code_node:
+        code_node.updated_at = datetime.now(timezone.utc)
+        for sec in code_node.sections:
+            if payload.path in sec.section_key or len(code_node.sections) == 1:
+                sec.content = payload.content
+                sec.content_hash = hashlib.sha256(payload.content.encode("utf-8")).hexdigest()
+                sec.updated_at = datetime.now(timezone.utc)
+                break
+        db.commit()
+
+    # Broadcast real-time WebSocket event
+    await ws_manager.broadcast(
+        str(project_id),
+        {
+            "type": "code_file_updated",
+            "path": payload.path,
+            "project_id": str(project_id),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+        }
+    )
+
+    return schemas.CodeFileUpdateOut(
+        status="success",
+        path=payload.path,
+        updated_at=datetime.now(timezone.utc),
+        message=f"File '{payload.path}' updated successfully on disk and database.",
+    )
 
 
 @app.get("/projects/{project_id}/download-zip")

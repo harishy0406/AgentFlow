@@ -271,4 +271,21 @@ class EvalRunOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
+# ---------------------------------------------------------------------------
+# Phase 7: Code File Updates
+# ---------------------------------------------------------------------------
+
+class CodeFileUpdate(BaseModel):
+    path: str
+    content: str
+
+
+class CodeFileUpdateOut(BaseModel):
+    status: str
+    path: str
+    updated_at: datetime
+    message: str
+
+
+
 

@@ -170,5 +170,13 @@ export async function getCodeFiles(projectId) {
   return request(`/projects/${projectId}/code-files`);
 }
 
+export async function updateCodeFile(projectId, path, content) {
+  return request(`/projects/${projectId}/code-files`, {
+    method: "PUT",
+    body: JSON.stringify({ path, content }),
+  });
+}
+
+
 
 

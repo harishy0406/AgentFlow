@@ -153,3 +153,17 @@ class TestCodeExportAndPackaging:
         assert "attachment; filename=" in zip_res.headers["content-disposition"]
         assert len(zip_res.content) > 100  # Non-empty zip file
 
+        # 5. Test PUT /projects/{id}/code-files (direct edit and disk writeback)
+        update_res = client.put(
+            f"/projects/{project_id}/code-files",
+            json={
+                "path": "backend/routes.py",
+                "content": "# Updated routes\nfrom fastapi import APIRouter\nrouter = APIRouter()\n@router.get('/health')\ndef h(): return {'ok': True}",
+            },
+        )
+        assert update_res.status_code == 200
+        up_data = update_res.json()
+        assert up_data["status"] == "success"
+        assert up_data["path"] == "backend/routes.py"
+
+

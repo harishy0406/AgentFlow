@@ -21,6 +21,7 @@ import {
   getExportUrl,
   getDownloadZipUrl,
   getCodeFiles,
+  updateCodeFile,
 } from "./lib/api";
 
 export default function Home() {
@@ -50,6 +51,9 @@ export default function Home() {
   const [codeData, setCodeData] = useState(null);
   const [selectedCodeFile, setSelectedCodeFile] = useState(null);
   const [codeLoading, setCodeLoading] = useState(false);
+  const [isEditingCode, setIsEditingCode] = useState(false);
+  const [editingCodeContent, setEditingCodeContent] = useState("");
+  const [savingCode, setSavingCode] = useState(false);
 
   // Section editing & version history state
   const [activeArtifactType, setActiveArtifactType] = useState("PRD");
@@ -875,7 +879,7 @@ export default function Home() {
                   })}
                 </div>
 
-                {/* Code Content Viewer */}
+                {/* Code Content Viewer & Editor */}
                 {selectedCodeFile ? (
                   <div
                     style={{
@@ -900,35 +904,107 @@ export default function Home() {
                       <strong style={{ fontSize: 13, color: "#c9d1d9", fontFamily: "monospace" }}>
                         {selectedCodeFile.path}
                       </strong>
-                      <button
-                        className="btn btn-secondary btn-sm"
-                        style={{ fontSize: 11, padding: "3px 8px" }}
-                        onClick={() => {
-                          navigator.clipboard.writeText(selectedCodeFile.content);
-                          showToast("Copied file content to clipboard!", "success");
+                      <div style={{ display: "flex", gap: 8 }}>
+                        {!isEditingCode ? (
+                          <>
+                            <button
+                              className="btn btn-secondary btn-sm"
+                              style={{ fontSize: 11, padding: "3px 8px" }}
+                              onClick={() => {
+                                setIsEditingCode(true);
+                                setEditingCodeContent(selectedCodeFile.content);
+                              }}
+                            >
+                              ✏️ Edit File
+                            </button>
+                            <button
+                              className="btn btn-secondary btn-sm"
+                              style={{ fontSize: 11, padding: "3px 8px" }}
+                              onClick={() => {
+                                navigator.clipboard.writeText(selectedCodeFile.content);
+                                showToast("Copied file content to clipboard!", "success");
+                              }}
+                            >
+                              📋 Copy
+                            </button>
+                          </>
+                        ) : (
+                          <>
+                            <button
+                              className="btn btn-primary btn-sm"
+                              disabled={savingCode}
+                              style={{ fontSize: 11, padding: "3px 10px", background: "#2ea043" }}
+                              onClick={async () => {
+                                setSavingCode(true);
+                                try {
+                                  await updateCodeFile(currentProject.id, selectedCodeFile.path, editingCodeContent);
+                                  selectedCodeFile.content = editingCodeContent;
+                                  if (codeData?.files) {
+                                    const match = codeData.files.find((f) => f.path === selectedCodeFile.path);
+                                    if (match) match.content = editingCodeContent;
+                                  }
+                                  setIsEditingCode(false);
+                                  showToast(`Saved '${selectedCodeFile.path}' to local disk!`, "success");
+                                } catch (err) {
+                                  showToast(err.message, "error");
+                                } finally {
+                                  setSavingCode(false);
+                                }
+                              }}
+                            >
+                              {savingCode ? "Saving..." : "💾 Save to Disk"}
+                            </button>
+                            <button
+                              className="btn btn-secondary btn-sm"
+                              disabled={savingCode}
+                              style={{ fontSize: 11, padding: "3px 8px" }}
+                              onClick={() => setIsEditingCode(false)}
+                            >
+                              Cancel
+                            </button>
+                          </>
+                        )}
+                      </div>
+                    </div>
+
+                    {isEditingCode ? (
+                      <textarea
+                        value={editingCodeContent}
+                        onChange={(e) => setEditingCodeContent(e.target.value)}
+                        style={{
+                          width: "100%",
+                          minHeight: 450,
+                          padding: 16,
+                          background: "#0d1117",
+                          color: "#e6edf3",
+                          border: "none",
+                          outline: "none",
+                          fontSize: 13,
+                          lineHeight: 1.5,
+                          fontFamily: "ui-monospace, SFMono-Regular, Consolas, monospace",
+                          resize: "vertical",
+                        }}
+                      />
+                    ) : (
+                      <pre
+                        style={{
+                          margin: 0,
+                          padding: 16,
+                          color: "#e6edf3",
+                          fontSize: 13,
+                          lineHeight: 1.5,
+                          fontFamily: "ui-monospace, SFMono-Regular, Consolas, monospace",
+                          overflowX: "auto",
+                          maxHeight: 500,
+                          whiteSpace: "pre-wrap",
                         }}
                       >
-                        📋 Copy
-                      </button>
-                    </div>
-                    <pre
-                      style={{
-                        margin: 0,
-                        padding: 16,
-                        color: "#e6edf3",
-                        fontSize: 13,
-                        lineHeight: 1.5,
-                        fontFamily: "ui-monospace, SFMono-Regular, Consolas, monospace",
-                        overflowX: "auto",
-                        maxHeight: 500,
-                        whiteSpace: "pre-wrap",
-                      }}
-                    >
-                      {selectedCodeFile.content}
-                    </pre>
+                        {selectedCodeFile.content}
+                      </pre>
+                    )}
                   </div>
                 ) : (
-                  <div style={{ color: "var(--text-muted)", padding: 20 }}>Select a file from the tree to preview.</div>
+                  <div style={{ color: "var(--text-muted)", padding: 20 }}>Select a file from the tree to preview or edit.</div>
                 )}
               </div>
             )}
