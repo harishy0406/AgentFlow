@@ -177,5 +177,16 @@ class TestCodeExportAndPackaging:
         assert "readiness_label" in health_data
         assert isinstance(health_data["health_summary"], list)
 
+        # 7. Test POST /projects/{id}/verify-code (automated smoke tests)
+        verify_res = client.post(f"/projects/{project_id}/verify-code")
+        assert verify_res.status_code == 200
+        verify_data = verify_res.json()
+        assert "total_files" in verify_data
+        assert "passed_files" in verify_data
+        assert "verification_score_pct" in verify_data
+        assert isinstance(verify_data["results"], list)
+        assert len(verify_data["results"]) >= 1
+
+
 
 

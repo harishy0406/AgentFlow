@@ -306,6 +306,30 @@ class ProjectHealthOut(BaseModel):
     health_summary: List[str] = []
 
 
+# ---------------------------------------------------------------------------
+# Code Verification & Smoke Testing
+# ---------------------------------------------------------------------------
+
+class FileVerificationOut(BaseModel):
+    path: str
+    file_type: str
+    status: str
+    message: str
+    line_count: int
+    symbols_count: int
+
+
+class CodeVerificationOut(BaseModel):
+    project_slug: str
+    all_passed: bool
+    total_files: int
+    passed_files: int
+    failed_files: int
+    verification_score_pct: float
+    results: List[FileVerificationOut] = []
+
+
+
 
 
 

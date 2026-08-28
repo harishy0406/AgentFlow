@@ -185,6 +185,17 @@ export async function getProjectHealth(projectId) {
   return request(`/projects/${projectId}/health`);
 }
 
+// ---------------------------------------------------------------------------
+// Automated Code Verification & Smoke Testing
+// ---------------------------------------------------------------------------
+
+export async function verifyProjectCode(projectId) {
+  return request(`/projects/${projectId}/verify-code`, {
+    method: "POST",
+  });
+}
+
+
 
 
 

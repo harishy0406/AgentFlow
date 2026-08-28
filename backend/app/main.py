@@ -21,6 +21,7 @@ from .agents.router import route as route_model
 from .agents.auditor import run_audit, list_open_drifts, resolve_drift_record
 from .agents.micro_regen import fix_drift
 from .agents.scaffolder import parse_code_files, sanitize_project_slug
+from .agents.tester import verify_project_codebase
 
 # Create database tables (in a real app, use alembic)
 models.Base.metadata.create_all(bind=engine)
@@ -449,6 +450,43 @@ async def update_project_code_file(
         updated_at=datetime.now(timezone.utc),
         message=f"File '{payload.path}' updated successfully on disk and database.",
     )
+
+
+@app.post("/projects/{project_id}/verify-code", response_model=schemas.CodeVerificationOut)
+def verify_project_code(project_id: UUID, db: Session = Depends(get_db)):
+    """
+    Executes automated static analysis and smoke verification on all generated files for a project.
+    Validates Python AST syntax, class/function declarations, JSON schemas, and markdown docs.
+    """
+    project = db.query(models.Project).filter(models.Project.id == project_id).first()
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    slug = sanitize_project_slug(project.name)
+    local_dir = Path("generated_projects") / slug
+
+    fallback_files = []
+    if not local_dir.exists():
+        code_node = (
+            db.query(models.ArtifactNode)
+            .filter(
+                models.ArtifactNode.project_id == project_id,
+                models.ArtifactNode.artifact_type == "CODE_GENERATION"
+            )
+            .first()
+        )
+        if code_node:
+            for sec in code_node.sections:
+                parsed = parse_code_files(sec.content)
+                for path, content in parsed.items():
+                    fallback_files.append({"path": path, "content": content})
+
+    verification_data = verify_project_codebase(
+        project_slug=slug,
+        fallback_files=fallback_files
+    )
+
+    return schemas.CodeVerificationOut(**verification_data)
 
 
 @app.get("/projects/{project_id}/download-zip")
