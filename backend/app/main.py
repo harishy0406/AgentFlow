@@ -261,6 +261,82 @@ def get_project_health(project_id: UUID, db: Session = Depends(get_db)):
     )
 
 
+@app.get("/projects/{project_id}/timeline", response_model=schemas.ProjectTimelineOut)
+def get_project_timeline(project_id: UUID, db: Session = Depends(get_db)):
+    """
+    Returns an aggregated, chronological audit timeline of all events for a project.
+    """
+    project = db.query(models.Project).filter(models.Project.id == project_id).first()
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    events: List[schemas.TimelineEventOut] = []
+
+    # 1. Project creation event
+    events.append(schemas.TimelineEventOut(
+        id=f"create-{project.id}",
+        event_type="project_created",
+        title="Project Initialized",
+        description=f"Project '{project.name}' created via HITL Intake.",
+        timestamp=project.created_at,
+        badge_type="fresh",
+        details={"brief": project.brief[:120] + "..." if len(project.brief) > 120 else project.brief}
+    ))
+
+    # 2. Generation logs
+    gen_logs = db.query(models.GenerationLog).filter(models.GenerationLog.project_id == project_id).all()
+    for log in gen_logs:
+        art_name = log.artifact_node.artifact_type if log.artifact_node else "Artifact"
+        events.append(schemas.TimelineEventOut(
+            id=f"gen-{log.id}",
+            event_type="generation_event",
+            title=f"Generated {art_name}",
+            description=f"Triggered by {log.triggered_by} ({log.provider}/{log.model})",
+            timestamp=log.created_at,
+            badge_type="fresh" if log.triggered_by == "full_pipeline" else "stale",
+            details={
+                "provider": log.provider,
+                "model": log.model,
+                "tokens": log.tokens_used,
+                "cost_usd": log.cost_usd,
+                "latency_ms": log.latency_ms
+            }
+        ))
+
+    # 3. Drifts
+    drifts = db.query(models.DriftRecord).filter(models.DriftRecord.project_id == project_id).all()
+    for drift in drifts:
+        events.append(schemas.TimelineEventOut(
+            id=f"drift-{drift.id}",
+            event_type="drift_detected",
+            title=f"Drift: {drift.check_name}",
+            description=drift.description,
+            timestamp=drift.detected_at,
+            badge_type="drifted" if drift.status == "open" else "fresh",
+            details={"severity": drift.severity, "status": drift.status}
+        ))
+        if drift.resolved_at:
+            events.append(schemas.TimelineEventOut(
+                id=f"drift-res-{drift.id}",
+                event_type="drift_resolved",
+                title=f"Resolved: {drift.check_name}",
+                description="Cross-artifact inconsistency auto-fixed.",
+                timestamp=drift.resolved_at,
+                badge_type="fresh",
+                details={"status": "resolved"}
+            ))
+
+    # Sort descending by timestamp
+    events.sort(key=lambda e: e.timestamp, reverse=True)
+
+    return schemas.ProjectTimelineOut(
+        project_id=project.id,
+        project_name=project.name,
+        total_events=len(events),
+        events=events
+    )
+
+
 @app.get("/projects/{project_id}/export")
 def export_project_specifications(
     project_id: UUID,

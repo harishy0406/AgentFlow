@@ -187,6 +187,16 @@ class TestCodeExportAndPackaging:
         assert isinstance(verify_data["results"], list)
         assert len(verify_data["results"]) >= 1
 
+        # 8. Test GET /projects/{id}/timeline (activity audit trail)
+        timeline_res = client.get(f"/projects/{project_id}/timeline")
+        assert timeline_res.status_code == 200
+        timeline_data = timeline_res.json()
+        assert timeline_data["project_name"] == "Zip Export Test App"
+        assert timeline_data["total_events"] >= 2  # At least create + generation events
+        assert isinstance(timeline_data["events"], list)
+        assert any(e["event_type"] == "project_created" for e in timeline_data["events"])
+
+
 
 
 

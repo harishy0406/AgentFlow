@@ -195,6 +195,15 @@ export async function verifyProjectCode(projectId) {
   });
 }
 
+// ---------------------------------------------------------------------------
+// Project Activity Timeline & Audit Trail
+// ---------------------------------------------------------------------------
+
+export async function getProjectTimeline(projectId) {
+  return request(`/projects/${projectId}/timeline`);
+}
+
+
 
 
 

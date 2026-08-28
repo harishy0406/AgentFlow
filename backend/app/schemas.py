@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
 from uuid import UUID
 from datetime import datetime
 from pydantic import BaseModel, ConfigDict
@@ -327,6 +327,28 @@ class CodeVerificationOut(BaseModel):
     failed_files: int
     verification_score_pct: float
     results: List[FileVerificationOut] = []
+
+
+# ---------------------------------------------------------------------------
+# Project Activity Timeline & Audit Trail
+# ---------------------------------------------------------------------------
+
+class TimelineEventOut(BaseModel):
+    id: str
+    event_type: str
+    title: str
+    description: str
+    timestamp: datetime
+    badge_type: str
+    details: Optional[Dict[str, Any]] = None
+
+
+class ProjectTimelineOut(BaseModel):
+    project_id: UUID
+    project_name: str
+    total_events: int
+    events: List[TimelineEventOut] = []
+
 
 
 

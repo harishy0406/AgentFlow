@@ -24,6 +24,7 @@ import {
   updateCodeFile,
   getProjectHealth,
   verifyProjectCode,
+  getProjectTimeline,
 } from "./lib/api";
 
 export default function Home() {
@@ -58,6 +59,10 @@ export default function Home() {
   const [savingCode, setSavingCode] = useState(false);
   const [verificationData, setVerificationData] = useState(null);
   const [verifyingCode, setVerifyingCode] = useState(false);
+
+  // Timeline state
+  const [timelineData, setTimelineData] = useState(null);
+  const [timelineLoading, setTimelineLoading] = useState(false);
 
   // Health Scorecard state
   const [projectHealth, setProjectHealth] = useState(null);
@@ -366,6 +371,26 @@ export default function Home() {
             disabled={!currentProject}
           >
             Metrics
+          </button>
+          <button
+            className={`tab ${activeTab === "timeline" ? "active" : ""}`}
+            onClick={async () => {
+              setActiveTab("timeline");
+              if (currentProject) {
+                setTimelineLoading(true);
+                try {
+                  const res = await getProjectTimeline(currentProject.id);
+                  setTimelineData(res);
+                } catch (err) {
+                  showToast(err.message, "error");
+                } finally {
+                  setTimelineLoading(false);
+                }
+              }
+            }}
+            disabled={!currentProject}
+          >
+            Timeline
           </button>
           <button
             className={`tab ${activeTab === "evaluations" ? "active" : ""}`}
@@ -1421,6 +1446,110 @@ export default function Home() {
               <p style={{ color: "var(--text-muted)", fontSize: 13 }}>
                 No evaluation runs yet. Trigger a run above to benchmark.
               </p>
+            )}
+          </div>
+        )}
+
+        {/* Tab: Timeline / Activity Stream */}
+        {activeTab === "timeline" && currentProject && (
+          <div className="card">
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+              <div>
+                <h2 className="card-title" style={{ marginBottom: 4 }}>
+                  📜 Project Activity Timeline
+                </h2>
+                <p style={{ color: "var(--text-muted)", fontSize: 13 }}>
+                  Chronological audit trail of agent runs, section edits, rollbacks, and code updates.
+                </p>
+              </div>
+              <button
+                className="btn btn-secondary btn-sm"
+                disabled={timelineLoading}
+                onClick={async () => {
+                  setTimelineLoading(true);
+                  try {
+                    const res = await getProjectTimeline(currentProject.id);
+                    setTimelineData(res);
+                  } catch (err) {
+                    showToast(err.message, "error");
+                  } finally {
+                    setTimelineLoading(false);
+                  }
+                }}
+              >
+                🔄 Refresh Timeline
+              </button>
+            </div>
+
+            {timelineLoading ? (
+              <div style={{ textAlign: "center", padding: 40 }}>
+                <span className="spinner" style={{ width: 28, height: 28 }} />
+                <p style={{ color: "var(--text-secondary)", marginTop: 12 }}>Loading activity stream...</p>
+              </div>
+            ) : !timelineData?.events || timelineData.events.length === 0 ? (
+              <p style={{ color: "var(--text-muted)", fontSize: 13 }}>
+                No events recorded for this project yet.
+              </p>
+            ) : (
+              <div style={{ position: "relative", paddingLeft: 24, borderLeft: "2px solid var(--border)", marginLeft: 12 }}>
+                {timelineData.events.map((evt) => (
+                  <div key={evt.id} style={{ position: "relative", marginBottom: 24 }}>
+                    {/* Circle marker */}
+                    <div
+                      style={{
+                        position: "absolute",
+                        left: -31,
+                        top: 4,
+                        width: 12,
+                        height: 12,
+                        borderRadius: "50%",
+                        background:
+                          evt.badge_type === "fresh"
+                            ? "#2ea043"
+                            : evt.badge_type === "drifted"
+                            ? "#f85149"
+                            : "#d29922",
+                        border: "2px solid var(--bg-card)",
+                      }}
+                    />
+
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                      <div>
+                        <strong style={{ fontSize: 14, color: "var(--text-primary)" }}>{evt.title}</strong>
+                        <span className={`badge badge-${evt.badge_type}`} style={{ marginLeft: 8, fontSize: 10 }}>
+                          {evt.event_type}
+                        </span>
+                      </div>
+                      <span style={{ fontSize: 11, color: "var(--text-muted)" }}>
+                        {new Date(evt.timestamp).toLocaleString()}
+                      </span>
+                    </div>
+
+                    <p style={{ margin: "4px 0 0", color: "var(--text-secondary)", fontSize: 13 }}>
+                      {evt.description}
+                    </p>
+
+                    {evt.details && (
+                      <div
+                        style={{
+                          marginTop: 6,
+                          background: "var(--bg-secondary)",
+                          padding: "6px 10px",
+                          borderRadius: 6,
+                          fontSize: 11,
+                          color: "var(--text-muted)",
+                          fontFamily: "monospace",
+                          display: "inline-block",
+                        }}
+                      >
+                        {Object.entries(evt.details)
+                          .map(([k, v]) => `${k}: ${v}`)
+                          .join(" • ")}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
             )}
           </div>
         )}
