@@ -25,6 +25,7 @@ import {
   getProjectHealth,
   verifyProjectCode,
   getProjectTimeline,
+  askProjectAssistant,
 } from "./lib/api";
 
 export default function Home() {
@@ -66,6 +67,12 @@ export default function Home() {
 
   // Health Scorecard state
   const [projectHealth, setProjectHealth] = useState(null);
+
+  // Copilot Chat state
+  const [showChat, setShowChat] = useState(false);
+  const [chatMessages, setChatMessages] = useState([]);
+  const [chatInput, setChatInput] = useState("");
+  const [chatLoading, setChatLoading] = useState(false);
 
   // Section editing & version history state
   const [activeArtifactType, setActiveArtifactType] = useState("PRD");
@@ -1558,6 +1565,236 @@ export default function Home() {
       {/* Toast */}
       {toast && (
         <div className={`toast toast-${toast.type}`}>{toast.message}</div>
+      )}
+
+      {/* Floating Copilot Trigger Button */}
+      {currentProject && !showChat && (
+        <button
+          onClick={() => setShowChat(true)}
+          style={{
+            position: "fixed",
+            bottom: 24,
+            right: 24,
+            background: "linear-gradient(135deg, #238636 0%, #1f6feb 100%)",
+            color: "#ffffff",
+            border: "1px solid rgba(255,255,255,0.2)",
+            borderRadius: "50px",
+            padding: "10px 20px",
+            fontSize: 13,
+            fontWeight: 700,
+            boxShadow: "0 8px 24px rgba(0,0,0,0.5)",
+            cursor: "pointer",
+            zIndex: 999,
+            display: "flex",
+            alignItems: "center",
+            gap: 8,
+          }}
+        >
+          <span>✨</span>
+          <span>Ask AI Copilot</span>
+        </button>
+      )}
+
+      {/* Interactive Copilot Chat Widget */}
+      {currentProject && showChat && (
+        <div
+          style={{
+            position: "fixed",
+            bottom: 24,
+            right: 24,
+            width: 400,
+            height: 520,
+            background: "var(--bg-card)",
+            border: "1px solid var(--border)",
+            borderRadius: 12,
+            boxShadow: "0 12px 36px rgba(0,0,0,0.6)",
+            zIndex: 1000,
+            display: "flex",
+            flexDirection: "column",
+            overflow: "hidden",
+          }}
+        >
+          {/* Header */}
+          <div
+            style={{
+              padding: "12px 16px",
+              background: "var(--bg-secondary)",
+              borderBottom: "1px solid var(--border)",
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+            }}
+          >
+            <div>
+              <strong style={{ fontSize: 13, display: "flex", alignItems: "center", gap: 6 }}>
+                <span>✨</span> Project Copilot
+              </strong>
+              <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 2 }}>
+                Grounded in {currentProject.name} specs
+              </div>
+            </div>
+            <button
+              onClick={() => setShowChat(false)}
+              style={{
+                background: "transparent",
+                border: "none",
+                color: "var(--text-muted)",
+                cursor: "pointer",
+                fontSize: 16,
+                padding: "2px 6px",
+              }}
+            >
+              ✕
+            </button>
+          </div>
+
+          {/* Messages Stream */}
+          <div
+            style={{
+              flex: 1,
+              padding: 16,
+              overflowY: "auto",
+              display: "flex",
+              flexDirection: "column",
+              gap: 12,
+            }}
+          >
+            {chatMessages.length === 0 ? (
+              <div style={{ textAlign: "center", color: "var(--text-muted)", fontSize: 12, marginTop: 40 }}>
+                <p style={{ fontSize: 24, marginBottom: 8 }}>💬</p>
+                <p>Ask anything about this project's architecture, APIs, DB schema, or implementation tasks.</p>
+                
+                {/* Suggestion Chips */}
+                <div style={{ display: "flex", flexDirection: "column", gap: 6, marginTop: 16 }}>
+                  {[
+                    "Explain the system architecture",
+                    "List all database tables and keys",
+                    "What are the main API endpoints?",
+                  ].map((s) => (
+                    <button
+                      key={s}
+                      className="btn btn-secondary btn-sm"
+                      style={{ fontSize: 11, textAlign: "left", padding: "6px 10px" }}
+                      onClick={async () => {
+                        setChatInput(s);
+                        setChatLoading(true);
+                        setChatMessages((prev) => [...prev, { role: "user", text: s }]);
+                        try {
+                          const res = await askProjectAssistant(currentProject.id, s, []);
+                          setChatMessages((prev) => [
+                            ...prev,
+                            { role: "assistant", text: res.reply, references: res.referenced_artifacts },
+                          ]);
+                        } catch (err) {
+                          setChatMessages((prev) => [
+                            ...prev,
+                            { role: "assistant", text: `Error: ${err.message}` },
+                          ]);
+                        } finally {
+                          setChatLoading(false);
+                        }
+                      }}
+                    >
+                      💡 {s}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              chatMessages.map((msg, idx) => (
+                <div
+                  key={idx}
+                  style={{
+                    alignSelf: msg.role === "user" ? "flex-end" : "flex-start",
+                    maxWidth: "85%",
+                    background: msg.role === "user" ? "#1f6feb" : "var(--bg-secondary)",
+                    color: msg.role === "user" ? "#ffffff" : "var(--text-primary)",
+                    padding: "8px 12px",
+                    borderRadius: msg.role === "user" ? "12px 12px 2px 12px" : "12px 12px 12px 2px",
+                    fontSize: 12,
+                    lineHeight: 1.4,
+                    whiteSpace: "pre-wrap",
+                  }}
+                >
+                  {msg.text}
+                  {msg.references && msg.references.length > 0 && (
+                    <div style={{ marginTop: 6, display: "flex", gap: 4, flexWrap: "wrap" }}>
+                      {msg.references.map((r) => (
+                        <span
+                          key={r}
+                          style={{
+                            fontSize: 9,
+                            background: "rgba(0,0,0,0.2)",
+                            padding: "2px 6px",
+                            borderRadius: 4,
+                            fontWeight: 600,
+                          }}
+                        >
+                          📌 {r}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ))
+            )}
+            {chatLoading && (
+              <div style={{ alignSelf: "flex-start", fontSize: 11, color: "var(--text-muted)" }}>
+                Copilot is thinking...
+              </div>
+            )}
+          </div>
+
+          {/* Chat Input */}
+          <form
+            onSubmit={async (e) => {
+              e.preventDefault();
+              if (!chatInput.trim() || chatLoading) return;
+              const text = chatInput.trim();
+              setChatInput("");
+              setChatLoading(true);
+              setChatMessages((prev) => [...prev, { role: "user", text }]);
+              try {
+                const res = await askProjectAssistant(currentProject.id, text, []);
+                setChatMessages((prev) => [
+                  ...prev,
+                  { role: "assistant", text: res.reply, references: res.referenced_artifacts },
+                ]);
+              } catch (err) {
+                setChatMessages((prev) => [
+                  ...prev,
+                  { role: "assistant", text: `Error: ${err.message}` },
+                ]);
+              } finally {
+                setChatLoading(false);
+              }
+            }}
+            style={{
+              padding: "10px 12px",
+              background: "var(--bg-secondary)",
+              borderTop: "1px solid var(--border)",
+              display: "flex",
+              gap: 8,
+            }}
+          >
+            <input
+              type="text"
+              className="input"
+              value={chatInput}
+              onChange={(e) => setChatInput(e.target.value)}
+              placeholder="Ask Copilot about specs or code..."
+              style={{ flex: 1, fontSize: 12, padding: "6px 10px" }}
+            />
+            <button
+              type="submit"
+              className="btn btn-primary btn-sm"
+              disabled={chatLoading || !chatInput.trim()}
+              style={{ fontSize: 12, padding: "0 12px" }}
+            >
+              ➤
+            </button>
+          </form>
+        </div>
       )}
     </div>
   );

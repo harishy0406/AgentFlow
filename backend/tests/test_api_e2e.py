@@ -196,6 +196,19 @@ class TestCodeExportAndPackaging:
         assert isinstance(timeline_data["events"], list)
         assert any(e["event_type"] == "project_created" for e in timeline_data["events"])
 
+        # 9. Test POST /projects/{id}/chat (Project Copilot Q&A)
+        chat_res = client.post(
+            f"/projects/{project_id}/chat",
+            json={"message": "What database tables are used in this project?"},
+        )
+        assert chat_res.status_code == 200
+        chat_data = chat_res.json()
+        assert "reply" in chat_data
+        assert len(chat_data["reply"]) > 0
+        assert "referenced_artifacts" in chat_data
+        assert "DB_SCHEMA" in chat_data["referenced_artifacts"]
+
+
 
 
 

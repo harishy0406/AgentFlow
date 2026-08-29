@@ -350,6 +350,22 @@ class ProjectTimelineOut(BaseModel):
     events: List[TimelineEventOut] = []
 
 
+# ---------------------------------------------------------------------------
+# Project AI Assistant & Q&A Chat
+# ---------------------------------------------------------------------------
+
+class ProjectChatInput(BaseModel):
+    message: str
+    history: Optional[List[Dict[str, str]]] = []
+
+
+class ProjectChatOut(BaseModel):
+    project_id: UUID
+    reply: str
+    referenced_artifacts: List[str] = []
+
+
+
 
 
 

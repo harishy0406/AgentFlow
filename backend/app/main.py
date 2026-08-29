@@ -22,6 +22,7 @@ from .agents.auditor import run_audit, list_open_drifts, resolve_drift_record
 from .agents.micro_regen import fix_drift
 from .agents.scaffolder import parse_code_files, sanitize_project_slug
 from .agents.tester import verify_project_codebase
+from .agents.assistant import answer_project_query
 
 # Create database tables (in a real app, use alembic)
 models.Base.metadata.create_all(bind=engine)
@@ -563,6 +564,28 @@ def verify_project_code(project_id: UUID, db: Session = Depends(get_db)):
     )
 
     return schemas.CodeVerificationOut(**verification_data)
+
+
+@app.post("/projects/{project_id}/chat", response_model=schemas.ProjectChatOut)
+def chat_with_project_assistant(
+    project_id: UUID,
+    payload: schemas.ProjectChatInput,
+    db: Session = Depends(get_db)
+):
+    """
+    Interactive AI Assistant: Answers questions strictly grounded in the project's
+    PRD, SDD, DB Schema, API Spec, User Stories, Tasks, and Code.
+    """
+    try:
+        res = answer_project_query(
+            project_id=project_id,
+            query=payload.message,
+            history=payload.history,
+            db=db
+        )
+        return schemas.ProjectChatOut(**res)
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
 
 
 @app.get("/projects/{project_id}/download-zip")

@@ -203,6 +203,18 @@ export async function getProjectTimeline(projectId) {
   return request(`/projects/${projectId}/timeline`);
 }
 
+// ---------------------------------------------------------------------------
+// Project AI Copilot / Q&A Assistant
+// ---------------------------------------------------------------------------
+
+export async function askProjectAssistant(projectId, message, history = []) {
+  return request(`/projects/${projectId}/chat`, {
+    method: "POST",
+    body: JSON.stringify({ message, history }),
+  });
+}
+
+
 
 
 
