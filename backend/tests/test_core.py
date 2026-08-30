@@ -225,3 +225,28 @@ class TestSchemaValidation:
         from pydantic import ValidationError
         with pytest.raises(ValidationError):
             ProjectCreate(name="Test")
+
+
+# ---------------------------------------------------------------------------
+# 6. OpenAPI Endpoint Parsing & Verification
+# ---------------------------------------------------------------------------
+
+class TestApiSpecParser:
+    def test_parse_http_methods(self):
+        raw_markdown = """
+        ## Endpoints
+        - `GET /api/v1/projects`: List all projects
+        - `POST /api/v1/projects`: Create project
+        - `PUT /api/v1/sections/{id}`: Update section
+        - `DELETE /api/v1/projects/{id}`: Delete project
+        """
+        import re
+        pattern = r"`(GET|POST|PUT|DELETE|PATCH)\s+([^\`]+)`"
+        matches = re.findall(pattern, raw_markdown)
+        assert len(matches) == 4
+        methods = [m[0] for m in matches]
+        assert methods == ["GET", "POST", "PUT", "DELETE"]
+        paths = [m[1] for m in matches]
+        assert paths[0] == "/api/v1/projects"
+        assert paths[2] == "/api/v1/sections/{id}"
+
