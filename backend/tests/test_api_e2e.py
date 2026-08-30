@@ -208,6 +208,21 @@ class TestCodeExportAndPackaging:
         assert "referenced_artifacts" in chat_data
         assert "DB_SCHEMA" in chat_data["referenced_artifacts"]
 
+        # 10. Test GET /templates and POST /projects/{id}/clone
+        tmpl_res = client.get("/templates")
+        assert tmpl_res.status_code == 200
+        templates = tmpl_res.json()
+        assert len(templates) >= 4
+        assert templates[0]["id"] == "saas_ai_reviewer"
+
+        clone_res = client.post(f"/projects/{project_id}/clone", json={"new_name": "Cloned Zip App"})
+        assert clone_res.status_code == 200
+        cloned_data = clone_res.json()
+        assert cloned_data["name"] == "Cloned Zip App"
+        assert cloned_data["id"] != str(project_id)
+        assert len(cloned_data["artifact_nodes"]) == 7
+
+
 
 
 

@@ -365,6 +365,24 @@ class ProjectChatOut(BaseModel):
     referenced_artifacts: List[str] = []
 
 
+# ---------------------------------------------------------------------------
+# Project Cloning & Templates
+# ---------------------------------------------------------------------------
+
+class ProjectCloneInput(BaseModel):
+    new_name: Optional[str] = None
+
+
+class ProjectTemplateOut(BaseModel):
+    id: str
+    title: str
+    category: str
+    description: str
+    suggested_brief: str
+    sample_clarifications: Dict[str, str] = {}
+
+
+
 
 
 

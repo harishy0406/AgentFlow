@@ -43,8 +43,20 @@ export async function clarifyProject(brief) {
 }
 
 export async function listProjects() {
-  return request("/projects");
+  return request("/projects/");
 }
+
+export async function listTemplates() {
+  return request("/templates");
+}
+
+export async function cloneProject(projectId, newName = null) {
+  return request(`/projects/${projectId}/clone`, {
+    method: "POST",
+    body: JSON.stringify({ new_name: newName }),
+  });
+}
+
 
 export async function getProject(projectId) {
   return request(`/projects/${projectId}`);

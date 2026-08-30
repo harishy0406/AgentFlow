@@ -26,6 +26,8 @@ import {
   verifyProjectCode,
   getProjectTimeline,
   askProjectAssistant,
+  listTemplates,
+  cloneProject,
 } from "./lib/api";
 
 export default function Home() {
@@ -47,6 +49,7 @@ export default function Home() {
   // Drift state
   const [drifts, setDrifts] = useState([]);
   const [driftLoading, setDriftLoading] = useState(false);
+  const [forking, setForking] = useState(false);
 
   // Eval state
   const [evalRuns, setEvalRuns] = useState([]);
@@ -307,6 +310,27 @@ export default function Home() {
               >
                 📥 JSON
               </a>
+              <button
+                className="btn btn-secondary btn-sm"
+                disabled={forking}
+                onClick={async () => {
+                  setForking(true);
+                  try {
+                    const cloned = await cloneProject(currentProject.id);
+                    setCurrentProject(cloned);
+                    await handleLoadProjects();
+                    showToast(`Forked project successfully as '${cloned.name}'!`, "success");
+                  } catch (err) {
+                    showToast(err.message, "error");
+                  } finally {
+                    setForking(false);
+                  }
+                }}
+                style={{ fontSize: 12, padding: "5px 10px", display: "flex", alignItems: "center", gap: 4 }}
+                title="Clone this project with all artifacts, code, and versions"
+              >
+                <span>🍴</span> {forking ? "Forking..." : "Fork"}
+              </button>
             </div>
           </div>
         )}
@@ -414,18 +438,76 @@ export default function Home() {
 
             {/* Step 1: Brief Input */}
             {clarifyStep === "brief" && (
-              <form onSubmit={handleClarify}>
-                <div className="form-group">
-                  <label className="form-label">Project Name</label>
-                  <input
-                    type="text"
-                    className="form-input"
-                    placeholder="e.g. E-Commerce Platform"
-                    value={projectName}
-                    onChange={(e) => setProjectName(e.target.value)}
-                    required
-                  />
+              <div>
+                {/* Starter Templates */}
+                <div style={{ marginBottom: 20 }}>
+                  <label className="form-label" style={{ marginBottom: 8, display: "block" }}>
+                    🚀 Quick Starter Templates (1-Click Fill)
+                  </label>
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 10 }}>
+                    {[
+                      {
+                        title: "AI Code Reviewer",
+                        tag: "DevOps & AI",
+                        brief: "Build an enterprise AI Code Reviewer that automatically parses GitHub pull requests, performs static AST analysis, checks for OWASP vulnerabilities, and posts inline suggestions with benchmarked test cases."
+                      },
+                      {
+                        title: "FinTech Escrow API",
+                        tag: "FinTech",
+                        brief: "Design a fault-tolerant multi-party escrow platform for freelance marketplaces. Requires milestone escrow holding, Stripe Connect payouts, dual-entry accounting ledgers, and KYC/AML verification workflows."
+                      },
+                      {
+                        title: "HIPAA Telehealth Suite",
+                        tag: "Healthcare",
+                        brief: "Create a secure telehealth application connecting patients with certified specialists. Features WebRTC encrypted video rooms, prescription management, automated appointment scheduling, and FHIR EHR integrations."
+                      },
+                      {
+                        title: "Multi-Vendor Marketplace",
+                        tag: "E-Commerce",
+                        brief: "Develop a multi-vendor marketplace with real-time product catalogs, distributed cart reservation locks, merchant analytics dashboards, and automated tax calculations."
+                      }
+                    ].map((t) => (
+                      <div
+                        key={t.title}
+                        onClick={() => {
+                          setProjectName(t.title);
+                          setProjectBrief(t.brief);
+                          showToast(`Loaded template: ${t.title}`, "info");
+                        }}
+                        style={{
+                          background: "var(--bg-secondary)",
+                          border: "1px solid var(--border)",
+                          borderRadius: 8,
+                          padding: "10px 12px",
+                          cursor: "pointer",
+                          transition: "all 0.15s ease",
+                        }}
+                        onMouseEnter={(e) => e.currentTarget.style.borderColor = "var(--accent-blue)"}
+                        onMouseLeave={(e) => e.currentTarget.style.borderColor = "var(--border)"}
+                      >
+                        <div style={{ fontSize: 10, color: "var(--accent-blue)", fontWeight: 700, textTransform: "uppercase" }}>
+                          {t.tag}
+                        </div>
+                        <div style={{ fontSize: 12, fontWeight: 600, color: "var(--text-primary)", marginTop: 2 }}>
+                          {t.title}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
+
+                <form onSubmit={handleClarify}>
+                  <div className="form-group">
+                    <label className="form-label">Project Name</label>
+                    <input
+                      type="text"
+                      className="form-input"
+                      placeholder="e.g. E-Commerce Platform"
+                      value={projectName}
+                      onChange={(e) => setProjectName(e.target.value)}
+                      required
+                    />
+                  </div>
                 <div className="form-group">
                   <label className="form-label">Project Brief</label>
                   <textarea

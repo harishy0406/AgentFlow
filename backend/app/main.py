@@ -10,6 +10,7 @@ import io
 import zipfile
 import os
 import hashlib
+import shutil
 from pathlib import Path
 
 from . import models, schemas
@@ -115,12 +116,148 @@ def list_projects(db: Session = Depends(get_db)):
     return db.query(models.Project).order_by(models.Project.created_at.desc()).all()
 
 
+@app.get("/templates", response_model=List[schemas.ProjectTemplateOut])
+def list_project_templates():
+    """Returns curated starter project templates with pre-configured briefs and sample requirements."""
+    return [
+        schemas.ProjectTemplateOut(
+            id="saas_ai_reviewer",
+            title="AI-Powered Code Reviewer",
+            category="DevOps & AI Tools",
+            description="Automated pull request analysis bot with AST static scanning, security vulnerability checks, and GitHub webhook integration.",
+            suggested_brief="Build an enterprise AI Code Reviewer that automatically parses GitHub pull requests, performs static AST analysis, checks for OWASP vulnerabilities, and posts inline suggestions with benchmarked test cases.",
+            sample_clarifications={
+                "Supported VCS": "GitHub and GitLab",
+                "Analysis Engine": "FastAPI + Python AST + Claude Sonnet",
+                "Deployment": "Dockerized container on AWS ECS"
+            }
+        ),
+        schemas.ProjectTemplateOut(
+            id="fintech_escrow",
+            title="FinTech Multi-Party Escrow API",
+            category="FinTech & Payments",
+            description="High-throughput payment settlement ledger with Stripe Connect, webhook idempotency, and cryptographic audit trails.",
+            suggested_brief="Design a fault-tolerant multi-party escrow platform for freelance marketplaces. Requires milestone escrow holding, Stripe Connect payouts, dual-entry accounting ledgers, and KYC/AML verification workflows.",
+            sample_clarifications={
+                "Payment Gateway": "Stripe Connect Custom Accounts",
+                "Ledger Architecture": "PostgreSQL with row-level locking",
+                "Compliance": "SOC2 and PCI-DSS compliance requirements"
+            }
+        ),
+        schemas.ProjectTemplateOut(
+            id="healthcare_telehealth",
+            title="HIPAA Compliant Telehealth Platform",
+            category="Healthcare & MedTech",
+            description="End-to-end encrypted video consultation suite with patient electronic health records (EHR) and HL7/FHIR interoperability.",
+            suggested_brief="Create a secure telehealth application connecting patients with certified specialists. Features WebRTC encrypted video rooms, prescription management, automated appointment scheduling, and FHIR EHR integrations.",
+            sample_clarifications={
+                "Video Engine": "LiveKit WebRTC",
+                "EHR Standard": "HL7 FHIR Release 4",
+                "Security": "End-to-end encryption with HIPAA audit logging"
+            }
+        ),
+        schemas.ProjectTemplateOut(
+            id="ecommerce_marketplace",
+            title="Multi-Vendor Marketplace Engine",
+            category="E-Commerce & Retail",
+            description="Scalable multi-tenant retail platform with dynamic inventory reservations, cart locking, and faceted search.",
+            suggested_brief="Develop a multi-vendor marketplace with real-time product catalogs, distributed cart reservation locks, merchant analytics dashboards, and automated tax calculations.",
+            sample_clarifications={
+                "Search Engine": "PostgreSQL Full Text / Elasticsearch",
+                "Inventory Locking": "Redis Distributed Lock (Redlock)",
+                "Payout Schedule": "Automated bi-weekly vendor settlements"
+            }
+        )
+    ]
+
+
 @app.get("/projects/{project_id}", response_model=schemas.Project)
 def read_project(project_id: UUID, db: Session = Depends(get_db)):
     db_project = db.query(models.Project).filter(models.Project.id == project_id).first()
     if db_project is None:
         raise HTTPException(status_code=404, detail="Project not found")
     return db_project
+
+
+@app.post("/projects/{project_id}/clone", response_model=schemas.Project)
+def clone_project(
+    project_id: UUID,
+    payload: schemas.ProjectCloneInput = schemas.ProjectCloneInput(),
+    db: Session = Depends(get_db)
+):
+    """
+    Clones/forks an existing project including all artifact nodes, sections,
+    version snapshots, and scaffolded local disk code files.
+    """
+    original = db.query(models.Project).filter(models.Project.id == project_id).first()
+    if not original:
+        raise HTTPException(status_code=404, detail="Original project not found")
+
+    new_name = payload.new_name.strip() if payload.new_name and payload.new_name.strip() else f"{original.name} (Fork)"
+
+    # Create new project record
+    cloned_project = models.Project(
+        name=new_name,
+        brief=original.brief,
+        clarifications=original.clarifications or {},
+    )
+    db.add(cloned_project)
+    db.commit()
+    db.refresh(cloned_project)
+
+    # Clone all ArtifactNodes and Sections
+    for old_node in original.artifact_nodes:
+        new_node = models.ArtifactNode(
+            project_id=cloned_project.id,
+            artifact_type=old_node.artifact_type,
+            status=old_node.status,
+            quality_score=old_node.quality_score,
+            content_hash=old_node.content_hash,
+            last_model_used=old_node.last_model_used,
+        )
+        db.add(new_node)
+        db.commit()
+        db.refresh(new_node)
+
+        for old_sec in old_node.sections:
+            new_sec = models.ArtifactSection(
+                artifact_node_id=new_node.id,
+                section_key=old_sec.section_key,
+                content=old_sec.content,
+                content_hash=old_sec.content_hash,
+                current_version_num=old_sec.current_version_num,
+            )
+            db.add(new_sec)
+            db.commit()
+            db.refresh(new_sec)
+
+            # Clone version snapshots
+            for old_ver in old_sec.versions:
+                new_ver = models.ArtifactVersion(
+                    section_id=new_sec.id,
+                    version_num=old_ver.version_num,
+                    content=old_ver.content,
+                    content_hash=old_ver.content_hash,
+                    change_reason=f"Cloned from {original.name}: {old_ver.change_reason or ''}",
+                )
+                db.add(new_ver)
+            db.commit()
+
+    # Clone local disk files if generated
+    orig_slug = sanitize_project_slug(original.name)
+    new_slug = sanitize_project_slug(cloned_project.name)
+    orig_dir = Path("generated_projects") / orig_slug
+    new_dir = Path("generated_projects") / new_slug
+    if orig_dir.exists():
+        try:
+            if new_dir.exists():
+                shutil.rmtree(new_dir)
+            shutil.copytree(orig_dir, new_dir)
+        except Exception:
+            pass
+
+    db.refresh(cloned_project)
+    return cloned_project
 
 
 @app.post("/projects/{project_id}/generate", response_model=List[schemas.ArtifactNode])
