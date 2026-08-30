@@ -28,6 +28,7 @@ import {
   askProjectAssistant,
   listTemplates,
   cloneProject,
+  getProjectAnalytics,
 } from "./lib/api";
 
 export default function Home() {
@@ -70,6 +71,7 @@ export default function Home() {
 
   // Health Scorecard state
   const [projectHealth, setProjectHealth] = useState(null);
+  const [analyticsData, setAnalyticsData] = useState(null);
 
   // Copilot Chat state
   const [showChat, setShowChat] = useState(false);
@@ -131,14 +133,18 @@ export default function Home() {
     };
   }, [currentProject?.id, showToast]);
 
-  // Load project health whenever active project, artifacts, or drifts update
+  // Load project health & analytics whenever active project, artifacts, or drifts update
   useEffect(() => {
     if (currentProject) {
       getProjectHealth(currentProject.id)
         .then(setProjectHealth)
         .catch(() => {});
+      getProjectAnalytics(currentProject.id)
+        .then(setAnalyticsData)
+        .catch(() => {});
     } else {
       setProjectHealth(null);
+      setAnalyticsData(null);
     }
   }, [currentProject, artifacts, drifts]);
 
@@ -1376,33 +1382,59 @@ export default function Home() {
               </div>
             )}
 
-            {/* Summary Stats */}
+            {/* Summary Stats & Token Analytics */}
             <div className="grid-3" style={{ marginBottom: 24 }}>
               <div className="stat-card">
-                <div className="stat-value">
-                  {artifacts.length > 0
-                    ? `$${artifacts.reduce((sum, a) => sum + (a.quality_signal_score ? 0.02 : 0), 0).toFixed(2)}`
-                    : "$0.00"}
+                <div className="stat-value" style={{ color: "#3fb950" }}>
+                  ${analyticsData ? analyticsData.total_cost_usd.toFixed(4) : "0.0000"}
                 </div>
-                <div className="stat-label">Estimated Total Cost</div>
+                <div className="stat-label">
+                  Total Generation Cost {analyticsData?.cost_savings_pct > 0 && `(Saved ${analyticsData.cost_savings_pct}%)`}
+                </div>
+              </div>
+              <div className="stat-card">
+                <div className="stat-value" style={{ color: "var(--accent-blue)" }}>
+                  {analyticsData ? analyticsData.total_tokens_used.toLocaleString() : "0"}
+                </div>
+                <div className="stat-label">Total Tokens Processed</div>
               </div>
               <div className="stat-card">
                 <div className="stat-value">
-                  {artifacts.length > 0
-                    ? `${(
-                        (artifacts.reduce((sum, a) => sum + (a.quality_signal_score || 0), 0) /
-                          artifacts.filter((a) => a.quality_signal_score != null).length) *
-                        100
-                      ).toFixed(0)}%`
-                    : "N/A"}
+                  {analyticsData ? `${analyticsData.total_latency_ms.toLocaleString()}ms` : "0ms"}
                 </div>
-                <div className="stat-label">Avg Quality Score</div>
-              </div>
-              <div className="stat-card">
-                <div className="stat-value">{artifacts.length}</div>
-                <div className="stat-label">Artifacts Generated</div>
+                <div className="stat-label">Total Execution Latency</div>
               </div>
             </div>
+
+            {/* Cost & Routing Efficiency Details */}
+            {analyticsData && analyticsData.by_model.length > 0 && (
+              <div style={{ marginBottom: 24, background: "var(--bg-secondary)", borderRadius: 8, padding: 16 }}>
+                <h4 style={{ fontSize: 13, fontWeight: 700, marginBottom: 10, display: "flex", alignItems: "center", gap: 6 }}>
+                  <span>💸</span> Cost Breakdown by Model
+                </h4>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 10 }}>
+                  {analyticsData.by_model.map((m) => (
+                    <div
+                      key={m.model_name}
+                      style={{
+                        background: "var(--bg-card)",
+                        border: "1px solid var(--border)",
+                        borderRadius: 6,
+                        padding: "10px 12px",
+                      }}
+                    >
+                      <div style={{ fontSize: 12, fontWeight: 700, color: "var(--text-primary)" }}>{m.model_name}</div>
+                      <div style={{ fontSize: 11, color: "var(--text-secondary)", marginTop: 4 }}>
+                        {m.calls_count} calls • {m.total_tokens.toLocaleString()} tokens
+                      </div>
+                      <div style={{ fontSize: 13, fontWeight: 700, color: "#3fb950", marginTop: 4 }}>
+                        ${m.total_cost_usd.toFixed(4)}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Routing Log Table */}
             <h3 style={{ fontSize: 14, fontWeight: 700, marginBottom: 12 }}>Routing Log</h3>

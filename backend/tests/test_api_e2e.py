@@ -222,6 +222,17 @@ class TestCodeExportAndPackaging:
         assert cloned_data["id"] != str(project_id)
         assert len(cloned_data["artifact_nodes"]) == 7
 
+        # 11. Test GET /projects/{id}/analytics (Token usage & cost distribution)
+        analytics_res = client.get(f"/projects/{project_id}/analytics")
+        assert analytics_res.status_code == 200
+        a_data = analytics_res.json()
+        assert a_data["project_name"] == "Zip Export Test App"
+        assert a_data["total_tokens_used"] > 0
+        assert a_data["total_cost_usd"] >= 0.0
+        assert isinstance(a_data["by_model"], list)
+        assert isinstance(a_data["by_artifact"], list)
+
+
 
 
 

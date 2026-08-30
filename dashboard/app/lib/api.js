@@ -226,6 +226,15 @@ export async function askProjectAssistant(projectId, message, history = []) {
   });
 }
 
+// ---------------------------------------------------------------------------
+// Token Usage & Cost Analytics
+// ---------------------------------------------------------------------------
+
+export async function getProjectAnalytics(projectId) {
+  return request(`/projects/${projectId}/analytics`);
+}
+
+
 
 
 

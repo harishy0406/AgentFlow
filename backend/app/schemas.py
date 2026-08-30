@@ -382,6 +382,39 @@ class ProjectTemplateOut(BaseModel):
     sample_clarifications: Dict[str, str] = {}
 
 
+# ---------------------------------------------------------------------------
+# Token Usage & Cost Analytics
+# ---------------------------------------------------------------------------
+
+class ModelUsageBreakdown(BaseModel):
+    model_name: str
+    provider: str
+    calls_count: int
+    total_tokens: int
+    total_cost_usd: float
+    avg_latency_ms: float
+
+
+class ArtifactCostBreakdown(BaseModel):
+    artifact_type: str
+    cost_usd: float
+    tokens_used: int
+    latency_ms: float
+
+
+class ProjectAnalyticsOut(BaseModel):
+    project_id: UUID
+    project_name: str
+    total_tokens_used: int
+    total_cost_usd: float
+    total_latency_ms: int
+    estimated_frontier_cost_usd: float
+    cost_savings_pct: float
+    by_model: List[ModelUsageBreakdown] = []
+    by_artifact: List[ArtifactCostBreakdown] = []
+
+
+
 
 
 
