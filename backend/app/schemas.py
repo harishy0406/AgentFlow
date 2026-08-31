@@ -60,12 +60,14 @@ class ProjectBase(BaseModel):
     name: str
     brief: str
     clarifications: Optional[str] = None
+    workspace_id: Optional[UUID] = None
 
 class ProjectCreate(ProjectBase):
     pass
 
 class Project(ProjectBase):
     id: UUID
+    workspace_id: Optional[UUID] = None
     created_at: datetime
     artifact_nodes: List[ArtifactNode] = []
 
@@ -428,6 +430,44 @@ class ProjectMigrationOut(BaseModel):
     alembic_file_path: str
     sql_ddl: str
     alembic_script: str
+
+
+# ---------------------------------------------------------------------------
+# Multi-Project Workspaces & Cross-Service Contracts
+# ---------------------------------------------------------------------------
+
+class WorkspaceCreate(BaseModel):
+    name: str
+    description: Optional[str] = None
+
+
+class WorkspaceOut(BaseModel):
+    id: UUID
+    name: str
+    description: Optional[str] = None
+    created_at: datetime
+    projects_count: int = 0
+    projects: List[Project] = []
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class CrossServiceLink(BaseModel):
+    source_service: str
+    target_service: str
+    relation: str
+    contract_status: str
+
+
+class WorkspaceContractsOut(BaseModel):
+    workspace_id: UUID
+    workspace_name: str
+    total_projects: int
+    all_contracts_valid: bool
+    services: List[Dict[str, Any]] = []
+    cross_service_links: List[CrossServiceLink] = []
+    validation_message: str
+
 
 
 

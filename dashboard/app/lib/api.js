@@ -244,6 +244,38 @@ export async function generateProjectMigrations(projectId) {
   });
 }
 
+// ---------------------------------------------------------------------------
+// Multi-Project Workspaces & Cross-Service Contracts
+// ---------------------------------------------------------------------------
+
+export async function createWorkspace(name, description = null) {
+  return request("/workspaces", {
+    method: "POST",
+    body: JSON.stringify({ name, description }),
+  });
+}
+
+export async function listWorkspaces() {
+  return request("/workspaces");
+}
+
+export async function getWorkspace(workspaceId) {
+  return request(`/workspaces/${workspaceId}`);
+}
+
+export async function assignProjectToWorkspace(workspaceId, projectId) {
+  return request(`/workspaces/${workspaceId}/projects/${projectId}`, {
+    method: "POST",
+  });
+}
+
+export async function validateWorkspaceContracts(workspaceId) {
+  return request(`/workspaces/${workspaceId}/validate-contracts`, {
+    method: "POST",
+  });
+}
+
+
 
 
 

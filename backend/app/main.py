@@ -25,6 +25,7 @@ from .agents.scaffolder import parse_code_files, sanitize_project_slug
 from .agents.tester import verify_project_codebase
 from .agents.assistant import answer_project_query
 from .agents.migrator import generate_and_save_migrations
+from .agents.workspace import validate_workspace_cross_service_contracts
 
 # Create database tables (in a real app, use alembic)
 models.Base.metadata.create_all(bind=engine)
@@ -108,6 +109,94 @@ def create_project(project: schemas.ProjectCreate, db: Session = Depends(get_db)
     db.commit()
     db.refresh(db_project)
     return db_project
+
+
+@app.post("/workspaces", response_model=schemas.WorkspaceOut)
+@app.post("/workspaces/", response_model=schemas.WorkspaceOut)
+def create_workspace(payload: schemas.WorkspaceCreate, db: Session = Depends(get_db)):
+    """Creates a multi-project workspace for orchestrating microservices or distributed platforms."""
+    ws = models.Workspace(name=payload.name, description=payload.description)
+    db.add(ws)
+    db.commit()
+    db.refresh(ws)
+    return schemas.WorkspaceOut(
+        id=ws.id,
+        name=ws.name,
+        description=ws.description,
+        created_at=ws.created_at,
+        projects_count=len(ws.projects),
+        projects=ws.projects
+    )
+
+
+@app.get("/workspaces", response_model=List[schemas.WorkspaceOut])
+@app.get("/workspaces/", response_model=List[schemas.WorkspaceOut])
+def list_workspaces(db: Session = Depends(get_db)):
+    """Lists all active workspaces with project counts."""
+    workspaces = db.query(models.Workspace).order_by(models.Workspace.created_at.desc()).all()
+    return [
+        schemas.WorkspaceOut(
+            id=w.id,
+            name=w.name,
+            description=w.description,
+            created_at=w.created_at,
+            projects_count=len(w.projects),
+            projects=w.projects
+        )
+        for w in workspaces
+    ]
+
+
+@app.get("/workspaces/{workspace_id}", response_model=schemas.WorkspaceOut)
+def get_workspace(workspace_id: UUID, db: Session = Depends(get_db)):
+    """Fetches details and assigned projects for a workspace."""
+    ws = db.query(models.Workspace).filter(models.Workspace.id == workspace_id).first()
+    if not ws:
+        raise HTTPException(status_code=404, detail="Workspace not found")
+    return schemas.WorkspaceOut(
+        id=ws.id,
+        name=ws.name,
+        description=ws.description,
+        created_at=ws.created_at,
+        projects_count=len(ws.projects),
+        projects=ws.projects
+    )
+
+
+@app.post("/workspaces/{workspace_id}/projects/{project_id}", response_model=schemas.WorkspaceOut)
+def assign_project_to_workspace(workspace_id: UUID, project_id: UUID, db: Session = Depends(get_db)):
+    """Assigns an autonomous project/service to a multi-project workspace."""
+    ws = db.query(models.Workspace).filter(models.Workspace.id == workspace_id).first()
+    if not ws:
+        raise HTTPException(status_code=404, detail="Workspace not found")
+    project = db.query(models.Project).filter(models.Project.id == project_id).first()
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    project.workspace_id = ws.id
+    db.commit()
+    db.refresh(ws)
+    return schemas.WorkspaceOut(
+        id=ws.id,
+        name=ws.name,
+        description=ws.description,
+        created_at=ws.created_at,
+        projects_count=len(ws.projects),
+        projects=ws.projects
+    )
+
+
+@app.post("/workspaces/{workspace_id}/validate-contracts", response_model=schemas.WorkspaceContractsOut)
+def validate_workspace_contracts(workspace_id: UUID, db: Session = Depends(get_db)):
+    """
+    Validates cross-service API contracts and schema dependencies across
+    all microservices/projects in the workspace.
+    """
+    try:
+        res = validate_workspace_cross_service_contracts(workspace_id, db)
+        return schemas.WorkspaceContractsOut(**res)
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
 
 
 @app.get("/projects", response_model=List[schemas.Project])

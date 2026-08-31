@@ -236,11 +236,32 @@ class TestCodeExportAndPackaging:
         mig_res = client.post(f"/projects/{project_id}/generate-migrations")
         assert mig_res.status_code == 200
         mig_data = mig_res.json()
-        assert mig_data["project_slug"] == "zip-export-test-app"
+        assert mig_data["project_slug"] == "zip_export_test_app"
         assert mig_data["tables_count"] >= 1
         assert "CREATE TABLE" in mig_data["sql_ddl"]
         assert "op.create_table" in mig_data["alembic_script"]
         assert mig_data["sql_file_path"] == "migrations/0001_initial_schema.sql"
+
+        # 13. Test POST /workspaces, assign project, and validate contracts
+        ws_res = client.post("/workspaces", json={"name": "Enterprise FinTech Suite", "description": "Core payments and ledger microservices"})
+        assert ws_res.status_code == 200
+        ws_data = ws_res.json()
+        ws_id = ws_data["id"]
+        assert ws_data["name"] == "Enterprise FinTech Suite"
+
+        # Assign project to workspace
+        assign_res = client.post(f"/workspaces/{ws_id}/projects/{project_id}")
+        assert assign_res.status_code == 200
+        assign_data = assign_res.json()
+        assert assign_data["projects_count"] == 1
+
+        # Validate cross-service contracts
+        val_res = client.post(f"/workspaces/{ws_id}/validate-contracts")
+        assert val_res.status_code == 200
+        val_data = val_res.json()
+        assert val_data["all_contracts_valid"] is True
+        assert val_data["total_projects"] == 1
+
 
 
 

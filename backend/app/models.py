@@ -5,16 +5,30 @@ from sqlalchemy.orm import relationship
 
 from .database import Base
 
+class Workspace(Base):
+    __tablename__ = "workspaces"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    name = Column(String, nullable=False)
+    description = Column(String, nullable=True)
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+
+    projects = relationship("Project", back_populates="workspace")
+
+
 class Project(Base):
     __tablename__ = "projects"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    workspace_id = Column(UUID(as_uuid=True), ForeignKey("workspaces.id"), nullable=True)
     name = Column(String, nullable=False)
     brief = Column(String, nullable=False)
     clarifications = Column(String, nullable=True) # JSON string or plain text of Q&A
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
 
+    workspace = relationship("Workspace", back_populates="projects")
     artifact_nodes = relationship("ArtifactNode", back_populates="project", cascade="all, delete-orphan")
+
 
 
 class ArtifactNode(Base):
