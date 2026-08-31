@@ -24,6 +24,7 @@ from .agents.micro_regen import fix_drift
 from .agents.scaffolder import parse_code_files, sanitize_project_slug
 from .agents.tester import verify_project_codebase
 from .agents.assistant import answer_project_query
+from .agents.migrator import generate_and_save_migrations
 
 # Create database tables (in a real app, use alembic)
 models.Base.metadata.create_all(bind=engine)
@@ -211,9 +212,8 @@ def clone_project(
             project_id=cloned_project.id,
             artifact_type=old_node.artifact_type,
             status=old_node.status,
-            quality_score=old_node.quality_score,
-            content_hash=old_node.content_hash,
-            last_model_used=old_node.last_model_used,
+            quality_signal_score=old_node.quality_signal_score,
+            generated_by_model=old_node.generated_by_model,
         )
         db.add(new_node)
         db.commit()
@@ -225,23 +225,10 @@ def clone_project(
                 section_key=old_sec.section_key,
                 content=old_sec.content,
                 content_hash=old_sec.content_hash,
-                current_version_num=old_sec.current_version_num,
             )
             db.add(new_sec)
             db.commit()
             db.refresh(new_sec)
-
-            # Clone version snapshots
-            for old_ver in old_sec.versions:
-                new_ver = models.ArtifactVersion(
-                    section_id=new_sec.id,
-                    version_num=old_ver.version_num,
-                    content=old_ver.content,
-                    content_hash=old_ver.content_hash,
-                    change_reason=f"Cloned from {original.name}: {old_ver.change_reason or ''}",
-                )
-                db.add(new_ver)
-            db.commit()
 
     # Clone local disk files if generated
     orig_slug = sanitize_project_slug(original.name)
@@ -850,6 +837,19 @@ def chat_with_project_assistant(
             db=db
         )
         return schemas.ProjectChatOut(**res)
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+
+
+@app.post("/projects/{project_id}/generate-migrations", response_model=schemas.ProjectMigrationOut)
+def create_project_migrations(project_id: UUID, db: Session = Depends(get_db)):
+    """
+    Parses the DB_SCHEMA specifications and automatically generates
+    executable SQL DDL and Alembic migration scripts in the project directory.
+    """
+    try:
+        res = generate_and_save_migrations(project_id=project_id, db=db)
+        return schemas.ProjectMigrationOut(**res)
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
 

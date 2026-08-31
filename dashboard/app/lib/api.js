@@ -234,6 +234,17 @@ export async function getProjectAnalytics(projectId) {
   return request(`/projects/${projectId}/analytics`);
 }
 
+// ---------------------------------------------------------------------------
+// Database Migrations & SQL DDL
+// ---------------------------------------------------------------------------
+
+export async function generateProjectMigrations(projectId) {
+  return request(`/projects/${projectId}/generate-migrations`, {
+    method: "POST",
+  });
+}
+
+
 
 
 

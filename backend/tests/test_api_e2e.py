@@ -232,6 +232,17 @@ class TestCodeExportAndPackaging:
         assert isinstance(a_data["by_model"], list)
         assert isinstance(a_data["by_artifact"], list)
 
+        # 12. Test POST /projects/{id}/generate-migrations (SQL DDL & Alembic)
+        mig_res = client.post(f"/projects/{project_id}/generate-migrations")
+        assert mig_res.status_code == 200
+        mig_data = mig_res.json()
+        assert mig_data["project_slug"] == "zip-export-test-app"
+        assert mig_data["tables_count"] >= 1
+        assert "CREATE TABLE" in mig_data["sql_ddl"]
+        assert "op.create_table" in mig_data["alembic_script"]
+        assert mig_data["sql_file_path"] == "migrations/0001_initial_schema.sql"
+
+
 
 
 

@@ -414,6 +414,23 @@ class ProjectAnalyticsOut(BaseModel):
     by_artifact: List[ArtifactCostBreakdown] = []
 
 
+# ---------------------------------------------------------------------------
+# Database Schema Migrations & DDL
+# ---------------------------------------------------------------------------
+
+class ProjectMigrationOut(BaseModel):
+    project_id: UUID
+    project_slug: str
+    revision_id: str
+    tables_count: int
+    tables: List[str] = []
+    sql_file_path: str
+    alembic_file_path: str
+    sql_ddl: str
+    alembic_script: str
+
+
+
 
 
 
