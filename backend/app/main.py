@@ -26,6 +26,7 @@ from .agents.tester import verify_project_codebase
 from .agents.assistant import answer_project_query
 from .agents.migrator import generate_and_save_migrations
 from .agents.workspace import validate_workspace_cross_service_contracts
+from .agents.openapi_generator import generate_openapi_spec
 
 # Create database tables (in a real app, use alembic)
 models.Base.metadata.create_all(bind=engine)
@@ -754,6 +755,20 @@ def export_project_specifications(
             "Content-Disposition": f"attachment; filename={safe_name}_specs.md"
         }
     )
+
+
+@app.get("/projects/{project_id}/openapi.json")
+def get_project_openapi_spec(project_id: UUID, db: Session = Depends(get_db)):
+    """
+    Returns a fully compliant OpenAPI 3.0.3 specification JSON generated
+    from the project's API_SPEC and DB_SCHEMA artifacts.
+    """
+    try:
+        spec = generate_openapi_spec(project_id=project_id, db=db)
+        return spec
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+
 
 
 # ---------------------------------------------------------------------------

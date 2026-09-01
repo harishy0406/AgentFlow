@@ -262,6 +262,18 @@ class TestCodeExportAndPackaging:
         assert val_data["all_contracts_valid"] is True
         assert val_data["total_projects"] == 1
 
+        # 14. Test GET /projects/{id}/openapi.json (OpenAPI 3.0.3 Specification Exporter)
+        openapi_res = client.get(f"/projects/{project_id}/openapi.json")
+        assert openapi_res.status_code == 200
+        spec = openapi_res.json()
+        assert spec["openapi"] == "3.0.3"
+        assert spec["info"]["title"] == "Zip Export Test App API"
+        assert "paths" in spec
+        assert len(spec["paths"]) >= 1
+        assert "components" in spec
+        assert "schemas" in spec["components"]
+
+
 
 
 

@@ -275,6 +275,19 @@ export async function validateWorkspaceContracts(workspaceId) {
   });
 }
 
+// ---------------------------------------------------------------------------
+// OpenAPI 3.0.3 Specification Exporter
+// ---------------------------------------------------------------------------
+
+export async function getProjectOpenApiSpec(projectId) {
+  return request(`/projects/${projectId}/openapi.json`);
+}
+
+export function getOpenApiSpecDownloadUrl(projectId) {
+  return `${API_BASE_URL}/projects/${projectId}/openapi.json`;
+}
+
+
 
 
 
