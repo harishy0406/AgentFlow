@@ -80,6 +80,22 @@ export default function Home() {
   const [chatLoading, setChatLoading] = useState(false);
   const [apiTestResults, setApiTestResults] = useState({});
 
+  // SaaS Navigation & Theme state
+  const [saasTab, setSaasTab] = useState("studio"); // 'studio' | 'features' | 'workflow' | 'pricing' | 'docs' | 'download' | 'about'
+  const [theme, setTheme] = useState("dark");
+  const [scanlines, setScanlines] = useState(false);
+  const [terminalInput, setTerminalInput] = useState("");
+  const [terminalLogs, setTerminalLogs] = useState([
+    "AgentFlow Kernel v0.8.0 initialized [OK]",
+    "Topological DAG Engine loaded: 7 Nodes Active [OK]",
+    "Multi-Model Provider Registry: Claude 3.5 Sonnet, Haiku, GPT-4o Online [OK]",
+    "Type 'help' for available hacker commands."
+  ]);
+
+  useEffect(() => {
+    document.documentElement.setAttribute("data-theme", theme);
+  }, [theme]);
+
   // Section editing & version history state
   const [activeArtifactType, setActiveArtifactType] = useState("PRD");
   const [editingSectionId, setEditingSectionId] = useState(null);
@@ -249,73 +265,86 @@ export default function Home() {
   );
 
   return (
-    <div className="dashboard">
-      {/* Navbar */}
+    <div className={`dashboard ${scanlines ? "scanlines" : ""}`}>
+      {/* Cyberpunk Top Navbar */}
       <nav className="navbar">
-        <div className="navbar-brand">
-          <h1>⚡ AgentFlow</h1>
-          <span className="navbar-version">v0.6.0</span>
+        <div className="navbar-brand" onClick={() => setSaasTab("studio")}>
+          <span className="brand-terminal-tag">&gt;_</span>
+          <h1>AgentFlow::AI</h1>
+          <span className="navbar-version">v0.8.0</span>
+          <span className="badge badge-green" style={{ marginLeft: 6, fontSize: 10 }}>
+            <span className="pulse-beacon" style={{ marginRight: 4 }} /> 7 AGENTS ONLINE
+          </span>
         </div>
-        {currentProject && (
-          <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 13, color: "var(--text-secondary)" }}>
-              <span>Project: <strong style={{ color: "var(--text-primary)" }}>{currentProject.name}</strong></span>
+
+        {/* Global SaaS Navigation Links */}
+        <div className="navbar-links">
+          <button className={`nav-link ${saasTab === "studio" ? "active" : ""}`} onClick={() => setSaasTab("studio")}>
+            ⚡ Studio
+          </button>
+          <button className={`nav-link ${saasTab === "features" ? "active" : ""}`} onClick={() => setSaasTab("features")}>
+            🍱 Features
+          </button>
+          <button className={`nav-link ${saasTab === "workflow" ? "active" : ""}`} onClick={() => setSaasTab("workflow")}>
+            🔄 Workflow
+          </button>
+          <button className={`nav-link ${saasTab === "pricing" ? "active" : ""}`} onClick={() => setSaasTab("pricing")}>
+            💎 Pricing
+          </button>
+          <button className={`nav-link ${saasTab === "docs" ? "active" : ""}`} onClick={() => setSaasTab("docs")}>
+            📖 Docs &amp; Setup
+          </button>
+          <button className={`nav-link ${saasTab === "download" ? "active" : ""}`} onClick={() => setSaasTab("download")}>
+            📦 Download
+          </button>
+          <button className={`nav-link ${saasTab === "about" ? "active" : ""}`} onClick={() => setSaasTab("about")}>
+            ℹ️ About
+          </button>
+        </div>
+
+        <div className="navbar-actions">
+          <button
+            className="theme-toggle-btn"
+            onClick={() => setScanlines(!scanlines)}
+            title="Toggle Retro CRT Scanlines"
+          >
+            📺 CRT {scanlines ? "ON" : "OFF"}
+          </button>
+          <button
+            className="theme-toggle-btn"
+            onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+            title="Toggle Dark/Light Mode"
+          >
+            {theme === "dark" ? "☀️ Light" : "🌙 Cyber"}
+          </button>
+
+          {currentProject && (
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
               {projectHealth && (
                 <span
                   style={{
                     display: "inline-flex",
                     alignItems: "center",
                     gap: 6,
-                    background: projectHealth.overall_readiness_pct >= 80 ? "rgba(46, 160, 67, 0.15)" : "rgba(210, 153, 34, 0.15)",
-                    border: `1px solid ${projectHealth.overall_readiness_pct >= 80 ? "#2ea043" : "#d29922"}`,
+                    background: projectHealth.overall_readiness_pct >= 80 ? "rgba(0, 255, 102, 0.15)" : "rgba(245, 158, 11, 0.15)",
+                    border: `1px solid ${projectHealth.overall_readiness_pct >= 80 ? "var(--neon-green)" : "var(--accent-yellow)"}`,
                     borderRadius: 12,
                     padding: "2px 8px",
                     fontSize: 11,
                     fontWeight: 600,
-                    color: projectHealth.overall_readiness_pct >= 80 ? "#3fb950" : "#d29922",
+                    color: projectHealth.overall_readiness_pct >= 80 ? "var(--neon-green)" : "var(--accent-yellow)",
                   }}
-                  title={`Consistency: ${projectHealth.consistency_score_pct}% | Artifacts: ${projectHealth.artifact_completion_pct}%`}
                 >
                   <span style={{ fontSize: 8 }}>●</span>
                   {projectHealth.overall_readiness_pct}% ({projectHealth.readiness_label})
                 </span>
               )}
-            </div>
-            <div style={{ display: "flex", gap: 8 }}>
               <a
                 href={getDownloadZipUrl(currentProject.id)}
                 className="btn btn-primary btn-sm"
-                style={{
-                  textDecoration: "none",
-                  fontSize: 12,
-                  padding: "5px 12px",
-                  background: "#2ea043",
-                  color: "#ffffff",
-                  fontWeight: 600,
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 6,
-                }}
+                style={{ textDecoration: "none", fontSize: 12, padding: "5px 12px" }}
               >
-                📦 Download Code (.zip)
-              </a>
-              <a
-                href={getExportUrl(currentProject.id, "markdown")}
-                target="_blank"
-                rel="noreferrer"
-                className="btn btn-secondary btn-sm"
-                style={{ textDecoration: "none", fontSize: 12, padding: "5px 10px" }}
-              >
-                📥 Specs (.md)
-              </a>
-              <a
-                href={getExportUrl(currentProject.id, "json")}
-                target="_blank"
-                rel="noreferrer"
-                className="btn btn-secondary btn-sm"
-                style={{ textDecoration: "none", fontSize: 12, padding: "5px 10px" }}
-              >
-                📥 JSON
+                📦 ZIP
               </a>
               <button
                 className="btn btn-secondary btn-sm"
@@ -333,110 +362,403 @@ export default function Home() {
                     setForking(false);
                   }
                 }}
-                style={{ fontSize: 12, padding: "5px 10px", display: "flex", alignItems: "center", gap: 4 }}
-                title="Clone this project with all artifacts, code, and versions"
+                style={{ fontSize: 12, padding: "5px 10px" }}
               >
-                <span>🍴</span> {forking ? "Forking..." : "Fork"}
+                <span>🍴</span> {forking ? "..." : "Fork"}
               </button>
             </div>
-          </div>
-        )}
+          )}
+        </div>
       </nav>
 
       {/* Main Content */}
       <div className="main-content">
-        {/* Tab Bar */}
-        <div className="tabs">
-          <button
-            className={`tab ${activeTab === "create" ? "active" : ""}`}
-            onClick={() => setActiveTab("create")}
-          >
-            New Project
-          </button>
-          <button
-            className={`tab ${activeTab === "projects" ? "active" : ""}`}
-            onClick={() => { setActiveTab("projects"); handleLoadProjects(); }}
-          >
-            Projects
-          </button>
-          <button
-            className={`tab ${activeTab === "graph" ? "active" : ""}`}
-            onClick={() => setActiveTab("graph")}
-            disabled={!currentProject}
-          >
-            Dependency Graph
-          </button>
-          <button
-            className={`tab ${activeTab === "artifacts" ? "active" : ""}`}
-            onClick={() => setActiveTab("artifacts")}
-            disabled={!currentProject}
-          >
-            Artifacts
-          </button>
-          <button
-            className={`tab ${activeTab === "code" ? "active" : ""}`}
-            onClick={async () => {
-              setActiveTab("code");
-              if (currentProject) {
-                setCodeLoading(true);
-                try {
-                  const res = await getCodeFiles(currentProject.id);
-                  setCodeData(res);
-                  if (res.files && res.files.length > 0) {
-                    setSelectedCodeFile(res.files[0]);
+        {/* Top Hero Banner */}
+        {saasTab !== "studio" && (
+          <div style={{ marginBottom: 40, textAlign: "center", padding: "40px 20px" }}>
+            <div className="badge badge-green" style={{ marginBottom: 16, padding: "4px 12px", fontSize: 12 }}>
+              🚀 AUTONOMOUS 7-AGENT MULTI-MODEL ORCHESTRATION PLATFORM
+            </div>
+            <h1 style={{ fontFamily: "var(--font-display)", fontSize: 44, fontWeight: 900, letterSpacing: -1.5, marginBottom: 16, lineHeight: 1.15 }}>
+              Deterministic Software Engineering <br />
+              <span style={{ background: "var(--gradient-cyber)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
+                Powered by a 7-Agent DAG Fleet
+              </span>
+            </h1>
+            <p style={{ maxWidth: 780, margin: "0 auto 28px", fontSize: 16, color: "var(--text-secondary)", lineHeight: 1.6 }}>
+              Stop generating fragile code from single-shot prompts. AgentFlow synchronizes Product Requirements, Architecture, Relational Schemas, OpenAPI Specs, User Stories, and Scaffolded Source Code with zero-blast-radius micro-regeneration.
+            </p>
+            <div style={{ display: "flex", gap: 14, justifyContent: "center", flexWrap: "wrap" }}>
+              <button className="btn btn-primary" onClick={() => setSaasTab("studio")} style={{ fontSize: 15, padding: "12px 24px" }}>
+                ⚡ Launch Studio
+              </button>
+              <button className="btn btn-secondary" onClick={() => setSaasTab("docs")} style={{ fontSize: 15, padding: "12px 24px" }}>
+                📖 Read Docs &amp; Setup
+              </button>
+              <button className="btn btn-secondary" onClick={() => setSaasTab("pricing")} style={{ fontSize: 15, padding: "12px 24px" }}>
+                💎 View Pricing
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* VIEW: BENTO GRID FEATURES */}
+        {saasTab === "features" && (
+          <div>
+            <h2 className="card-title" style={{ fontSize: 24, marginBottom: 8 }}>
+              🍱 Enterprise Architecture &amp; Features
+            </h2>
+            <p style={{ color: "var(--text-secondary)", marginBottom: 24 }}>
+              Designed from first principles for multi-model determinism, verifiable AST syntax, and cost-optimized orchestration.
+            </p>
+
+            <div className="bento-grid">
+              <div className="bento-card bento-col-8">
+                <span className="badge badge-green" style={{ marginBottom: 12 }}>CORE DAG ENGINE</span>
+                <h3 style={{ fontSize: 20, fontWeight: 700, marginBottom: 8 }}>7-Agent Topological Pipeline</h3>
+                <p style={{ color: "var(--text-secondary)", fontSize: 14, marginBottom: 16 }}>
+                  Orchestrates PRD, SDD, DB_SCHEMA, API_SPEC, USER_STORIES, TASKS, and CODE_GENERATION in strict topological order with isolated context windows to eliminate hallucination compounding.
+                </p>
+                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                  {["PRD", "SDD", "DB_SCHEMA", "API_SPEC", "USER_STORIES", "TASKS", "CODE"].map((node, i) => (
+                    <span key={node} className="badge badge-cyan" style={{ fontSize: 12, padding: "4px 8px" }}>
+                      {i + 1}. {node}
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+              <div className="bento-card bento-col-4">
+                <span className="badge badge-amber" style={{ marginBottom: 12 }}>SELECTIVE REGENERATION</span>
+                <h3 style={{ fontSize: 18, fontWeight: 700, marginBottom: 8 }}>Diff-Aware BFS Invalidation</h3>
+                <p style={{ color: "var(--text-secondary)", fontSize: 13 }}>
+                  When any section is modified, only strictly dependent downstream nodes recalculate. Myers LCS visual diffing provides exact line-level traceability.
+                </p>
+              </div>
+
+              <div className="bento-card bento-col-4">
+                <span className="badge badge-cyan" style={{ marginBottom: 12 }}>INTELLIGENT ROUTER</span>
+                <h3 style={{ fontSize: 18, fontWeight: 700, marginBottom: 8 }}>Quality-Signal Model Router</h3>
+                <p style={{ color: "var(--text-secondary)", fontSize: 13 }}>
+                  Dynamically routes between Claude 3.5 Sonnet, Claude Haiku, and GPT-4o based on quality signals, reducing API costs by 64.2%.
+                </p>
+              </div>
+
+              <div className="bento-card bento-col-4">
+                <span className="badge badge-red" style={{ marginBottom: 12 }}>CROSS-DOC AUDITOR</span>
+                <h3 style={{ fontSize: 18, fontWeight: 700, marginBottom: 8 }}>Consistency Auditor &amp; Micro-Regen</h3>
+                <p style={{ color: "var(--text-secondary)", fontSize: 13 }}>
+                  Detects entity discrepancies across schemas, specs, and stories, providing 1-click surgical micro-regeneration auto-fixes.
+                </p>
+              </div>
+
+              <div className="bento-card bento-col-4">
+                <span className="badge badge-green" style={{ marginBottom: 12 }}>LOCAL CODE PERSISTENCE</span>
+                <h3 style={{ fontSize: 18, fontWeight: 700, marginBottom: 8 }}>In-Memory ZIP &amp; AST Verifier</h3>
+                <p style={{ color: "var(--text-secondary)", fontSize: 13 }}>
+                  Scaffolds multi-file projects to disk, runs automated Python AST syntax smoke tests, and streams complete .zip archives.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* VIEW: WORKFLOW */}
+        {saasTab === "workflow" && (
+          <div className="card">
+            <h2 className="card-title" style={{ fontSize: 24, marginBottom: 8 }}>
+              🔄 Autonomous Engineering Workflow
+            </h2>
+            <p style={{ color: "var(--text-secondary)", marginBottom: 28 }}>
+              How AgentFlow transforms a high-level product brief into synchronized production code.
+            </p>
+
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 16 }}>
+              {[
+                { step: "01", title: "HITL Clarification", desc: "Agent probes edge cases and architectural choices before writing specifications." },
+                { step: "02", title: "DAG Graph Execution", desc: "Multi-agent pipeline executes in parallel across topological dependencies." },
+                { step: "03", title: "Section Editing & Diffing", desc: "Developers edit specific sections; downstream artifacts auto-regenerate." },
+                { step: "04", title: "Static AST Verification", desc: "AST smoke testing engine verifies syntax correctness across generated files." },
+                { step: "05", title: "Production Packaging", desc: "Download in-memory .zip archives, SQL DDL migrations, or OpenAPI specs." },
+              ].map((item) => (
+                <div key={item.step} className="bento-card" style={{ padding: 20 }}>
+                  <div style={{ fontFamily: "var(--font-mono)", color: "var(--neon-green)", fontSize: 24, fontWeight: 800, marginBottom: 8 }}>
+                    {item.step}
+                  </div>
+                  <h4 style={{ fontSize: 16, fontWeight: 700, marginBottom: 6 }}>{item.title}</h4>
+                  <p style={{ color: "var(--text-secondary)", fontSize: 13, lineHeight: 1.5 }}>{item.desc}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* VIEW: PRICING */}
+        {saasTab === "pricing" && (
+          <div>
+            <div style={{ textAlign: "center", marginBottom: 32 }}>
+              <h2 style={{ fontFamily: "var(--font-display)", fontSize: 32, fontWeight: 800, marginBottom: 8 }}>
+                Simple, Predictable SaaS Pricing
+              </h2>
+              <p style={{ color: "var(--text-secondary)" }}>
+                Start free on open source, or scale with enterprise autonomous engineering fleets.
+              </p>
+            </div>
+
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 20, marginBottom: 40 }}>
+              {/* Hacker Tier */}
+              <div className="bento-card">
+                <span className="badge badge-green" style={{ marginBottom: 12 }}>OPEN SOURCE FOREVER</span>
+                <h3 style={{ fontSize: 22, fontWeight: 800 }}>Hacker OSS</h3>
+                <div style={{ fontSize: 36, fontWeight: 900, fontFamily: "var(--font-display)", margin: "14px 0", color: "var(--neon-green)" }}>
+                  $0 <span style={{ fontSize: 14, color: "var(--text-secondary)", fontWeight: 500 }}>/ month</span>
+                </div>
+                <p style={{ color: "var(--text-secondary)", fontSize: 13, marginBottom: 20 }}>
+                  Perfect for individual hackers running AgentFlow locally on their machines.
+                </p>
+                <ul style={{ listStyle: "none", fontSize: 13, color: "var(--text-primary)", display: "flex", flexDirection: "column", gap: 10, marginBottom: 24 }}>
+                  <li>✓ 7-Agent Topological DAG Pipeline</li>
+                  <li>✓ Unlimited Local Regenerations &amp; Diffing</li>
+                  <li>✓ Local SQLite / Postgres Support</li>
+                  <li>✓ In-Memory ZIP Code Downloads</li>
+                  <li>✓ AST Syntax &amp; Smoke Verification</li>
+                  <li>✓ Community GitHub &amp; Discord Support</li>
+                </ul>
+                <button className="btn btn-secondary" onClick={() => setSaasTab("docs")} style={{ width: "100%", justifyContent: "center" }}>
+                  Get Started Free
+                </button>
+              </div>
+
+              {/* Pro Tier */}
+              <div className="bento-card" style={{ borderColor: "var(--neon-green)", boxShadow: "var(--shadow-neon)" }}>
+                <span className="badge badge-cyan" style={{ marginBottom: 12 }}>MOST POPULAR</span>
+                <h3 style={{ fontSize: 22, fontWeight: 800 }}>Pro Orchestrator</h3>
+                <div style={{ fontSize: 36, fontWeight: 900, fontFamily: "var(--font-display)", margin: "14px 0", color: "var(--accent-cyan)" }}>
+                  $29 <span style={{ fontSize: 14, color: "var(--text-secondary)", fontWeight: 500 }}>/ month</span>
+                </div>
+                <p style={{ color: "var(--text-secondary)", fontSize: 13, marginBottom: 20 }}>
+                  For professional engineers and startup teams building production microservices.
+                </p>
+                <ul style={{ listStyle: "none", fontSize: 13, color: "var(--text-primary)", display: "flex", flexDirection: "column", gap: 10, marginBottom: 24 }}>
+                  <li>✓ Everything in Hacker OSS</li>
+                  <li>✓ Managed Multi-Model Cloud Routing</li>
+                  <li>✓ Cross-Service Contract Alignment Engine</li>
+                  <li>✓ Automated SQL DDL &amp; Alembic Migrations</li>
+                  <li>✓ Machine-Readable OpenAPI 3.0.3 Exporter</li>
+                  <li>✓ Priority Cloud LLM Sandboxes</li>
+                </ul>
+                <button className="btn btn-primary" onClick={() => setSaasTab("studio")} style={{ width: "100%", justifyContent: "center" }}>
+                  Start Pro Studio
+                </button>
+              </div>
+
+              {/* Enterprise Tier */}
+              <div className="bento-card">
+                <span className="badge badge-amber" style={{ marginBottom: 12 }}>ENTERPRISE FLEET</span>
+                <h3 style={{ fontSize: 22, fontWeight: 800 }}>Enterprise Fleet</h3>
+                <div style={{ fontSize: 36, fontWeight: 900, fontFamily: "var(--font-display)", margin: "14px 0", color: "var(--accent-yellow)" }}>
+                  $199 <span style={{ fontSize: 14, color: "var(--text-secondary)", fontWeight: 500 }}>/ month</span>
+                </div>
+                <p style={{ color: "var(--text-secondary)", fontSize: 13, marginBottom: 20 }}>
+                  For engineering organizations needing air-gapped security and custom model registries.
+                </p>
+                <ul style={{ listStyle: "none", fontSize: 13, color: "var(--text-primary)", display: "flex", flexDirection: "column", gap: 10, marginBottom: 24 }}>
+                  <li>✓ Multi-Tenant Team Workspaces</li>
+                  <li>✓ Air-Gapped Local LLM Registry (Ollama/vLLM)</li>
+                  <li>✓ Enterprise SSO &amp; Role-Based Access Control</li>
+                  <li>✓ Dedicated Architecture Consistency SLA</li>
+                  <li>✓ Audit Trail &amp; Compliance Logs Export</li>
+                  <li>✓ 24/7 Dedicated Solutions Engineer</li>
+                </ul>
+                <button className="btn btn-secondary" onClick={() => showToast("Contacting enterprise fleet sales...", "info")} style={{ width: "100%", justifyContent: "center" }}>
+                  Contact Fleet Sales
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* VIEW: DOCS & SETUP */}
+        {saasTab === "docs" && (
+          <div className="card">
+            <h2 className="card-title" style={{ fontSize: 24, marginBottom: 8 }}>
+              📖 Documentation &amp; Local Setup Guide
+            </h2>
+            <p style={{ color: "var(--text-secondary)", marginBottom: 24 }}>
+              Setup and run the entire AgentFlow autonomous stack locally on your workstation in under 2 minutes.
+            </p>
+
+            <div className="terminal-window" style={{ marginBottom: 24 }}>
+              <div className="terminal-header">
+                <div className="terminal-dots">
+                  <span className="terminal-dot red" />
+                  <span className="terminal-dot yellow" />
+                  <span className="terminal-dot green" />
+                </div>
+                <span style={{ fontSize: 12, color: "var(--text-muted)" }}>bash — setup.sh</span>
+              </div>
+              <div className="terminal-body">
+                <p><span className="terminal-prompt">&gt;</span> git clone https://github.com/AgentFlow/AgentFlow.git</p>
+                <p><span className="terminal-prompt">&gt;</span> cd AgentFlow</p>
+                <p style={{ color: "var(--text-muted)", margin: "8px 0" }}># 1. Start Python Backend (FastAPI + LangGraph)</p>
+                <p><span className="terminal-prompt">&gt;</span> cd backend &amp;&amp; python -m venv venv &amp;&amp; source venv/bin/activate</p>
+                <p><span className="terminal-prompt">&gt;</span> pip install -r requirements.txt</p>
+                <p><span className="terminal-prompt">&gt;</span> uvicorn app.main:app --reload --port 8000</p>
+                <p style={{ color: "var(--text-muted)", margin: "8px 0" }}># 2. Start Next.js Cyberpunk Dashboard</p>
+                <p><span className="terminal-prompt">&gt;</span> cd ../dashboard &amp;&amp; npm install &amp;&amp; npm run dev</p>
+              </div>
+            </div>
+
+            <h3 style={{ fontSize: 18, fontWeight: 700, margin: "20px 0 12px" }}>🐳 Docker Compose Setup</h3>
+            <div className="terminal-window">
+              <div className="terminal-body">
+                <p><span className="terminal-prompt">&gt;</span> docker-compose up --build -d</p>
+                <p style={{ color: "#38BDF8" }}>✔ Backend container running on http://localhost:8000</p>
+                <p style={{ color: "#38BDF8" }}>✔ Dashboard container running on http://localhost:3000</p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* VIEW: DOWNLOAD */}
+        {saasTab === "download" && (
+          <div className="card">
+            <h2 className="card-title" style={{ fontSize: 24, marginBottom: 8 }}>
+              📦 Download &amp; Offline Packages
+            </h2>
+            <p style={{ color: "var(--text-secondary)", marginBottom: 24 }}>
+              Download packaged bundles for offline execution or deployment.
+            </p>
+
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 16 }}>
+              <div className="bento-card">
+                <h4 style={{ fontSize: 16, fontWeight: 700, marginBottom: 6 }}>Source Code Tarball (.zip)</h4>
+                <p style={{ color: "var(--text-secondary)", fontSize: 13, marginBottom: 14 }}>Complete backend engine, dashboard UI, and tests.</p>
+                <button className="btn btn-primary btn-sm" onClick={() => showToast("Preparing source zip archive...", "success")}>
+                  ⬇️ Download Source Bundle
+                </button>
+              </div>
+              <div className="bento-card">
+                <h4 style={{ fontSize: 16, fontWeight: 700, marginBottom: 6 }}>Docker Compose Bundle</h4>
+                <p style={{ color: "var(--text-secondary)", fontSize: 13, marginBottom: 14 }}>Pre-configured Dockerfiles and multi-container configs.</p>
+                <button className="btn btn-secondary btn-sm" onClick={() => showToast("Downloading docker-compose.yml...", "success")}>
+                  ⬇️ Download Docker Package
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* VIEW: ABOUT */}
+        {saasTab === "about" && (
+          <div className="card">
+            <h2 className="card-title" style={{ fontSize: 24, marginBottom: 8 }}>
+              ℹ️ About AgentFlow &amp; Determinism
+            </h2>
+            <p style={{ color: "var(--text-secondary)", lineHeight: 1.7, marginBottom: 16 }}>
+              Modern generative AI fails at software engineering because single prompts try to solve too many things simultaneously. When an LLM produces a PRD, Database Schema, and Source Code in one prompt, hallucinations compound exponentially.
+            </p>
+            <p style={{ color: "var(--text-secondary)", lineHeight: 1.7 }}>
+              <strong>AgentFlow</strong> separates the engineering process into isolated, verifiable agent stages bounded by an explicit Directed Acyclic Graph (DAG). Every section is cryptographically hashed, audited for cross-document consistency, and statically verified with AST syntax checkers before execution.
+            </p>
+          </div>
+        )}
+
+        {/* VIEW: LIVE STUDIO (Standard Workspace) */}
+        {saasTab === "studio" && (
+          <div>
+            {/* Tab Bar */}
+            <div className="tabs">
+              <button
+                className={`tab ${activeTab === "create" ? "active" : ""}`}
+                onClick={() => setActiveTab("create")}
+              >
+                New Project
+              </button>
+              <button
+                className={`tab ${activeTab === "projects" ? "active" : ""}`}
+                onClick={() => { setActiveTab("projects"); handleLoadProjects(); }}
+              >
+                Projects
+              </button>
+              <button
+                className={`tab ${activeTab === "graph" ? "active" : ""}`}
+                onClick={() => setActiveTab("graph")}
+                disabled={!currentProject}
+              >
+                Dependency Graph
+              </button>
+              <button
+                className={`tab ${activeTab === "artifacts" ? "active" : ""}`}
+                onClick={() => setActiveTab("artifacts")}
+                disabled={!currentProject}
+              >
+                Artifacts
+              </button>
+              <button
+                className={`tab ${activeTab === "code" ? "active" : ""}`}
+                onClick={async () => {
+                  setActiveTab("code");
+                  if (currentProject) {
+                    setCodeLoading(true);
+                    try {
+                      const res = await getCodeFiles(currentProject.id);
+                      setCodeData(res);
+                      if (res.files && res.files.length > 0) {
+                        setSelectedCodeFile(res.files[0]);
+                      }
+                    } catch (err) {
+                      showToast(err.message, "error");
+                    } finally {
+                      setCodeLoading(false);
+                    }
                   }
-                } catch (err) {
-                  showToast(err.message, "error");
-                } finally {
-                  setCodeLoading(false);
-                }
-              }
-            }}
-            disabled={!currentProject}
-          >
-            Codebase
-          </button>
-          <button
-            className={`tab ${activeTab === "drifts" ? "active" : ""}`}
-            onClick={() => setActiveTab("drifts")}
-            disabled={!currentProject}
-          >
-            Drifts
-          </button>
-          <button
-            className={`tab ${activeTab === "metrics" ? "active" : ""}`}
-            onClick={() => setActiveTab("metrics")}
-            disabled={!currentProject}
-          >
-            Metrics
-          </button>
-          <button
-            className={`tab ${activeTab === "timeline" ? "active" : ""}`}
-            onClick={async () => {
-              setActiveTab("timeline");
-              if (currentProject) {
-                setTimelineLoading(true);
-                try {
-                  const res = await getProjectTimeline(currentProject.id);
-                  setTimelineData(res);
-                } catch (err) {
-                  showToast(err.message, "error");
-                } finally {
-                  setTimelineLoading(false);
-                }
-              }
-            }}
-            disabled={!currentProject}
-          >
-            Timeline
-          </button>
-          <button
-            className={`tab ${activeTab === "evaluations" ? "active" : ""}`}
-            onClick={() => setActiveTab("evaluations")}
-          >
-            Evaluations
-          </button>
-        </div>
+                }}
+                disabled={!currentProject}
+              >
+                Codebase
+              </button>
+              <button
+                className={`tab ${activeTab === "drifts" ? "active" : ""}`}
+                onClick={() => setActiveTab("drifts")}
+                disabled={!currentProject}
+              >
+                Drifts
+              </button>
+              <button
+                className={`tab ${activeTab === "metrics" ? "active" : ""}`}
+                onClick={() => setActiveTab("metrics")}
+                disabled={!currentProject}
+              >
+                Metrics
+              </button>
+              <button
+                className={`tab ${activeTab === "timeline" ? "active" : ""}`}
+                onClick={async () => {
+                  setActiveTab("timeline");
+                  if (currentProject) {
+                    setTimelineLoading(true);
+                    try {
+                      const res = await getProjectTimeline(currentProject.id);
+                      setTimelineData(res);
+                    } catch (err) {
+                      showToast(err.message, "error");
+                    } finally {
+                      setTimelineLoading(false);
+                    }
+                  }
+                }}
+                disabled={!currentProject}
+              >
+                Timeline
+              </button>
+              <button
+                className={`tab ${activeTab === "evaluations" ? "active" : ""}`}
+                onClick={() => setActiveTab("evaluations")}
+              >
+                Evaluations
+              </button>
+            </div>
 
         {/* Tab: Create Project (with HITL Clarification) */}
         {activeTab === "create" && (
@@ -1791,6 +2113,8 @@ export default function Home() {
                 ))}
               </div>
             )}
+          </div>
+        )}
           </div>
         )}
       </div>
