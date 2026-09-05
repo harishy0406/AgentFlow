@@ -29,6 +29,13 @@ import {
   listTemplates,
   cloneProject,
   getProjectAnalytics,
+  generateProjectMigrations,
+  createWorkspace,
+  listWorkspaces,
+  getWorkspace,
+  assignProjectToWorkspace,
+  validateWorkspaceContracts,
+  getOpenApiSpecDownloadUrl,
 } from "./lib/api";
 
 export default function Home() {
@@ -41,6 +48,17 @@ export default function Home() {
   const [selectedArtifact, setSelectedArtifact] = useState(null);
   const [toast, setToast] = useState(null);
   const [projects, setProjects] = useState([]);
+
+  // Workspaces & Cross-Service state
+  const [workspaces, setWorkspaces] = useState([]);
+  const [selectedWorkspace, setSelectedWorkspace] = useState(null);
+  const [workspaceName, setWorkspaceName] = useState("");
+  const [workspaceDesc, setWorkspaceDesc] = useState("");
+  const [workspaceLoading, setWorkspaceLoading] = useState(false);
+  const [contractValidation, setContractValidation] = useState(null);
+  const [validatingContracts, setValidatingContracts] = useState(false);
+  const [migrationData, setMigrationData] = useState(null);
+  const [generatingMigrations, setGeneratingMigrations] = useState(false);
 
   // HITL clarification state
   const [clarifyStep, setClarifyStep] = useState("brief"); // 'brief' | 'questions' | 'generating'
@@ -346,6 +364,36 @@ export default function Home() {
               >
                 📦 ZIP
               </a>
+              <a
+                href={getOpenApiSpecDownloadUrl(currentProject.id)}
+                target="_blank"
+                rel="noreferrer"
+                className="btn btn-secondary btn-sm"
+                style={{ textDecoration: "none", fontSize: 12, padding: "5px 10px" }}
+                title="Download OpenAPI 3.0.3 Swagger JSON specification"
+              >
+                📄 OpenAPI
+              </a>
+              <button
+                className="btn btn-secondary btn-sm"
+                disabled={generatingMigrations}
+                onClick={async () => {
+                  setGeneratingMigrations(true);
+                  try {
+                    const mig = await generateProjectMigrations(currentProject.id);
+                    setMigrationData(mig);
+                    showToast(`Generated ${mig.tables_count} tables SQL DDL & Alembic scripts!`, "success");
+                  } catch (err) {
+                    showToast(err.message, "error");
+                  } finally {
+                    setGeneratingMigrations(false);
+                  }
+                }}
+                style={{ fontSize: 12, padding: "5px 10px" }}
+                title="Generate SQL DDL & Alembic Migrations"
+              >
+                🛠️ {generatingMigrations ? "..." : "Migrations"}
+              </button>
               <button
                 className="btn btn-secondary btn-sm"
                 disabled={forking}
@@ -757,6 +805,23 @@ export default function Home() {
                 onClick={() => setActiveTab("evaluations")}
               >
                 Evaluations
+              </button>
+              <button
+                className={`tab ${activeTab === "workspaces" ? "active" : ""}`}
+                onClick={async () => {
+                  setActiveTab("workspaces");
+                  setWorkspaceLoading(true);
+                  try {
+                    const ws = await listWorkspaces();
+                    setWorkspaces(ws);
+                  } catch (e) {
+                    showToast(e.message, "error");
+                  } finally {
+                    setWorkspaceLoading(false);
+                  }
+                }}
+              >
+                Workspaces
               </button>
             </div>
 
@@ -2111,6 +2176,176 @@ export default function Home() {
                     )}
                   </div>
                 ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Tab: Workspaces & Cross-Service Contracts */}
+        {activeTab === "workspaces" && (
+          <div className="card">
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+              <div>
+                <h2 className="card-title" style={{ marginBottom: 4 }}>
+                  🏢 Multi-Project Workspaces &amp; Mesh Contracts
+                </h2>
+                <p style={{ color: "var(--text-secondary)", fontSize: 13 }}>
+                  Group microservices into distributed system workspaces and validate cross-service API contract compatibility.
+                </p>
+              </div>
+            </div>
+
+            {/* Create Workspace Form */}
+            <div className="bento-card" style={{ marginBottom: 24 }}>
+              <h4 style={{ fontSize: 15, fontWeight: 700, marginBottom: 12 }}>➕ Create New System Workspace</h4>
+              <form
+                onSubmit={async (e) => {
+                  e.preventDefault();
+                  if (!workspaceName.trim()) return;
+                  try {
+                    const newWs = await createWorkspace(workspaceName.trim(), workspaceDesc.trim());
+                    setWorkspaces((prev) => [newWs, ...prev]);
+                    setWorkspaceName("");
+                    setWorkspaceDesc("");
+                    showToast(`Created workspace '${newWs.name}'!`, "success");
+                  } catch (err) {
+                    showToast(err.message, "error");
+                  }
+                }}
+                style={{ display: "grid", gridTemplateColumns: "1fr 1fr auto", gap: 12, alignItems: "end" }}
+              >
+                <div>
+                  <label className="form-label" style={{ fontSize: 11 }}>Workspace Name</label>
+                  <input
+                    type="text"
+                    className="form-input"
+                    placeholder="e.g. FinTech Core Mesh"
+                    value={workspaceName}
+                    onChange={(e) => setWorkspaceName(e.target.value)}
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="form-label" style={{ fontSize: 11 }}>Description (Optional)</label>
+                  <input
+                    type="text"
+                    className="form-input"
+                    placeholder="e.g. Distributed payment and ledger services"
+                    value={workspaceDesc}
+                    onChange={(e) => setWorkspaceDesc(e.target.value)}
+                  />
+                </div>
+                <button type="submit" className="btn btn-primary" style={{ height: 42 }}>
+                  Create Workspace
+                </button>
+              </form>
+            </div>
+
+            {/* Workspaces List */}
+            {workspaceLoading ? (
+              <div style={{ textAlign: "center", padding: 20 }}>
+                <span className="spinner" /> Loading workspaces...
+              </div>
+            ) : workspaces.length === 0 ? (
+              <p style={{ color: "var(--text-muted)", fontSize: 13 }}>
+                No multi-project workspaces created yet. Create one above to link microservices.
+              </p>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                {workspaces.map((ws) => (
+                  <div key={ws.id} className="bento-card" style={{ padding: 20 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+                      <div>
+                        <h3 style={{ fontSize: 17, fontWeight: 700, color: "var(--text-primary)" }}>{ws.name}</h3>
+                        <div style={{ fontSize: 12, color: "var(--text-secondary)", marginTop: 2 }}>
+                          {ws.description || "No description provided."} • Created: {new Date(ws.created_at).toLocaleDateString()}
+                        </div>
+                      </div>
+                      <div style={{ display: "flex", gap: 8 }}>
+                        {currentProject && (
+                          <button
+                            className="btn btn-secondary btn-sm"
+                            onClick={async () => {
+                              try {
+                                const updated = await assignProjectToWorkspace(ws.id, currentProject.id);
+                                setWorkspaces((prev) => prev.map((w) => (w.id === ws.id ? updated : w)));
+                                showToast(`Assigned '${currentProject.name}' to '${ws.name}'!`, "success");
+                              } catch (err) {
+                                showToast(err.message, "error");
+                              }
+                            }}
+                          >
+                            🔗 Link Active Project
+                          </button>
+                        )}
+                        <button
+                          className="btn btn-primary btn-sm"
+                          disabled={validatingContracts}
+                          onClick={async () => {
+                            setValidatingContracts(true);
+                            try {
+                              const res = await validateWorkspaceContracts(ws.id);
+                              setContractValidation(res);
+                              showToast(res.validation_message, "success");
+                            } catch (err) {
+                              showToast(err.message, "error");
+                            } finally {
+                              setValidatingContracts(false);
+                            }
+                          }}
+                        >
+                          ⚡ Validate Mesh Contracts
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Assigned Microservices */}
+                    <div style={{ marginTop: 12 }}>
+                      <span className="badge badge-cyan" style={{ marginBottom: 8 }}>
+                        {ws.projects?.length || 0} Linked Services
+                      </span>
+                      <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 6 }}>
+                        {ws.projects && ws.projects.length > 0 ? (
+                          ws.projects.map((p) => (
+                            <span key={p.id} className="badge badge-green" style={{ fontSize: 12, padding: "4px 10px" }}>
+                              ⚙️ {p.name}
+                            </span>
+                          ))
+                        ) : (
+                          <span style={{ fontSize: 12, color: "var(--text-muted)" }}>No services assigned yet.</span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Live Cross-Service Contract Validation Results Modal/Card */}
+            {contractValidation && (
+              <div className="bento-card" style={{ marginTop: 24, borderColor: "var(--neon-green)" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+                  <h4 style={{ fontSize: 16, fontWeight: 700, color: "var(--neon-green)" }}>
+                    ✔ Cross-Service Contract Alignment Report
+                  </h4>
+                  <button className="btn btn-secondary btn-sm" onClick={() => setContractValidation(null)}>
+                    ✕ Close
+                  </button>
+                </div>
+                <p style={{ fontSize: 13, color: "var(--text-primary)", marginBottom: 14 }}>
+                  {contractValidation.validation_message}
+                </p>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 12 }}>
+                  {contractValidation.services?.map((svc) => (
+                    <div key={svc.project_id} style={{ background: "var(--bg-secondary)", padding: 12, borderRadius: 8 }}>
+                      <strong style={{ fontSize: 13 }}>{svc.project_name}</strong>
+                      <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 4 }}>
+                        Exported Endpoints: <strong>{svc.exported_endpoints_count}</strong><br />
+                        Database Tables: <strong>{svc.tables_count}</strong>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
           </div>
