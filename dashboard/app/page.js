@@ -110,6 +110,16 @@ export default function Home() {
     "Type 'help' for available hacker commands."
   ]);
 
+  // Hero Live DAG Simulation State
+  const [simPreset, setSimPreset] = useState("ai-reviewer");
+  const [simCustomPrompt, setSimCustomPrompt] = useState("");
+  const [simRunning, setSimRunning] = useState(false);
+  const [simStepIndex, setSimStepIndex] = useState(-1);
+  const [simLogs, setSimLogs] = useState([
+    "[DAG_DAEMON] Engine ready. Select an architecture preset or enter a prompt to simulate topological execution."
+  ]);
+  const [simStats, setSimStats] = useState({ tokens: 0, costUsd: 0, latencyMs: 0 });
+
   useEffect(() => {
     document.documentElement.setAttribute("data-theme", theme);
   }, [theme]);
@@ -282,6 +292,79 @@ export default function Home() {
     [artifacts]
   );
 
+  const SIM_PRESETS = [
+    {
+      id: "ai-reviewer",
+      title: "🤖 AI PR Reviewer",
+      brief: "Build an enterprise AI Code Reviewer that automatically parses GitHub pull requests, performs static AST analysis, checks for OWASP vulnerabilities, and posts inline suggestions with benchmarked test cases."
+    },
+    {
+      id: "fintech-escrow",
+      title: "💳 FinTech Escrow Mesh",
+      brief: "Design a fault-tolerant multi-party escrow platform for freelance marketplaces. Requires milestone escrow holding, Stripe Connect payouts, dual-entry accounting ledgers, and KYC/AML verification workflows."
+    },
+    {
+      id: "hipaa-health",
+      title: "🏥 HIPAA Telehealth Suite",
+      brief: "Create a secure telehealth application connecting patients with certified specialists. Features WebRTC encrypted video rooms, prescription management, automated appointment scheduling, and FHIR EHR integrations."
+    },
+    {
+      id: "web3-dao",
+      title: "⚡ Decentralized Governance",
+      brief: "Design an autonomous decentralized governance protocol with off-chain gasless voting via IPFS, ERC-20 voting power calculations, and time-locked multi-sig on-chain execution."
+    }
+  ];
+
+  const DAG_STAGES = [
+    { id: "PRD", label: "PRD Spec", agent: "Product Analyst", model: "Claude 3.5 Sonnet", icon: "📋", logMsg: "Synthesizing user personas, domain requirements, and MVP scope..." },
+    { id: "SDD", label: "Architecture", agent: "System Architect", model: "Claude 3.5 Sonnet", icon: "📐", logMsg: "Designing microservice topology, event queues, and SLA limits..." },
+    { id: "DB_SCHEMA", label: "DB Schema", agent: "DB Engineer", model: "Claude Haiku", icon: "🗄️", logMsg: "Synthesizing third-normal-form relational tables & indexing strategies..." },
+    { id: "API_SPEC", label: "OpenAPI 3.0", agent: "API Designer", model: "Claude Haiku", icon: "⚡", logMsg: "Generating OpenAPI 3.0.3 endpoints, schemas, and error contracts..." },
+    { id: "USER_STORIES", label: "User Stories", agent: "Scrum Master", model: "Claude Haiku", icon: "📖", logMsg: "Drafting Gherkin-format acceptance criteria & developer story points..." },
+    { id: "TASKS", label: "Work Breakdown", agent: "Tech Lead", model: "GPT-4o", icon: "🔨", logMsg: "Decomposing epics into dependency-ordered engineering task DAGs..." },
+    { id: "CODE", label: "Source Code", agent: "Dev Fleet", model: "Claude 3.5 Sonnet", icon: "🚀", logMsg: "Scaffolding multi-file repository with AST syntax verification..." }
+  ];
+
+  const handleRunSimulation = () => {
+    if (simRunning) return;
+    setSimRunning(true);
+    setSimStepIndex(0);
+    const selectedPresetObj = SIM_PRESETS.find(p => p.id === simPreset);
+    const promptText = simCustomPrompt.trim() || selectedPresetObj?.brief || "Autonomous application brief";
+    
+    setSimLogs([
+      `[SIM_INIT] Launching 7-Agent DAG Fleet for '${promptText.substring(0, 42)}...'`,
+      `[DAG_RUNNER] Memory isolation verified. Multi-model router online.`
+    ]);
+    setSimStats({ tokens: 0, costUsd: 0, latencyMs: 0 });
+
+    DAG_STAGES.forEach((stage, idx) => {
+      setTimeout(() => {
+        setSimStepIndex(idx);
+        setSimLogs((prev) => [
+          ...prev,
+          `[STAGE ${idx + 1}/7 - ${stage.id}] [${stage.agent} :: ${stage.model}] ${stage.logMsg}`
+        ]);
+        setSimStats((prev) => ({
+          tokens: prev.tokens + Math.floor(450 + Math.random() * 320),
+          costUsd: Number((prev.costUsd + 0.0032).toFixed(4)),
+          latencyMs: prev.latencyMs + Math.floor(320 + Math.random() * 180)
+        }));
+
+        if (idx === DAG_STAGES.length - 1) {
+          setTimeout(() => {
+            setSimRunning(false);
+            setSimLogs((prev) => [
+              ...prev,
+              `[SUCCESS] 7/7 DAG stages synthesized. AST syntax clean. Zero drift detected. Ready for deployment.`
+            ]);
+            showToast("DAG Simulation complete! Ready to load into Studio.", "success");
+          }, 800);
+        }
+      }, (idx + 1) * 750);
+    });
+  };
+
   return (
     <div className={`dashboard ${scanlines ? "scanlines" : ""}`}>
       {/* Cyberpunk Top Navbar */}
@@ -421,7 +504,7 @@ export default function Home() {
 
       {/* Main Content */}
       <div className="main-content">
-        {/* Top Hero Banner */}
+        {/* Top Hero Banner & Live DAG Simulator */}
         {saasTab !== "studio" && (
           <div style={{ marginBottom: 40, textAlign: "center", padding: "40px 20px" }}>
             <div className="badge badge-green" style={{ marginBottom: 16, padding: "4px 12px", fontSize: 12 }}>
@@ -436,7 +519,7 @@ export default function Home() {
             <p style={{ maxWidth: 780, margin: "0 auto 28px", fontSize: 16, color: "var(--text-secondary)", lineHeight: 1.6 }}>
               Stop generating fragile code from single-shot prompts. AgentFlow synchronizes Product Requirements, Architecture, Relational Schemas, OpenAPI Specs, User Stories, and Scaffolded Source Code with zero-blast-radius micro-regeneration.
             </p>
-            <div style={{ display: "flex", gap: 14, justifyContent: "center", flexWrap: "wrap" }}>
+            <div style={{ display: "flex", gap: 14, justifyContent: "center", flexWrap: "wrap", marginBottom: 32 }}>
               <button className="btn btn-primary" onClick={() => setSaasTab("studio")} style={{ fontSize: 15, padding: "12px 24px" }}>
                 ⚡ Launch Studio
               </button>
@@ -446,6 +529,111 @@ export default function Home() {
               <button className="btn btn-secondary" onClick={() => setSaasTab("pricing")} style={{ fontSize: 15, padding: "12px 24px" }}>
                 💎 View Pricing
               </button>
+            </div>
+
+            {/* Interactive Hero Live Playground */}
+            <div className="sim-playground">
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16, flexWrap: "wrap", gap: 8 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <span className="brand-terminal-tag">&gt;_ DAG_RUNNER</span>
+                  <span style={{ fontSize: 13, fontWeight: 700, color: "var(--text-primary)" }}>
+                    Interactive 7-Agent Topological Playground
+                  </span>
+                </div>
+                <div style={{ display: "flex", gap: 8, fontSize: 11, color: "var(--text-secondary)" }}>
+                  <span>⚡ Tokens: <strong style={{ color: "var(--neon-green)" }}>{simStats.tokens.toLocaleString()}</strong></span>
+                  <span>•</span>
+                  <span>💸 Cost: <strong style={{ color: "var(--accent-cyan)" }}>${simStats.costUsd.toFixed(4)}</strong></span>
+                  <span>•</span>
+                  <span>⏱️ Latency: <strong style={{ color: "var(--text-primary)" }}>{simStats.latencyMs}ms</strong></span>
+                </div>
+              </div>
+
+              {/* Preset Chips */}
+              <div className="sim-preset-chips">
+                {SIM_PRESETS.map((p) => (
+                  <button
+                    key={p.id}
+                    className={`sim-chip ${simPreset === p.id ? "active" : ""}`}
+                    onClick={() => {
+                      setSimPreset(p.id);
+                      setSimCustomPrompt(p.brief);
+                    }}
+                  >
+                    {p.title}
+                  </button>
+                ))}
+              </div>
+
+              {/* Input Prompt & Simulator Action */}
+              <div style={{ display: "flex", gap: 10, marginBottom: 16 }}>
+                <input
+                  type="text"
+                  className="form-input"
+                  style={{ flex: 1, fontSize: 13, background: "rgba(0,0,0,0.3)" }}
+                  placeholder="Or enter a custom architecture specification to simulate..."
+                  value={simCustomPrompt || SIM_PRESETS.find(p => p.id === simPreset)?.brief || ""}
+                  onChange={(e) => setSimCustomPrompt(e.target.value)}
+                />
+                <button
+                  className="btn btn-primary"
+                  disabled={simRunning}
+                  onClick={handleRunSimulation}
+                  style={{ padding: "0 20px", whiteSpace: "nowrap" }}
+                >
+                  {simRunning ? "⚡ Simulating..." : "▶️ Simulate DAG"}
+                </button>
+                <button
+                  className="btn btn-secondary"
+                  onClick={() => {
+                    const presetObj = SIM_PRESETS.find(p => p.id === simPreset);
+                    setProjectName(presetObj ? presetObj.title.replace(/[^a-zA-Z0-9 ]/g, "").trim() : "Custom AgentFlow App");
+                    setProjectBrief(simCustomPrompt || presetObj?.brief || "");
+                    setSaasTab("studio");
+                    setActiveTab("create");
+                    showToast("Loaded preset into Studio Creator!", "info");
+                  }}
+                  title="Load this architecture into Studio to build real code"
+                >
+                  📥 Load in Studio
+                </button>
+              </div>
+
+              {/* Visual 7-Stage DAG Nodes */}
+              <div className="sim-dag-grid">
+                {DAG_STAGES.map((stg, idx) => {
+                  const isActive = simStepIndex === idx;
+                  const isDone = simStepIndex > idx;
+                  return (
+                    <div
+                      key={stg.id}
+                      className={`sim-node-box ${isActive ? "active" : ""} ${isDone ? "completed" : ""}`}
+                    >
+                      <div style={{ fontSize: 18, marginBottom: 4 }}>{stg.icon}</div>
+                      <div style={{ fontSize: 12, fontWeight: 700, color: "var(--text-primary)" }}>{stg.label}</div>
+                      <div style={{ fontSize: 10, color: "var(--text-muted)", marginTop: 2 }}>{stg.model}</div>
+                      <div style={{ marginTop: 6 }}>
+                        <span
+                          className={`badge ${isActive ? "badge-amber" : isDone ? "badge-green" : "badge-cyan"}`}
+                          style={{ fontSize: 9, padding: "1px 5px" }}
+                        >
+                          {isActive ? "ACTIVE" : isDone ? "SYNCED" : "IDLE"}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Streaming Terminal Log */}
+              <div className="sim-terminal-box">
+                {simLogs.map((log, i) => (
+                  <div key={i} style={{ color: log.includes("[SUCCESS]") ? "#33FF85" : log.includes("[STAGE") ? "#00F0FF" : "var(--neon-green)" }}>
+                    <span style={{ opacity: 0.6, marginRight: 6 }}>&gt;</span>
+                    {log}
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         )}
