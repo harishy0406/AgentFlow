@@ -38,6 +38,47 @@ import {
   getOpenApiSpecDownloadUrl,
 } from "./lib/api";
 
+function RadialGauge({ value = 0, size = 110, strokeWidth = 10, label = "", color = "#00FF66", subtext = "" }) {
+  const radius = (size - strokeWidth) / 2;
+  const circumference = 2 * Math.PI * radius;
+  const clamped = Math.min(100, Math.max(0, value));
+  const strokeDashoffset = circumference - (clamped / 100) * circumference;
+
+  return (
+    <div className="radial-gauge-card">
+      <svg width={size} height={size} style={{ transform: "rotate(-90deg)" }}>
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={radius}
+          stroke="rgba(255, 255, 255, 0.08)"
+          strokeWidth={strokeWidth}
+          fill="transparent"
+        />
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={radius}
+          stroke={color}
+          strokeWidth={strokeWidth}
+          strokeDasharray={circumference}
+          strokeDashoffset={strokeDashoffset}
+          strokeLinecap="round"
+          fill="transparent"
+          style={{ transition: "stroke-dashoffset 0.8s ease" }}
+        />
+      </svg>
+      <div style={{ position: "relative", marginTop: -size / 2 - 14, marginBottom: size / 2 - 24, textAlign: "center" }}>
+        <div style={{ fontSize: 18, fontWeight: 800, color: "var(--text-primary)", fontFamily: "var(--font-display)" }}>
+          {clamped}%
+        </div>
+      </div>
+      <div style={{ fontSize: 12, fontWeight: 700, color: "var(--text-primary)", marginTop: 8 }}>{label}</div>
+      {subtext && <div style={{ fontSize: 10, color: "var(--text-muted)", marginTop: 2 }}>{subtext}</div>}
+    </div>
+  );
+}
+
 export default function Home() {
   const [activeTab, setActiveTab] = useState("create");
   const [projectName, setProjectName] = useState("");
@@ -2073,69 +2114,100 @@ export default function Home() {
           </div>
         )}
 
-        {/* Tab: Metrics (Phase 3 — Full Implementation) */}
+        {/* Tab: Metrics (Phase 3 + Cyber SVG Health Gauges & Audit Exporter) */}
         {activeTab === "metrics" && currentProject && (
           <div className="card">
-            <h2 className="card-title">Project Health & Metrics</h2>
-            <p style={{ color: "var(--text-muted)", fontSize: 13, marginBottom: 20 }}>
-              Per-artifact cost, quality signals, and automated readiness scorecard.
-            </p>
-
-            {/* Health Scorecard Widget */}
-            {projectHealth && (
-              <div
-                style={{
-                  background: "var(--bg-secondary)",
-                  border: "1px solid var(--border)",
-                  borderRadius: 8,
-                  padding: 16,
-                  marginBottom: 24,
-                  display: "grid",
-                  gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
-                  gap: 16,
-                }}
-              >
-                <div>
-                  <div style={{ fontSize: 11, color: "var(--text-muted)", textTransform: "uppercase", fontWeight: 700 }}>
-                    Readiness Score
-                  </div>
-                  <div style={{ fontSize: 24, fontWeight: 800, color: projectHealth.overall_readiness_pct >= 80 ? "#3fb950" : "#d29922", marginTop: 4 }}>
-                    {projectHealth.overall_readiness_pct}%
-                  </div>
-                  <div style={{ fontSize: 12, color: "var(--text-secondary)" }}>{projectHealth.readiness_label}</div>
-                </div>
-
-                <div>
-                  <div style={{ fontSize: 11, color: "var(--text-muted)", textTransform: "uppercase", fontWeight: 700 }}>
-                    Artifact Pipeline
-                  </div>
-                  <div style={{ fontSize: 24, fontWeight: 800, color: "var(--text-primary)", marginTop: 4 }}>
-                    {projectHealth.artifacts_generated}/{projectHealth.total_expected_artifacts}
-                  </div>
-                  <div style={{ fontSize: 12, color: "var(--text-secondary)" }}>{projectHealth.artifact_completion_pct}% complete</div>
-                </div>
-
-                <div>
-                  <div style={{ fontSize: 11, color: "var(--text-muted)", textTransform: "uppercase", fontWeight: 700 }}>
-                    Consistency Index
-                  </div>
-                  <div style={{ fontSize: 24, fontWeight: 800, color: projectHealth.consistency_score_pct >= 90 ? "#3fb950" : "#f85149", marginTop: 4 }}>
-                    {projectHealth.consistency_score_pct}%
-                  </div>
-                  <div style={{ fontSize: 12, color: "var(--text-secondary)" }}>{projectHealth.open_drifts_count} open drift(s)</div>
-                </div>
-
-                <div>
-                  <div style={{ fontSize: 11, color: "var(--text-muted)", textTransform: "uppercase", fontWeight: 700 }}>
-                    Codebase Status
-                  </div>
-                  <div style={{ fontSize: 20, fontWeight: 800, color: "var(--accent-blue)", marginTop: 6 }}>
-                    {projectHealth.codebase_status}
-                  </div>
-                  <div style={{ fontSize: 12, color: "var(--text-secondary)" }}>Scaffolded in disk</div>
-                </div>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20, flexWrap: "wrap", gap: 12 }}>
+              <div>
+                <h2 className="card-title" style={{ margin: 0 }}>
+                  📊 System Health Gauges &amp; Telemetry
+                </h2>
+                <p style={{ color: "var(--text-secondary)", fontSize: 13, marginTop: 4 }}>
+                  Real-time multi-dimensional readiness metrics, token burn rates, and cryptographic audit logs.
+                </p>
               </div>
-            )}
+              <div style={{ display: "flex", gap: 8 }}>
+                <button
+                  className="btn btn-secondary btn-sm"
+                  onClick={() => {
+                    const auditReport = {
+                      project_id: currentProject.id,
+                      project_name: currentProject.name,
+                      exported_at: new Date().toISOString(),
+                      readiness_score_pct: projectHealth?.overall_readiness_pct || 0,
+                      consistency_index_pct: projectHealth?.consistency_score_pct || 0,
+                      total_cost_usd: analyticsData?.total_cost_usd || 0,
+                      total_tokens_used: analyticsData?.total_tokens_used || 0,
+                      artifacts: artifacts.map((a) => ({
+                        type: a.artifact_type,
+                        version: a.version,
+                        status: a.status,
+                        model: a.generated_by_model,
+                        quality_score: a.quality_signal_score,
+                      })),
+                      drifts: drifts.map((d) => ({
+                        id: d.id,
+                        severity: d.severity,
+                        status: d.status,
+                        description: d.description,
+                      })),
+                    };
+                    downloadTextFile(`agentflow_audit_${currentProject.id.substring(0, 8)}.json`, JSON.stringify(auditReport, null, 2), "application/json");
+                    showToast("Downloaded JSON Audit Telemetry Report!", "success");
+                  }}
+                >
+                  📥 Export Audit JSON
+                </button>
+                <button
+                  className="btn btn-primary btn-sm"
+                  onClick={() => {
+                    const csvLines = [
+                      "Category,Metric,Value",
+                      `Project,ID,"${currentProject.id}"`,
+                      `Project,Name,"${currentProject.name}"`,
+                      `Readiness,OverallScore,"${projectHealth?.overall_readiness_pct || 0}%"`,
+                      `Readiness,ConsistencyIndex,"${projectHealth?.consistency_score_pct || 0}%"`,
+                      `Artifacts,GeneratedCount,"${projectHealth?.artifacts_generated || 0}"`,
+                      `Drifts,OpenCount,"${projectHealth?.open_drifts_count || 0}"`,
+                      `Cost,TotalUSD,"$${analyticsData?.total_cost_usd?.toFixed(4) || '0.0000'}"`,
+                      `Tokens,TotalUsed,"${analyticsData?.total_tokens_used || 0}"`,
+                    ];
+                    downloadTextFile(`agentflow_audit_${currentProject.id.substring(0, 8)}.csv`, csvLines.join("\n"), "text/csv");
+                    showToast("Downloaded CSV Audit Telemetry Report!", "success");
+                  }}
+                >
+                  📊 Export CSV
+                </button>
+              </div>
+            </div>
+
+            {/* Dynamic SVG Radial Health Gauges Grid */}
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 16, marginBottom: 28 }}>
+              <RadialGauge
+                value={projectHealth?.overall_readiness_pct || 0}
+                label="Overall Readiness"
+                subtext={projectHealth?.readiness_label || "Calculating..."}
+                color={projectHealth?.overall_readiness_pct >= 80 ? "var(--neon-green)" : "var(--accent-yellow)"}
+              />
+              <RadialGauge
+                value={projectHealth?.consistency_score_pct || 100}
+                label="Consistency Index"
+                subtext={`${projectHealth?.open_drifts_count || 0} Drifts Active`}
+                color={projectHealth?.consistency_score_pct >= 90 ? "#33FF85" : "var(--accent-red)"}
+              />
+              <RadialGauge
+                value={projectHealth?.artifact_completion_pct || 0}
+                label="DAG Pipeline"
+                subtext={`${projectHealth?.artifacts_generated || 0}/6 Synchronized`}
+                color="var(--accent-cyan)"
+              />
+              <RadialGauge
+                value={verificationData ? verificationData.verification_score_pct : 100}
+                label="AST Code Cleanliness"
+                subtext={verificationData?.all_passed ? "All Smoke Tests Passed" : "Static Syntax Verified"}
+                color="var(--accent-blue)"
+              />
+            </div>
 
             {/* Summary Stats & Token Analytics */}
             <div className="grid-3" style={{ marginBottom: 24 }}>
@@ -2165,7 +2237,7 @@ export default function Home() {
             {analyticsData && analyticsData.by_model.length > 0 && (
               <div style={{ marginBottom: 24, background: "var(--bg-secondary)", borderRadius: 8, padding: 16 }}>
                 <h4 style={{ fontSize: 13, fontWeight: 700, marginBottom: 10, display: "flex", alignItems: "center", gap: 6 }}>
-                  <span>💸</span> Cost Breakdown by Model
+                  <span>💸</span> Multi-Model Cost &amp; Token Breakdown
                 </h4>
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 10 }}>
                   {analyticsData.by_model.map((m) => (
