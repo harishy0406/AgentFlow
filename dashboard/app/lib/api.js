@@ -298,3 +298,16 @@ export async function generatePostmanCollection(projectId) {
 export function getPostmanCollectionDownloadUrl(projectId) {
   return `${API_BASE}/projects/${projectId}/postman-collection.json`;
 }
+
+// ---------------------------------------------------------------------------
+// Enterprise DevOps & CI/CD Pipeline Generator
+// ---------------------------------------------------------------------------
+
+export async function getProjectCicdPipeline(projectId) {
+  return request(`/projects/${projectId}/cicd-pipeline`);
+}
+
+export async function generateProjectCicdPipeline(projectId) {
+  return request(`/projects/${projectId}/generate-cicd`, { method: "POST" });
+}
+
