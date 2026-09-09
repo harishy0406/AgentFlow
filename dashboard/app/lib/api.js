@@ -284,17 +284,17 @@ export async function getProjectOpenApiSpec(projectId) {
 }
 
 export function getOpenApiSpecDownloadUrl(projectId) {
-  return `${API_BASE_URL}/projects/${projectId}/openapi.json`;
+  return `${API_BASE}/projects/${projectId}/openapi.json`;
 }
 
+// ---------------------------------------------------------------------------
+// Postman Collection v2.1.0 Exporter
+// ---------------------------------------------------------------------------
 
+export async function generatePostmanCollection(projectId) {
+  return request(`/projects/${projectId}/generate-postman`, { method: "POST" });
+}
 
-
-
-
-
-
-
-
-
-
+export function getPostmanCollectionDownloadUrl(projectId) {
+  return `${API_BASE}/projects/${projectId}/postman-collection.json`;
+}

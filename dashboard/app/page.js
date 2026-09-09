@@ -36,6 +36,8 @@ import {
   assignProjectToWorkspace,
   validateWorkspaceContracts,
   getOpenApiSpecDownloadUrl,
+  generatePostmanCollection,
+  getPostmanCollectionDownloadUrl,
 } from "./lib/api";
 
 function RadialGauge({ value = 0, size = 110, strokeWidth = 10, label = "", color = "#00FF66", subtext = "" }) {
@@ -102,6 +104,12 @@ export default function Home() {
   const [generatingMigrations, setGeneratingMigrations] = useState(false);
   const [showMigrationModal, setShowMigrationModal] = useState(false);
   const [migrationSubTab, setMigrationSubTab] = useState("sql"); // 'sql' | 'alembic' | 'tables'
+
+  // Postman Collection Modal state
+  const [postmanData, setPostmanData] = useState(null);
+  const [generatingPostman, setGeneratingPostman] = useState(false);
+  const [showPostmanModal, setShowPostmanModal] = useState(false);
+  const [postmanSubTab, setPostmanSubTab] = useState("explorer"); // 'explorer' | 'raw' | 'variables'
 
   const downloadTextFile = (filename, text, mime = "text/plain") => {
     const blob = new Blob([text], { type: mime });
@@ -532,6 +540,27 @@ export default function Home() {
                 title="Generate and inspect SQL DDL & Alembic Migrations"
               >
                 🛠️ {generatingMigrations ? "..." : "Migrations"}
+              </button>
+              <button
+                className="btn btn-secondary btn-sm"
+                disabled={generatingPostman}
+                onClick={async () => {
+                  setGeneratingPostman(true);
+                  try {
+                    const res = await generatePostmanCollection(currentProject.id);
+                    setPostmanData(res.collection);
+                    setShowPostmanModal(true);
+                    showToast(`Generated Postman Collection with ${res.folders_count} folder modules!`, "success");
+                  } catch (err) {
+                    showToast(err.message, "error");
+                  } finally {
+                    setGeneratingPostman(false);
+                  }
+                }}
+                style={{ fontSize: 12, padding: "5px 10px" }}
+                title="Generate and inspect Postman Collection v2.1.0"
+              >
+                📬 {generatingPostman ? "..." : "Postman"}
               </button>
               <button
                 className="btn btn-secondary btn-sm"
@@ -3117,6 +3146,312 @@ export default function Home() {
           </div>
         </div>
       )}
+
+      {/* Postman Collection Explorer Modal */}
+      {showPostmanModal && postmanData && (
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: "rgba(0, 0, 0, 0.85)",
+            backdropFilter: "blur(8px)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 1000,
+            padding: 20,
+          }}
+        >
+          <div
+            style={{
+              background: "var(--bg-card)",
+              border: "1px solid var(--border)",
+              borderRadius: 12,
+              width: "100%",
+              maxWidth: 960,
+              maxHeight: "90vh",
+              display: "flex",
+              flexDirection: "column",
+              boxShadow: "0 10px 40px rgba(0, 255, 102, 0.15)",
+              overflow: "hidden",
+            }}
+          >
+            {/* Modal Header */}
+            <div
+              style={{
+                padding: "16px 20px",
+                borderBottom: "1px solid var(--border)",
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                background: "var(--bg-secondary)",
+              }}
+            >
+              <div>
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <h3 style={{ margin: 0, fontSize: 16, fontFamily: "var(--font-display)", color: "var(--text-primary)" }}>
+                    📬 Postman Collection v2.1.0 Explorer
+                  </h3>
+                  <span className="badge badge-green" style={{ fontSize: 10 }}>
+                    {postmanData.item?.length || 0} Modules
+                  </span>
+                  <span className="badge badge-cyan" style={{ fontSize: 10 }}>
+                    Schema v2.1.0
+                  </span>
+                </div>
+                <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 4 }}>
+                  {postmanData.info?.name} — Pre-configured mock payloads, headers, and automated test assertion scripts
+                </div>
+              </div>
+              <button
+                onClick={() => setShowPostmanModal(false)}
+                className="btn btn-secondary btn-sm"
+                style={{ fontSize: 14, padding: "4px 10px" }}
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Modal Subtabs & Actions Bar */}
+            <div
+              style={{
+                padding: "10px 20px",
+                background: "var(--bg-card)",
+                borderBottom: "1px solid var(--border)",
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                flexWrap: "wrap",
+                gap: 10,
+              }}
+            >
+              <div style={{ display: "flex", gap: 8 }}>
+                <button
+                  className={`tab ${postmanSubTab === "explorer" ? "active" : ""}`}
+                  onClick={() => setPostmanSubTab("explorer")}
+                  style={{ padding: "5px 12px", fontSize: 12, borderRadius: 6 }}
+                >
+                  📂 Folders &amp; Requests ({postmanData.item?.length || 0})
+                </button>
+                <button
+                  className={`tab ${postmanSubTab === "raw" ? "active" : ""}`}
+                  onClick={() => setPostmanSubTab("raw")}
+                  style={{ padding: "5px 12px", fontSize: 12, borderRadius: 6 }}
+                >
+                  📄 Raw Collection JSON
+                </button>
+                <button
+                  className={`tab ${postmanSubTab === "variables" ? "active" : ""}`}
+                  onClick={() => setPostmanSubTab("variables")}
+                  style={{ padding: "5px 12px", fontSize: 12, borderRadius: 6 }}
+                >
+                  🔑 Environment Variables ({postmanData.variable?.length || 0})
+                </button>
+              </div>
+
+              <div style={{ display: "flex", gap: 8 }}>
+                <button
+                  className="btn btn-secondary btn-sm"
+                  onClick={() => {
+                    navigator.clipboard.writeText(JSON.stringify(postmanData, null, 2));
+                    showToast("Copied Postman Collection JSON to clipboard!", "success");
+                  }}
+                  style={{ fontSize: 11, padding: "4px 10px" }}
+                >
+                  📋 Copy JSON
+                </button>
+                <button
+                  className="btn btn-primary btn-sm"
+                  onClick={() => downloadTextFile(`${postmanData.info?.name?.replace(/[^a-zA-Z0-9_-]/g, "_") || "collection"}.postman_collection.json`, JSON.stringify(postmanData, null, 2), "application/json")}
+                  style={{ fontSize: 11, padding: "4px 10px" }}
+                >
+                  ⬇️ Download .json
+                </button>
+                <a
+                  href={getPostmanCollectionDownloadUrl(currentProject?.id)}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="btn btn-secondary btn-sm"
+                  style={{ textDecoration: "none", fontSize: 11, padding: "4px 10px" }}
+                  title="Direct raw JSON URL"
+                >
+                  🔗 Direct URL
+                </a>
+              </div>
+            </div>
+
+            {/* Modal Body */}
+            <div style={{ padding: 20, overflowY: "auto", maxHeight: "65vh", background: "#040705" }}>
+              {postmanSubTab === "explorer" && (
+                <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                  {postmanData.item?.map((folder, fIdx) => (
+                    <div
+                      key={fIdx}
+                      style={{
+                        background: "var(--bg-secondary)",
+                        border: "1px solid var(--border)",
+                        borderRadius: 8,
+                        padding: 14,
+                      }}
+                    >
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                          <strong style={{ fontSize: 14, color: "var(--neon-green)", fontFamily: "var(--font-mono)" }}>
+                            📁 {folder.name}
+                          </strong>
+                          <span style={{ fontSize: 11, color: "var(--text-muted)" }}>
+                            {folder.description}
+                          </span>
+                        </div>
+                        <span className="badge badge-cyan" style={{ fontSize: 10 }}>
+                          {folder.item?.length || 0} endpoints
+                        </span>
+                      </div>
+
+                      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                        {folder.item?.map((reqItem, rIdx) => {
+                          const method = reqItem.request?.method || "GET";
+                          const methodColor =
+                            method === "POST"
+                              ? "var(--neon-green)"
+                              : method === "GET"
+                              ? "#38BDF8"
+                              : method === "PUT"
+                              ? "#FBBF24"
+                              : "#F87171";
+                          return (
+                            <div
+                              key={rIdx}
+                              style={{
+                                background: "rgba(0, 0, 0, 0.4)",
+                                border: "1px solid rgba(255, 255, 255, 0.06)",
+                                borderRadius: 6,
+                                padding: 12,
+                              }}
+                            >
+                              <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
+                                <span
+                                  style={{
+                                    fontSize: 10,
+                                    fontWeight: 800,
+                                    padding: "2px 6px",
+                                    borderRadius: 4,
+                                    background: "rgba(255, 255, 255, 0.06)",
+                                    color: methodColor,
+                                    fontFamily: "var(--font-mono)",
+                                  }}
+                                >
+                                  {method}
+                                </span>
+                                <span style={{ fontSize: 12, color: "var(--text-primary)", fontFamily: "var(--font-mono)", flex: 1 }}>
+                                  {reqItem.request?.url?.raw || reqItem.name}
+                                </span>
+                                <span style={{ fontSize: 10, color: "var(--text-muted)" }}>
+                                  {reqItem.event?.length || 0} assertions
+                                </span>
+                              </div>
+
+                              {reqItem.request?.body?.raw && (
+                                <div style={{ marginTop: 6 }}>
+                                  <div style={{ fontSize: 10, color: "var(--text-muted)", marginBottom: 2 }}>Sample Request Body:</div>
+                                  <pre
+                                    style={{
+                                      margin: 0,
+                                      padding: 8,
+                                      background: "rgba(0,0,0,0.5)",
+                                      borderRadius: 4,
+                                      fontSize: 11,
+                                      fontFamily: "var(--font-mono)",
+                                      color: "#A7F3D0",
+                                      maxHeight: 100,
+                                      overflowY: "auto",
+                                    }}
+                                  >
+                                    {reqItem.request.body.raw}
+                                  </pre>
+                                </div>
+                              )}
+
+                              {reqItem.event?.[0]?.script?.exec && (
+                                <div style={{ marginTop: 6 }}>
+                                  <div style={{ fontSize: 10, color: "var(--text-muted)", marginBottom: 2 }}>pm.test Assertions:</div>
+                                  <pre
+                                    style={{
+                                      margin: 0,
+                                      padding: 8,
+                                      background: "rgba(0,0,0,0.5)",
+                                      borderRadius: 4,
+                                      fontSize: 10,
+                                      fontFamily: "var(--font-mono)",
+                                      color: "#93C5FD",
+                                    }}
+                                  >
+                                    {reqItem.event[0].script.exec.join("\n")}
+                                  </pre>
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {postmanSubTab === "raw" && (
+                <pre
+                  style={{
+                    margin: 0,
+                    fontFamily: "var(--font-mono)",
+                    fontSize: 11,
+                    lineHeight: 1.6,
+                    color: "var(--neon-green)",
+                    whiteSpace: "pre-wrap",
+                  }}
+                >
+                  {JSON.stringify(postmanData, null, 2)}
+                </pre>
+              )}
+
+              {postmanSubTab === "variables" && (
+                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                  {postmanData.variable?.map((v, vIdx) => (
+                    <div
+                      key={vIdx}
+                      style={{
+                        background: "var(--bg-secondary)",
+                        border: "1px solid var(--border)",
+                        borderRadius: 6,
+                        padding: 12,
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                      }}
+                    >
+                      <div>
+                        <strong style={{ fontSize: 13, color: "var(--neon-green)", fontFamily: "var(--font-mono)" }}>
+                          {`{{${v.key}}}`}
+                        </strong>
+                        <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 2 }}>
+                          {v.description}
+                        </div>
+                      </div>
+                      <span style={{ fontSize: 12, color: "#38BDF8", fontFamily: "var(--font-mono)", background: "rgba(0,0,0,0.3)", padding: "4px 8px", borderRadius: 4 }}>
+                        {v.value}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
+
