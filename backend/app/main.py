@@ -27,6 +27,7 @@ from .agents.assistant import answer_project_query
 from .agents.migrator import generate_and_save_migrations
 from .agents.workspace import validate_workspace_cross_service_contracts
 from .agents.openapi_generator import generate_openapi_spec
+from .agents.postman_generator import generate_postman_collection
 
 # Create database tables (in a real app, use alembic)
 models.Base.metadata.create_all(bind=engine)
@@ -954,6 +955,60 @@ def create_project_migrations(project_id: UUID, db: Session = Depends(get_db)):
     try:
         res = generate_and_save_migrations(project_id=project_id, db=db)
         return schemas.ProjectMigrationOut(**res)
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+
+
+@app.get("/projects/{project_id}/openapi.json")
+def get_project_openapi_spec(project_id: UUID, db: Session = Depends(get_db)):
+    """
+    Exports a machine-readable OpenAPI 3.0.3 Swagger specification in JSON format.
+    """
+    try:
+        spec = generate_openapi_spec(str(project_id), db)
+        return Response(
+            content=json.dumps(spec, indent=2),
+            media_type="application/json",
+            headers={
+                "Content-Disposition": f"attachment; filename=openapi_{str(project_id)[:8]}.json"
+            }
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+
+
+@app.get("/projects/{project_id}/postman-collection.json")
+def get_project_postman_collection(project_id: UUID, db: Session = Depends(get_db)):
+    """
+    Exports an automated Postman Collection v2.1.0 specification in JSON format.
+    """
+    try:
+        collection = generate_postman_collection(project_id, db)
+        return Response(
+            content=json.dumps(collection, indent=2),
+            media_type="application/json",
+            headers={
+                "Content-Disposition": f"attachment; filename=postman_{str(project_id)[:8]}.json"
+            }
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+
+
+@app.post("/projects/{project_id}/generate-postman")
+def create_project_postman_collection(project_id: UUID, db: Session = Depends(get_db)):
+    """
+    Generates and returns the Postman Collection v2.1.0 for the project.
+    """
+    try:
+        collection = generate_postman_collection(project_id, db)
+        return {
+            "status": "success",
+            "project_id": str(project_id),
+            "collection_name": collection.get("info", {}).get("name", "API Collection"),
+            "folders_count": len(collection.get("item", [])),
+            "collection": collection
+        }
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
 
