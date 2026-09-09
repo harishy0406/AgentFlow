@@ -28,6 +28,7 @@ from .agents.migrator import generate_and_save_migrations
 from .agents.workspace import validate_workspace_cross_service_contracts
 from .agents.openapi_generator import generate_openapi_spec
 from .agents.postman_generator import generate_postman_collection
+from .agents.cicd_generator import generate_cicd_pipeline
 
 # Create database tables (in a real app, use alembic)
 models.Base.metadata.create_all(bind=engine)
@@ -1008,6 +1009,35 @@ def create_project_postman_collection(project_id: UUID, db: Session = Depends(ge
             "collection_name": collection.get("info", {}).get("name", "API Collection"),
             "folders_count": len(collection.get("item", [])),
             "collection": collection
+        }
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+
+
+@app.get("/projects/{project_id}/cicd-pipeline")
+def get_project_cicd_pipeline(project_id: UUID, db: Session = Depends(get_db)):
+    """
+    Returns the complete automated CI/CD pipeline, Docker, and deployment files for the project.
+    """
+    try:
+        pipeline = generate_cicd_pipeline(project_id, db)
+        return pipeline
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+
+
+@app.post("/projects/{project_id}/generate-cicd")
+def create_project_cicd_pipeline(project_id: UUID, db: Session = Depends(get_db)):
+    """
+    Generates and returns production CI/CD pipelines and Docker configuration for the project.
+    """
+    try:
+        pipeline = generate_cicd_pipeline(project_id, db)
+        return {
+            "status": "success",
+            "project_id": str(project_id),
+            "files_count": pipeline.get("files_count", 0),
+            "pipeline": pipeline
         }
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
