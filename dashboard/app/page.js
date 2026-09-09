@@ -35,6 +35,7 @@ import {
   getWorkspace,
   assignProjectToWorkspace,
   validateWorkspaceContracts,
+  getWorkspaceTopology,
   getOpenApiSpecDownloadUrl,
   generatePostmanCollection,
   getPostmanCollectionDownloadUrl,
@@ -102,6 +103,8 @@ export default function Home() {
   const [workspaceLoading, setWorkspaceLoading] = useState(false);
   const [contractValidation, setContractValidation] = useState(null);
   const [validatingContracts, setValidatingContracts] = useState(false);
+  const [workspaceTopology, setWorkspaceTopology] = useState(null);
+  const [topologyLoading, setTopologyLoading] = useState(false);
   const [migrationData, setMigrationData] = useState(null);
   const [generatingMigrations, setGeneratingMigrations] = useState(false);
   const [showMigrationModal, setShowMigrationModal] = useState(false);
@@ -2685,6 +2688,24 @@ export default function Home() {
                           </button>
                         )}
                         <button
+                          className="btn btn-secondary btn-sm"
+                          disabled={topologyLoading}
+                          onClick={async () => {
+                            setTopologyLoading(true);
+                            try {
+                              const topo = await getWorkspaceTopology(ws.id);
+                              setWorkspaceTopology(topo);
+                              showToast(`Loaded ${topo.nodes_count} microservice mesh topology nodes!`, "success");
+                            } catch (err) {
+                              showToast(err.message, "error");
+                            } finally {
+                              setTopologyLoading(false);
+                            }
+                          }}
+                        >
+                          🕸️ Mesh Topology
+                        </button>
+                        <button
                           className="btn btn-primary btn-sm"
                           disabled={validatingContracts}
                           onClick={async () => {
@@ -2724,6 +2745,195 @@ export default function Home() {
                     </div>
                   </div>
                 ))}
+              </div>
+            )}
+
+            {/* Interactive SVG Cross-Service Mesh Network Topology Viewer */}
+            {workspaceTopology && (
+              <div className="bento-card" style={{ marginTop: 24, borderColor: "#38BDF8", boxShadow: "0 8px 32px rgba(56, 189, 248, 0.15)" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+                  <div>
+                    <h4 style={{ fontSize: 16, fontWeight: 700, color: "#38BDF8", margin: 0, display: "flex", alignItems: "center", gap: 8 }}>
+                      <span>🕸️</span> Cross-Service Network Topology &amp; Architecture Matrix
+                    </h4>
+                    <div style={{ fontSize: 12, color: "var(--text-secondary)", marginTop: 2 }}>
+                      {workspaceTopology.workspace_name} — {workspaceTopology.nodes_count} active services, {workspaceTopology.edges_count} communication channels
+                    </div>
+                  </div>
+                  <button className="btn btn-secondary btn-sm" onClick={() => setWorkspaceTopology(null)}>
+                    ✕ Close Topology
+                  </button>
+                </div>
+
+                {/* Mesh Telemetry Counters */}
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 12, marginBottom: 20 }}>
+                  <div style={{ background: "var(--bg-secondary)", padding: 12, borderRadius: 8, border: "1px solid var(--border)" }}>
+                    <div style={{ fontSize: 11, color: "var(--text-muted)" }}>SERVICES IN MESH</div>
+                    <div style={{ fontSize: 18, fontWeight: 800, color: "var(--neon-green)", marginTop: 2 }}>
+                      {workspaceTopology.nodes_count} Nodes
+                    </div>
+                  </div>
+                  <div style={{ background: "var(--bg-secondary)", padding: 12, borderRadius: 8, border: "1px solid var(--border)" }}>
+                    <div style={{ fontSize: 11, color: "var(--text-muted)" }}>INTER-SERVICE RPC EDGES</div>
+                    <div style={{ fontSize: 18, fontWeight: 800, color: "#38BDF8", marginTop: 2 }}>
+                      {workspaceTopology.edges_count} Channels
+                    </div>
+                  </div>
+                  <div style={{ background: "var(--bg-secondary)", padding: 12, borderRadius: 8, border: "1px solid var(--border)" }}>
+                    <div style={{ fontSize: 11, color: "var(--text-muted)" }}>EXPORTED REST ENDPOINTS</div>
+                    <div style={{ fontSize: 18, fontWeight: 800, color: "#FBBF24", marginTop: 2 }}>
+                      {workspaceTopology.total_endpoints} Endpoints
+                    </div>
+                  </div>
+                  <div style={{ background: "var(--bg-secondary)", padding: 12, borderRadius: 8, border: "1px solid var(--border)" }}>
+                    <div style={{ fontSize: 11, color: "var(--text-muted)" }}>MESH HEALTH SLA</div>
+                    <div style={{ fontSize: 18, fontWeight: 800, color: "var(--neon-green)", marginTop: 2 }}>
+                      {workspaceTopology.mesh_health_score}%
+                    </div>
+                  </div>
+                </div>
+
+                {/* SVG Visual Mesh Topology Graph */}
+                <div
+                  style={{
+                    background: "#040705",
+                    border: "1px solid var(--border)",
+                    borderRadius: 8,
+                    padding: 24,
+                    marginBottom: 20,
+                    overflowX: "auto",
+                  }}
+                >
+                  <svg width="100%" height="220" viewBox="0 0 800 220" style={{ minWidth: 600 }}>
+                    <defs>
+                      <linearGradient id="edgeGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                        <stop offset="0%" stopColor="#00FF66" stopOpacity="0.8" />
+                        <stop offset="100%" stopColor="#38BDF8" stopOpacity="0.8" />
+                      </linearGradient>
+                    </defs>
+
+                    {/* Edge Lines */}
+                    {workspaceTopology.nodes?.length > 1 &&
+                      workspaceTopology.nodes.map((node, i) => {
+                        const x1 = 120 + (i * (560 / Math.max(1, workspaceTopology.nodes.length - 1)));
+                        const y1 = i % 2 === 0 ? 80 : 140;
+                        return workspaceTopology.nodes.slice(i + 1).map((targetNode, j) => {
+                          const targetIdx = i + 1 + j;
+                          const x2 = 120 + (targetIdx * (560 / Math.max(1, workspaceTopology.nodes.length - 1)));
+                          const y2 = targetIdx % 2 === 0 ? 80 : 140;
+                          return (
+                            <g key={`line-${i}-${targetIdx}`}>
+                              <line
+                                x1={x1}
+                                y1={y1}
+                                x2={x2}
+                                y2={y2}
+                                stroke="url(#edgeGrad)"
+                                strokeWidth="2"
+                                strokeDasharray="5,5"
+                              />
+                              <circle
+                                cx={(x1 + x2) / 2}
+                                cy={(y1 + y2) / 2}
+                                r="4"
+                                fill="#38BDF8"
+                              />
+                            </g>
+                          );
+                        });
+                      })}
+
+                    {/* Nodes */}
+                    {workspaceTopology.nodes?.map((node, i) => {
+                      const cx = 120 + (i * (560 / Math.max(1, workspaceTopology.nodes.length - 1)));
+                      const cy = i % 2 === 0 ? 80 : 140;
+                      const isGateway = node.type === "gateway";
+                      const strokeColor = isGateway ? "#38BDF8" : "var(--neon-green)";
+
+                      return (
+                        <g key={node.id} style={{ cursor: "pointer" }}>
+                          <circle
+                            cx={cx}
+                            cy={cy}
+                            r="32"
+                            fill="#0A100D"
+                            stroke={strokeColor}
+                            strokeWidth="2.5"
+                          />
+                          <text
+                            x={cx}
+                            y={cy - 4}
+                            textAnchor="middle"
+                            fill="var(--text-primary)"
+                            fontSize="11"
+                            fontWeight="800"
+                            fontFamily="var(--font-mono)"
+                          >
+                            {node.name.length > 14 ? node.name.slice(0, 12) + ".." : node.name}
+                          </text>
+                          <text
+                            x={cx}
+                            y={cy + 12}
+                            textAnchor="middle"
+                            fill={strokeColor}
+                            fontSize="9"
+                            fontWeight="700"
+                          >
+                            {isGateway ? "GATEWAY" : "SERVICE"}
+                          </text>
+                          <text
+                            x={cx}
+                            y={cy + 50}
+                            textAnchor="middle"
+                            fill="var(--text-muted)"
+                            fontSize="10"
+                          >
+                            {node.endpoints_count} endpoints • {node.tables_count} tbls
+                          </text>
+                        </g>
+                      );
+                    })}
+                  </svg>
+                </div>
+
+                {/* Cross-Service RPC Dependency Matrix Table */}
+                <h5 style={{ fontSize: 13, fontWeight: 700, color: "var(--text-primary)", marginBottom: 10 }}>
+                  ⚡ Inter-Service Communication Channels &amp; SLAs
+                </h5>
+                <div style={{ overflowX: "auto" }}>
+                  <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
+                    <thead>
+                      <tr style={{ borderBottom: "1px solid var(--border)", color: "var(--text-muted)", textAlign: "left" }}>
+                        <th style={{ padding: "8px 12px" }}>Source Service</th>
+                        <th style={{ padding: "8px 12px" }}>Target Service</th>
+                        <th style={{ padding: "8px 12px" }}>Protocol</th>
+                        <th style={{ padding: "8px 12px" }}>Latency (p99)</th>
+                        <th style={{ padding: "8px 12px" }}>Auth Mode</th>
+                        <th style={{ padding: "8px 12px" }}>SLA Uptime</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {workspaceTopology.edges?.map((e) => (
+                        <tr key={e.id} style={{ borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
+                          <td style={{ padding: "8px 12px", color: "var(--neon-green)", fontWeight: 700 }}>
+                            {e.source_name}
+                          </td>
+                          <td style={{ padding: "8px 12px", color: "#38BDF8", fontWeight: 700 }}>
+                            {e.target_name}
+                          </td>
+                          <td style={{ padding: "8px 12px" }}>{e.protocol}</td>
+                          <td style={{ padding: "8px 12px" }}>{e.latency_p99}</td>
+                          <td style={{ padding: "8px 12px" }}>
+                            <span className="badge badge-cyan" style={{ fontSize: 10 }}>
+                              {e.auth_mode}
+                            </span>
+                          </td>
+                          <td style={{ padding: "8px 12px", color: "var(--neon-green)" }}>{e.sla_status}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             )}
 

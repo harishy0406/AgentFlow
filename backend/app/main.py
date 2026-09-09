@@ -25,7 +25,7 @@ from .agents.scaffolder import parse_code_files, sanitize_project_slug
 from .agents.tester import verify_project_codebase
 from .agents.assistant import answer_project_query
 from .agents.migrator import generate_and_save_migrations
-from .agents.workspace import validate_workspace_cross_service_contracts
+from .agents.workspace import validate_workspace_cross_service_contracts, get_workspace_topology
 from .agents.openapi_generator import generate_openapi_spec
 from .agents.postman_generator import generate_postman_collection
 from .agents.cicd_generator import generate_cicd_pipeline
@@ -198,6 +198,19 @@ def validate_workspace_contracts(workspace_id: UUID, db: Session = Depends(get_d
     try:
         res = validate_workspace_cross_service_contracts(workspace_id, db)
         return schemas.WorkspaceContractsOut(**res)
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+
+
+@app.get("/workspaces/{workspace_id}/topology")
+def get_workspace_network_topology(workspace_id: UUID, db: Session = Depends(get_db)):
+    """
+    Returns the complete cross-service topology graph, endpoint mappings,
+    and mesh SLA metrics for the workspace.
+    """
+    try:
+        topology = get_workspace_topology(workspace_id, db)
+        return topology
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
 

@@ -275,6 +275,10 @@ export async function validateWorkspaceContracts(workspaceId) {
   });
 }
 
+export async function getWorkspaceTopology(workspaceId) {
+  return request(`/workspaces/${workspaceId}/topology`);
+}
+
 // ---------------------------------------------------------------------------
 // OpenAPI 3.0.3 Specification Exporter
 // ---------------------------------------------------------------------------
