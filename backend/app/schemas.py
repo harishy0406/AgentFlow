@@ -522,3 +522,55 @@ class SecurityAuditReport(BaseModel):
     vulnerabilities: List[SecurityVulnerability] = []
     remediation_status: str
     timestamp: str
+
+
+# ---------------------------------------------------------------------------
+# Performance Benchmarking & Load Testing Schemas
+# ---------------------------------------------------------------------------
+
+class LoadTestRequest(BaseModel):
+    target_endpoint: Optional[str] = "/api/v1/projects"
+    method: str = "GET"
+    virtual_users: int = 50
+    duration_seconds: int = 10
+    ramp_up_seconds: int = 2
+    payload_body: Optional[Dict[str, Any]] = None
+
+
+class LatencyPercentiles(BaseModel):
+    p50_ms: float
+    p90_ms: float
+    p95_ms: float
+    p99_ms: float
+    min_ms: float
+    max_ms: float
+    avg_ms: float
+
+
+class OptimizationRecommendation(BaseModel):
+    category: str  # CACHING, DATABASE, ASYNC, GATEWAY
+    title: str
+    impact: str  # HIGH, MEDIUM, LOW
+    description: str
+    code_example: Optional[str] = None
+
+
+class LoadTestResult(BaseModel):
+    id: str
+    project_id: UUID
+    project_name: str
+    target_endpoint: str
+    method: str
+    virtual_users: int
+    duration_seconds: int
+    total_requests: int
+    successful_requests: int
+    failed_requests: int
+    requests_per_sec: float
+    error_rate_pct: float
+    throughput_mb_per_sec: float
+    latencies: LatencyPercentiles
+    status_distribution: Dict[str, int]
+    recommendations: List[OptimizationRecommendation] = []
+    timestamp: str
+

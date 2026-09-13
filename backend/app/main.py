@@ -1715,3 +1715,38 @@ def get_or_run_security_audit(
         raise HTTPException(status_code=500, detail=str(e))
 
 
+# ---------------------------------------------------------------------------
+# Phase 8+: Performance Benchmarking & High-Concurrency Load Tester
+# ---------------------------------------------------------------------------
+
+from .agents.load_tester import execute_project_load_test
+
+@app.post("/projects/{project_id}/load-test", response_model=schemas.LoadTestResult)
+def trigger_project_load_test(
+    project_id: UUID,
+    payload: schemas.LoadTestRequest,
+    db: Session = Depends(get_db)
+):
+    """
+    Executes a high-concurrency synthetic stress test and load profile simulation,
+    measuring latency percentiles, throughput (RPS), and generating AI tuning recommendations.
+    """
+    try:
+        result = execute_project_load_test(
+            project_id=project_id,
+            target_endpoint=payload.target_endpoint or "/api/v1/projects",
+            method=payload.method,
+            virtual_users=payload.virtual_users,
+            duration_seconds=payload.duration_seconds,
+            ramp_up_seconds=payload.ramp_up_seconds,
+            payload_body=payload.payload_body,
+            db=db
+        )
+        return result
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+
