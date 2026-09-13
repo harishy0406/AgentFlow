@@ -1689,3 +1689,29 @@ def get_mock_routes(
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+
+# ---------------------------------------------------------------------------
+# Phase 8+: OWASP & AST Security Shield & Vulnerability Audit Engine
+# ---------------------------------------------------------------------------
+
+from .agents.security_scanner import run_project_security_audit
+
+@app.get("/projects/{project_id}/security-audit", response_model=schemas.SecurityAuditReport)
+@app.post("/projects/{project_id}/run-security-audit", response_model=schemas.SecurityAuditReport)
+def get_or_run_security_audit(
+    project_id: UUID,
+    db: Session = Depends(get_db)
+):
+    """
+    Runs automated OWASP Top 10 and AST vulnerability scans across all project
+    artifacts and code files, returning a comprehensive security report and score.
+    """
+    try:
+        report = run_project_security_audit(project_id=project_id, db=db)
+        return report
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
