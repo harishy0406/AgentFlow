@@ -349,3 +349,29 @@ export async function runSecurityAudit(projectId) {
     method: "POST",
   });
 }
+
+// ---------------------------------------------------------------------------
+// High-Concurrency API Load Tester & Performance Benchmark
+// ---------------------------------------------------------------------------
+
+export async function runProjectLoadTest(projectId, {
+  targetEndpoint = "/api/v1/projects",
+  method = "GET",
+  virtualUsers = 50,
+  durationSeconds = 10,
+  rampUpSeconds = 2,
+  payloadBody = null,
+} = {}) {
+  return request(`/projects/${projectId}/load-test`, {
+    method: "POST",
+    body: JSON.stringify({
+      target_endpoint: targetEndpoint,
+      method,
+      virtual_users: virtualUsers,
+      duration_seconds: durationSeconds,
+      ramp_up_seconds: rampUpSeconds,
+      payload_body: payloadBody,
+    }),
+  });
+}
+

@@ -45,6 +45,7 @@ import {
   executeMockApiCall,
   getSecurityAudit,
   runSecurityAudit,
+  runProjectLoadTest,
 } from "./lib/api";
 
 function RadialGauge({ value = 0, size = 110, strokeWidth = 10, label = "", color = "#00FF66", subtext = "" }) {
@@ -146,6 +147,14 @@ export default function Home() {
   const [securityScanning, setSecurityScanning] = useState(false);
   const [securityRemediating, setSecurityRemediating] = useState(false);
   const [securityFilterSeverity, setSecurityFilterSeverity] = useState("ALL");
+
+  // Performance Load Testing & Benchmark state
+  const [loadTestResult, setLoadTestResult] = useState(null);
+  const [loadTestingRunning, setLoadTestingRunning] = useState(false);
+  const [loadTestTargetEndpoint, setLoadTestTargetEndpoint] = useState("/api/v1/projects");
+  const [loadTestMethod, setLoadTestMethod] = useState("GET");
+  const [loadTestUsers, setLoadTestUsers] = useState(100);
+  const [loadTestDuration, setLoadTestDuration] = useState(10);
 
   const downloadTextFile = (filename, text, mime = "text/plain") => {
     const blob = new Blob([text], { type: mime });
@@ -1225,6 +1234,24 @@ export default function Home() {
                 disabled={!currentProject}
               >
                 🛡️ Security Shield
+              </button>
+              <button
+                className={`tab ${activeTab === "load-testing" ? "active" : ""}`}
+                onClick={async () => {
+                  setActiveTab("load-testing");
+                  if (currentProject && !loadTestResult) {
+                    try {
+                      const routes = await listMockRoutes(currentProject.id);
+                      if (routes && routes.length > 0) {
+                        setLoadTestTargetEndpoint(routes[0].path);
+                        setLoadTestMethod(routes[0].method);
+                      }
+                    } catch (e) {}
+                  }
+                }}
+                disabled={!currentProject}
+              >
+                🚀 Load Testing
               </button>
             </div>
 
@@ -4024,6 +4051,297 @@ export default function Home() {
                 </div>
               )}
             </div>
+          </div>
+        )}
+
+        {/* Tab: High-Concurrency Load Testing & Performance Benchmarks */}
+        {activeTab === "load-testing" && currentProject && (
+          <div className="card">
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 20, flexWrap: "wrap", gap: 12 }}>
+              <div>
+                <h2 className="card-title" style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <span>🚀</span> High-Concurrency API Load Tester &amp; Benchmark Studio
+                </h2>
+                <p style={{ color: "var(--text-muted)", fontSize: 13, margin: "4px 0 0" }}>
+                  Stress test and benchmark your project's endpoints under synthetic multi-user concurrency, measuring p50/p95/p99 tail latency, RPS throughput, and database bottlenecks.
+                </p>
+              </div>
+
+              <div style={{ display: "flex", gap: 8 }}>
+                <button
+                  className="btn btn-primary"
+                  disabled={loadTestingRunning}
+                  onClick={async () => {
+                    setLoadTestingRunning(true);
+                    try {
+                      const res = await runProjectLoadTest(currentProject.id, {
+                        targetEndpoint: loadTestTargetEndpoint,
+                        method: loadTestMethod,
+                        virtualUsers: loadTestUsers,
+                        durationSeconds: loadTestDuration,
+                      });
+                      setLoadTestResult(res);
+                      showToast(`Benchmark completed: ${res.requests_per_sec.toFixed(0)} RPS @ ${res.latencies.p95_ms}ms p95 latency!`, "success");
+                    } catch (err) {
+                      showToast(err.message, "error");
+                    } finally {
+                      setLoadTestingRunning(false);
+                    }
+                  }}
+                  style={{ padding: "8px 20px", fontWeight: 700 }}
+                >
+                  {loadTestingRunning ? "⏳ Running Benchmark..." : "🚀 Launch Load Test"}
+                </button>
+              </div>
+            </div>
+
+            {/* Benchmark Configurator Bento */}
+            <div
+              style={{
+                background: "var(--bg-secondary)",
+                border: "1px solid var(--border)",
+                borderRadius: 8,
+                padding: 16,
+                marginBottom: 24,
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+                gap: 16,
+              }}
+            >
+              <div>
+                <label style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", display: "block", marginBottom: 6 }}>
+                  Target Endpoint
+                </label>
+                <div style={{ display: "flex", gap: 8 }}>
+                  <select
+                    value={loadTestMethod}
+                    onChange={(e) => setLoadTestMethod(e.target.value)}
+                    style={{
+                      background: "var(--bg-card)",
+                      color: loadTestMethod === "GET" ? "var(--neon-green)" : "#38BDF8",
+                      border: "1px solid var(--border)",
+                      borderRadius: 6,
+                      padding: "6px 10px",
+                      fontWeight: 800,
+                      fontFamily: "var(--font-mono)",
+                      fontSize: 12,
+                    }}
+                  >
+                    <option value="GET">GET</option>
+                    <option value="POST">POST</option>
+                    <option value="PUT">PUT</option>
+                  </select>
+                  <input
+                    type="text"
+                    value={loadTestTargetEndpoint}
+                    onChange={(e) => setLoadTestTargetEndpoint(e.target.value)}
+                    placeholder="/api/v1/projects"
+                    style={{
+                      flex: 1,
+                      background: "var(--bg-card)",
+                      color: "var(--text-primary)",
+                      border: "1px solid var(--border)",
+                      borderRadius: 6,
+                      padding: "6px 10px",
+                      fontFamily: "var(--font-mono)",
+                      fontSize: 12,
+                      outline: "none",
+                    }}
+                  />
+                </div>
+              </div>
+
+              <div>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+                  <label style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase" }}>
+                    Virtual Users (Concurrency)
+                  </label>
+                  <span style={{ fontSize: 12, fontWeight: 800, color: "var(--neon-green)", fontFamily: "var(--font-mono)" }}>
+                    {loadTestUsers} VUs
+                  </span>
+                </div>
+                <input
+                  type="range"
+                  min="10"
+                  max="1000"
+                  step="10"
+                  value={loadTestUsers}
+                  onChange={(e) => setLoadTestUsers(Number(e.target.value))}
+                  style={{ width: "100%", accentColor: "var(--neon-green)" }}
+                />
+              </div>
+
+              <div>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+                  <label style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase" }}>
+                    Test Duration
+                  </label>
+                  <span style={{ fontSize: 12, fontWeight: 800, color: "#38BDF8", fontFamily: "var(--font-mono)" }}>
+                    {loadTestDuration} Seconds
+                  </span>
+                </div>
+                <input
+                  type="range"
+                  min="3"
+                  max="30"
+                  step="1"
+                  value={loadTestDuration}
+                  onChange={(e) => setLoadTestDuration(Number(e.target.value))}
+                  style={{ width: "100%", accentColor: "#38BDF8" }}
+                />
+              </div>
+            </div>
+
+            {/* Benchmark Results Display */}
+            {loadTestResult ? (
+              <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+                {/* KPI Metrics Grid */}
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
+                    gap: 12,
+                  }}
+                >
+                  <div style={{ background: "var(--bg-secondary)", border: "1px solid var(--border)", borderRadius: 8, padding: 14 }}>
+                    <div style={{ fontSize: 11, color: "var(--text-muted)", textTransform: "uppercase" }}>THROUGHPUT (RPS)</div>
+                    <div style={{ fontSize: 24, fontWeight: 900, color: "var(--neon-green)", marginTop: 2, fontFamily: "var(--font-display)" }}>
+                      {loadTestResult.requests_per_sec.toFixed(1)} req/s
+                    </div>
+                    <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 4 }}>
+                      {loadTestResult.total_requests} total requests
+                    </div>
+                  </div>
+
+                  <div style={{ background: "var(--bg-secondary)", border: "1px solid var(--border)", borderRadius: 8, padding: 14 }}>
+                    <div style={{ fontSize: 11, color: "var(--text-muted)", textTransform: "uppercase" }}>P95 LATENCY</div>
+                    <div style={{ fontSize: 24, fontWeight: 900, color: loadTestResult.latencies.p95_ms < 50 ? "var(--neon-green)" : loadTestResult.latencies.p95_ms < 150 ? "#38BDF8" : "#FBBF24", marginTop: 2, fontFamily: "var(--font-display)" }}>
+                      {loadTestResult.latencies.p95_ms.toFixed(1)} ms
+                    </div>
+                    <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 4 }}>
+                      95% of users faster
+                    </div>
+                  </div>
+
+                  <div style={{ background: "var(--bg-secondary)", border: "1px solid var(--border)", borderRadius: 8, padding: 14 }}>
+                    <div style={{ fontSize: 11, color: "var(--text-muted)", textTransform: "uppercase" }}>ERROR RATE</div>
+                    <div style={{ fontSize: 24, fontWeight: 900, color: loadTestResult.error_rate_pct === 0 ? "var(--neon-green)" : "#F87171", marginTop: 2, fontFamily: "var(--font-display)" }}>
+                      {loadTestResult.error_rate_pct}%
+                    </div>
+                    <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 4 }}>
+                      {loadTestResult.failed_requests} failed requests
+                    </div>
+                  </div>
+
+                  <div style={{ background: "var(--bg-secondary)", border: "1px solid var(--border)", borderRadius: 8, padding: 14 }}>
+                    <div style={{ fontSize: 11, color: "var(--text-muted)", textTransform: "uppercase" }}>BANDWIDTH TRANSFER</div>
+                    <div style={{ fontSize: 24, fontWeight: 900, color: "#38BDF8", marginTop: 2, fontFamily: "var(--font-display)" }}>
+                      {loadTestResult.throughput_mb_per_sec.toFixed(2)} MB/s
+                    </div>
+                    <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 4 }}>
+                      Payload wire transfer
+                    </div>
+                  </div>
+                </div>
+
+                {/* Latency Percentiles Detailed Card */}
+                <div
+                  style={{
+                    background: "var(--bg-card)",
+                    border: "1px solid var(--border)",
+                    borderRadius: 8,
+                    padding: 16,
+                  }}
+                >
+                  <div style={{ fontSize: 13, fontWeight: 700, color: "var(--text-primary)", marginBottom: 12 }}>
+                    ⏱️ Latency Distribution &amp; Tail Percentiles
+                  </div>
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(110px, 1fr))", gap: 10 }}>
+                    {[
+                      { label: "Minimum", val: loadTestResult.latencies.min_ms, color: "var(--neon-green)" },
+                      { label: "Average", val: loadTestResult.latencies.avg_ms, color: "var(--text-primary)" },
+                      { label: "p50 (Median)", val: loadTestResult.latencies.p50_ms, color: "#38BDF8" },
+                      { label: "p90", val: loadTestResult.latencies.p90_ms, color: "#38BDF8" },
+                      { label: "p95", val: loadTestResult.latencies.p95_ms, color: "#FBBF24" },
+                      { label: "p99 (Tail)", val: loadTestResult.latencies.p99_ms, color: "#FB923C" },
+                      { label: "Maximum", val: loadTestResult.latencies.max_ms, color: "#F87171" },
+                    ].map((p, idx) => (
+                      <div key={idx} style={{ background: "var(--bg-secondary)", padding: "8px 10px", borderRadius: 6, border: "1px solid var(--border)" }}>
+                        <div style={{ fontSize: 10, color: "var(--text-muted)", textTransform: "uppercase" }}>{p.label}</div>
+                        <div style={{ fontSize: 15, fontWeight: 800, color: p.color, fontFamily: "var(--font-mono)", marginTop: 2 }}>
+                          {p.val} ms
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* AI Performance Tuning Recommendations */}
+                {loadTestResult.recommendations?.length > 0 && (
+                  <div
+                    style={{
+                      background: "var(--bg-card)",
+                      border: "1px solid var(--border)",
+                      borderRadius: 8,
+                      padding: 16,
+                    }}
+                  >
+                    <div style={{ fontSize: 13, fontWeight: 700, color: "var(--neon-green)", marginBottom: 12, display: "flex", alignItems: "center", gap: 8 }}>
+                      <span>💡</span> AI Bottleneck Diagnosis &amp; Performance Tuning
+                    </div>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                      {loadTestResult.recommendations.map((rec, i) => (
+                        <div
+                          key={i}
+                          style={{
+                            background: "var(--bg-secondary)",
+                            border: "1px solid var(--border)",
+                            borderRadius: 6,
+                            padding: 12,
+                          }}
+                        >
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
+                            <strong style={{ fontSize: 13, color: "var(--text-primary)" }}>{rec.title}</strong>
+                            <span className="badge badge-green" style={{ fontSize: 9 }}>
+                              {rec.category} • {rec.impact} IMPACT
+                            </span>
+                          </div>
+                          <p style={{ fontSize: 12, color: "var(--text-muted)", margin: "4px 0 8px", lineHeight: 1.4 }}>
+                            {rec.description}
+                          </p>
+                          {rec.code_example && (
+                            <pre
+                              style={{
+                                background: "#0d1117",
+                                color: "var(--neon-green)",
+                                padding: 8,
+                                borderRadius: 4,
+                                fontSize: 11,
+                                fontFamily: "var(--font-mono)",
+                                margin: 0,
+                                overflowX: "auto",
+                              }}
+                            >
+                              {rec.code_example}
+                            </pre>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div style={{ padding: "40px 20px", textAlign: "center", background: "var(--bg-card)", border: "1px dashed var(--border)", borderRadius: 8 }}>
+                <div style={{ fontSize: 32, marginBottom: 8 }}>🚀</div>
+                <div style={{ fontSize: 14, fontWeight: 700, color: "var(--text-primary)" }}>
+                  Ready to Benchmark API Concurrency
+                </div>
+                <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 4 }}>
+                  Configure target endpoint, concurrency virtual users, and click <strong>"🚀 Launch Load Test"</strong> to run high-throughput stress testing.
+                </div>
+              </div>
+            )}
           </div>
         )}
           </div>
