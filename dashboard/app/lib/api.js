@@ -315,3 +315,37 @@ export async function generateProjectCicdPipeline(projectId) {
   return request(`/projects/${projectId}/generate-cicd`, { method: "POST" });
 }
 
+// ---------------------------------------------------------------------------
+// Dynamic Mock API Sandbox & Route Simulator
+// ---------------------------------------------------------------------------
+
+export async function listMockRoutes(projectId) {
+  return request(`/projects/${projectId}/mock-routes`);
+}
+
+export async function executeMockApiCall(projectId, { method = "GET", path = "/", body = null, queryParams = null, headers = null } = {}) {
+  return request(`/projects/${projectId}/mock-api`, {
+    method: "POST",
+    body: JSON.stringify({
+      method,
+      path,
+      body,
+      query_params: queryParams,
+      headers,
+    }),
+  });
+}
+
+// ---------------------------------------------------------------------------
+// OWASP & AST Security Shield & Vulnerability Audit
+// ---------------------------------------------------------------------------
+
+export async function getSecurityAudit(projectId) {
+  return request(`/projects/${projectId}/security-audit`);
+}
+
+export async function runSecurityAudit(projectId) {
+  return request(`/projects/${projectId}/run-security-audit`, {
+    method: "POST",
+  });
+}
