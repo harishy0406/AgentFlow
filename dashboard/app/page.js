@@ -1564,13 +1564,38 @@ export default function Home() {
                         marginBottom: 24,
                       }}
                     >
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12, flexWrap: "wrap", gap: 8 }}>
                         <h4 style={{ fontSize: 14, fontWeight: 700, margin: 0, display: "flex", alignItems: "center", gap: 6 }}>
-                          <span>⚡</span> OpenAPI Endpoints Explorer & Playground
+                          <span>⚡</span> OpenAPI Endpoints Explorer &amp; Playground
                         </h4>
-                        <span style={{ fontSize: 11, color: "var(--text-muted)" }}>
-                          Parsed from generated API contracts
-                        </span>
+                        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                          <button
+                            className="btn btn-primary btn-sm"
+                            style={{ fontSize: 11, padding: "4px 10px" }}
+                            onClick={async () => {
+                              setActiveTab("api-sandbox");
+                              setMockRoutesLoading(true);
+                              try {
+                                const routes = await listMockRoutes(currentProject.id);
+                                setMockRoutes(routes);
+                                if (routes && routes.length > 0) {
+                                  setSelectedMockRoute(routes[0]);
+                                  setMockMethod(routes[0].method || "GET");
+                                  setMockPath(routes[0].path || "/");
+                                }
+                              } catch (e) {
+                                showToast(e.message, "error");
+                              } finally {
+                                setMockRoutesLoading(false);
+                              }
+                            }}
+                          >
+                            ⚡ Launch Interactive Sandbox
+                          </button>
+                          <span style={{ fontSize: 11, color: "var(--text-muted)" }}>
+                            Parsed from generated contracts
+                          </span>
+                        </div>
                       </div>
 
                       <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
