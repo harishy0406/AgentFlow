@@ -3,7 +3,7 @@ from fastapi.responses import Response, PlainTextResponse, StreamingResponse
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from uuid import UUID
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
 from datetime import datetime, timezone
 import json
 import io
@@ -1638,3 +1638,54 @@ async def websocket_endpoint(websocket: WebSocket, project_id: str):
             await websocket.send_text(json.dumps({"type": "ack", "data": data}))
     except WebSocketDisconnect:
         ws_manager.disconnect(project_id, websocket)
+
+
+# ---------------------------------------------------------------------------
+# Phase 8+: Dynamic Mock API Sandbox Engine
+# ---------------------------------------------------------------------------
+
+from .agents.api_sandbox import execute_mock_api_call, list_project_mock_routes
+
+@app.post("/projects/{project_id}/mock-api", response_model=schemas.MockApiResponse)
+def run_mock_api_request(
+    project_id: UUID,
+    payload: schemas.MockApiRequest,
+    db: Session = Depends(get_db)
+):
+    """
+    Executes an interactive simulated mock HTTP request against the project's
+    declared OpenAPI / API_SPEC contracts and DB schemas.
+    """
+    try:
+        res = execute_mock_api_call(
+            project_id=project_id,
+            method=payload.method,
+            path=payload.path,
+            body=payload.body,
+            query_params=payload.query_params,
+            headers=payload.headers,
+            db=db
+        )
+        return res
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/projects/{project_id}/mock-routes", response_model=List[Dict[str, Any]])
+def get_mock_routes(
+    project_id: UUID,
+    db: Session = Depends(get_db)
+):
+    """
+    Lists all available testable mock routes for the project.
+    """
+    try:
+        routes = list_project_mock_routes(project_id=project_id, db=db)
+        return routes
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+

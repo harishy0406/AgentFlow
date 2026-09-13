@@ -469,13 +469,56 @@ class WorkspaceContractsOut(BaseModel):
     validation_message: str
 
 
+# ---------------------------------------------------------------------------
+# Dynamic Mock API Sandbox Schemas
+# ---------------------------------------------------------------------------
+
+class MockApiRequest(BaseModel):
+    method: str = "GET"
+    path: str = "/"
+    body: Optional[Dict[str, Any]] = None
+    query_params: Optional[Dict[str, str]] = None
+    headers: Optional[Dict[str, str]] = None
 
 
+class MockApiResponse(BaseModel):
+    status_code: int
+    status_text: str
+    method: str
+    path: str
+    matched_contract: bool
+    route_description: str
+    latency_ms: int
+    response_headers: Dict[str, str]
+    response_body: Any
+    available_routes_count: int
 
 
+# ---------------------------------------------------------------------------
+# OWASP & AST Security Vulnerability Scanner Schemas
+# ---------------------------------------------------------------------------
+
+class SecurityVulnerability(BaseModel):
+    id: str
+    title: str
+    severity: str  # CRITICAL, HIGH, MEDIUM, LOW, INFO
+    owasp_category: str
+    cwe_id: str
+    file_target: str
+    line_number: Optional[int] = None
+    snippet: Optional[str] = None
+    description: str
+    remediation: str
 
 
-
-
-
-
+class SecurityAuditReport(BaseModel):
+    project_id: UUID
+    project_name: str
+    overall_score: int  # 0 - 100
+    security_grade: str  # A+, A, B, C, F
+    total_vulnerabilities: int
+    severity_counts: Dict[str, int]
+    scanned_artifacts_count: int
+    vulnerabilities: List[SecurityVulnerability] = []
+    remediation_status: str
+    timestamp: str
