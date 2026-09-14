@@ -1749,4 +1749,63 @@ def trigger_project_load_test(
         raise HTTPException(status_code=500, detail=str(e))
 
 
+# ---------------------------------------------------------------------------
+# Phase 8+: Multi-Language Client SDK Generator
+# ---------------------------------------------------------------------------
+
+from .agents.sdk_generator import generate_project_sdk_bundle, generate_all_sdk_packages
+
+@app.get("/projects/{project_id}/sdk", response_model=schemas.SdkCatalogOut)
+def get_project_sdk_catalog_endpoint(
+    project_id: UUID,
+    db: Session = Depends(get_db)
+):
+    """
+    Returns full SDK packages catalog for TypeScript, Python, and cURL recipes.
+    """
+    try:
+        catalog = generate_all_sdk_packages(project_id=project_id, db=db)
+        return catalog
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/projects/{project_id}/sdk/{language}", response_model=schemas.SdkBundleOut)
+def get_project_sdk_bundle_endpoint(
+    project_id: UUID,
+    language: str,
+    db: Session = Depends(get_db)
+):
+    """
+    Returns specific SDK bundle for requested language (typescript, python, curl).
+    """
+    try:
+        bundle = generate_project_sdk_bundle(project_id=project_id, language=language, db=db)
+        return bundle
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/projects/{project_id}/generate-sdk", response_model=schemas.SdkCatalogOut)
+def trigger_sdk_generation_endpoint(
+    project_id: UUID,
+    db: Session = Depends(get_db)
+):
+    """
+    Regenerates and returns complete multi-language client SDK catalog for the project.
+    """
+    try:
+        catalog = generate_all_sdk_packages(project_id=project_id, db=db)
+        return catalog
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+
 

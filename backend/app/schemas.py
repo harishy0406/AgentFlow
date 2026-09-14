@@ -574,3 +574,32 @@ class LoadTestResult(BaseModel):
     recommendations: List[OptimizationRecommendation] = []
     timestamp: str
 
+
+# ---------------------------------------------------------------------------
+# Multi-Language Client SDK Generator Schemas
+# ---------------------------------------------------------------------------
+
+class SdkFile(BaseModel):
+    path: str
+    content: str
+    language: str  # typescript, python, curl, json
+
+
+class SdkBundleOut(BaseModel):
+    project_id: UUID
+    project_name: str
+    language: str  # typescript, python, curl
+    package_name: str
+    install_command: str
+    readme_snippet: str
+    files: List[SdkFile] = []
+    routes_count: int
+
+
+class SdkCatalogOut(BaseModel):
+    project_id: UUID
+    project_name: str
+    available_languages: List[str]
+    packages: Dict[str, SdkBundleOut]
+
+
