@@ -46,6 +46,9 @@ import {
   getSecurityAudit,
   runSecurityAudit,
   runProjectLoadTest,
+  getProjectSdkCatalog,
+  getProjectSdkBundle,
+  generateProjectSdk,
 } from "./lib/api";
 
 function RadialGauge({ value = 0, size = 110, strokeWidth = 10, label = "", color = "#00FF66", subtext = "" }) {
@@ -155,6 +158,14 @@ export default function Home() {
   const [loadTestMethod, setLoadTestMethod] = useState("GET");
   const [loadTestUsers, setLoadTestUsers] = useState(100);
   const [loadTestDuration, setLoadTestDuration] = useState(10);
+
+  // Multi-Language Client SDK state
+  const [sdkCatalog, setSdkCatalog] = useState(null);
+  const [sdkLoading, setSdkLoading] = useState(false);
+  const [selectedSdkLang, setSelectedSdkLang] = useState("typescript");
+  const [selectedSdkFile, setSelectedSdkFile] = useState(null);
+  const [sdkCopied, setSdkCopied] = useState(false);
+
 
   const downloadTextFile = (filename, text, mime = "text/plain") => {
     const blob = new Blob([text], { type: mime });
@@ -1252,6 +1263,30 @@ export default function Home() {
                 disabled={!currentProject}
               >
                 🚀 Load Testing
+              </button>
+              <button
+                className={`tab ${activeTab === "sdks" ? "active" : ""}`}
+                onClick={async () => {
+                  setActiveTab("sdks");
+                  if (currentProject) {
+                    setSdkLoading(true);
+                    try {
+                      const cat = await getProjectSdkCatalog(currentProject.id);
+                      setSdkCatalog(cat);
+                      const pkg = cat?.packages?.[selectedSdkLang] || cat?.packages?.typescript;
+                      if (pkg?.files?.length > 0) {
+                        setSelectedSdkFile(pkg.files[0]);
+                      }
+                    } catch (err) {
+                      showToast(err.message, "error");
+                    } finally {
+                      setSdkLoading(false);
+                    }
+                  }
+                }}
+                disabled={!currentProject}
+              >
+                📦 Client SDKs
               </button>
             </div>
 
@@ -4339,6 +4374,315 @@ export default function Home() {
                 </div>
                 <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 4 }}>
                   Configure target endpoint, concurrency virtual users, and click <strong>"🚀 Launch Load Test"</strong> to run high-throughput stress testing.
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Tab: Multi-Language Client SDKs Explorer */}
+        {activeTab === "sdks" && currentProject && (
+          <div className="card">
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 20, flexWrap: "wrap", gap: 12 }}>
+              <div>
+                <h2 className="card-title" style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <span>📦</span> Client SDK Generator &amp; Code Snippet Studio
+                </h2>
+                <p style={{ color: "var(--text-muted)", fontSize: 13, margin: "4px 0 0" }}>
+                  Production-grade client libraries generated directly from your project's API specifications and schemas. Zero-boilerplate, strongly-typed endpoints for your frontend or backend.
+                </p>
+              </div>
+
+              <div style={{ display: "flex", gap: 8 }}>
+                <button
+                  className="btn btn-primary"
+                  disabled={sdkLoading}
+                  onClick={async () => {
+                    setSdkLoading(true);
+                    try {
+                      const cat = await generateProjectSdk(currentProject.id);
+                      setSdkCatalog(cat);
+                      const currentPkg = cat?.packages?.[selectedSdkLang] || cat?.packages?.typescript;
+                      if (currentPkg?.files?.length > 0) {
+                        setSelectedSdkFile(currentPkg.files[0]);
+                      }
+                      showToast("Generated fresh client SDK packages!", "success");
+                    } catch (err) {
+                      showToast(err.message, "error");
+                    } finally {
+                      setSdkLoading(false);
+                    }
+                  }}
+                >
+                  {sdkLoading ? "⏳ Generating SDKs..." : "⚡ Regenerate SDKs"}
+                </button>
+              </div>
+            </div>
+
+            {/* Language Switcher Bar */}
+            <div style={{ display: "flex", gap: 10, marginBottom: 20, borderBottom: "1px solid var(--border)", paddingBottom: 12 }}>
+              {[
+                { id: "typescript", name: "TypeScript / Node.js", icon: "🔷" },
+                { id: "python", name: "Python (Pydantic v2)", icon: "🐍" },
+                { id: "curl", name: "cURL & Shell Recipes", icon: "⚡" },
+              ].map((lang) => {
+                const isSelected = selectedSdkLang === lang.id;
+                return (
+                  <button
+                    key={lang.id}
+                    onClick={() => {
+                      setSelectedSdkLang(lang.id);
+                      const pkg = sdkCatalog?.packages?.[lang.id];
+                      if (pkg?.files?.length > 0) {
+                        setSelectedSdkFile(pkg.files[0]);
+                      }
+                    }}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 8,
+                      padding: "8px 16px",
+                      borderRadius: 6,
+                      background: isSelected ? "rgba(0, 255, 102, 0.12)" : "var(--bg-secondary)",
+                      border: `1px solid ${isSelected ? "var(--neon-green)" : "var(--border)"}`,
+                      color: isSelected ? "var(--neon-green)" : "var(--text-secondary)",
+                      fontWeight: isSelected ? 700 : 500,
+                      cursor: "pointer",
+                      fontSize: 13,
+                      transition: "all 0.2s ease",
+                    }}
+                  >
+                    <span>{lang.icon}</span>
+                    <span>{lang.name}</span>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Package Install & Info Bar */}
+            {sdkCatalog?.packages?.[selectedSdkLang] && (
+              <div
+                style={{
+                  background: "var(--bg-secondary)",
+                  border: "1px solid var(--border)",
+                  borderRadius: 8,
+                  padding: "12px 16px",
+                  marginBottom: 20,
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  flexWrap: "wrap",
+                  gap: 12,
+                }}
+              >
+                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                  <span style={{ fontSize: 11, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: 0.5, fontWeight: 700 }}>
+                    Install:
+                  </span>
+                  <code
+                    style={{
+                      background: "#050505",
+                      border: "1px solid var(--border)",
+                      color: "var(--neon-green)",
+                      padding: "4px 10px",
+                      borderRadius: 4,
+                      fontSize: 12,
+                      fontFamily: "var(--font-mono)",
+                    }}
+                  >
+                    {sdkCatalog.packages[selectedSdkLang].install_command}
+                  </code>
+                </div>
+
+                <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                  <span style={{ fontSize: 11, color: "var(--text-muted)" }}>
+                    Routes bound: <strong style={{ color: "var(--text-primary)" }}>{sdkCatalog.packages[selectedSdkLang].routes_count}</strong>
+                  </span>
+                  <span style={{ fontSize: 11, color: "var(--text-muted)" }}>•</span>
+                  <span style={{ fontSize: 11, color: "var(--text-muted)" }}>
+                    Files: <strong style={{ color: "var(--text-primary)" }}>{sdkCatalog.packages[selectedSdkLang].files?.length || 0}</strong>
+                  </span>
+                  <button
+                    className="btn btn-secondary btn-sm"
+                    style={{ fontSize: 11, padding: "3px 8px" }}
+                    onClick={() => {
+                      navigator.clipboard.writeText(sdkCatalog.packages[selectedSdkLang].install_command);
+                      showToast("Installation command copied!", "success");
+                    }}
+                  >
+                    📋 Copy Command
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Studio Workspace: File Tree on Left, Code Viewer on Right */}
+            {sdkCatalog?.packages?.[selectedSdkLang]?.files?.length > 0 ? (
+              <div style={{ display: "grid", gridTemplateColumns: "260px 1fr", gap: 16, alignItems: "start" }}>
+                {/* File Tree List */}
+                <div
+                  style={{
+                    background: "var(--bg-secondary)",
+                    border: "1px solid var(--border)",
+                    borderRadius: 8,
+                    overflow: "hidden",
+                  }}
+                >
+                  <div
+                    style={{
+                      padding: "10px 14px",
+                      background: "rgba(255,255,255,0.03)",
+                      borderBottom: "1px solid var(--border)",
+                      fontSize: 11,
+                      fontWeight: 700,
+                      color: "var(--text-muted)",
+                      textTransform: "uppercase",
+                      letterSpacing: 0.5,
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                    }}
+                  >
+                    <span>Package Files</span>
+                    <span>{sdkCatalog.packages[selectedSdkLang].files.length}</span>
+                  </div>
+
+                  <div style={{ padding: "8px 0" }}>
+                    {sdkCatalog.packages[selectedSdkLang].files.map((file, idx) => {
+                      const isSelected = selectedSdkFile?.path === file.path;
+                      return (
+                        <div
+                          key={file.path || idx}
+                          onClick={() => setSelectedSdkFile(file)}
+                          style={{
+                            padding: "8px 14px",
+                            cursor: "pointer",
+                            fontSize: 12,
+                            fontFamily: "var(--font-mono)",
+                            background: isSelected ? "rgba(0, 255, 102, 0.1)" : "transparent",
+                            color: isSelected ? "var(--neon-green)" : "var(--text-primary)",
+                            borderLeft: isSelected ? "3px solid var(--neon-green)" : "3px solid transparent",
+                            display: "flex",
+                            justifyContent: "space-between",
+                            alignItems: "center",
+                            transition: "all 0.15s ease",
+                          }}
+                        >
+                          <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                            {file.path.endsWith(".ts") && "🔷 "}
+                            {file.path.endsWith(".py") && "🐍 "}
+                            {file.path.endsWith(".sh") && "⚡ "}
+                            {file.path.endsWith(".json") && "⚙️ "}
+                            {file.path.endsWith(".md") && "📖 "}
+                            {file.path.endsWith(".http") && "🌐 "}
+                            {file.path}
+                          </span>
+                          <span style={{ fontSize: 10, color: "var(--text-muted)" }}>
+                            {file.content ? `${file.content.split("\n").length}L` : ""}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Code Previewer & Downloader */}
+                <div
+                  style={{
+                    background: "#080a0f",
+                    border: "1px solid var(--border)",
+                    borderRadius: 8,
+                    overflow: "hidden",
+                  }}
+                >
+                  {selectedSdkFile ? (
+                    <div>
+                      {/* Code Header */}
+                      <div
+                        style={{
+                          padding: "10px 16px",
+                          background: "var(--bg-secondary)",
+                          borderBottom: "1px solid var(--border)",
+                          display: "flex",
+                          justifyContent: "space-between",
+                          alignItems: "center",
+                          flexWrap: "wrap",
+                          gap: 8,
+                        }}
+                      >
+                        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                          <strong style={{ fontSize: 12, fontFamily: "var(--font-mono)", color: "var(--text-primary)" }}>
+                            {selectedSdkFile.path}
+                          </strong>
+                          <span className="badge badge-cyan" style={{ fontSize: 10 }}>
+                            {selectedSdkFile.language}
+                          </span>
+                          <span style={{ fontSize: 11, color: "var(--text-muted)" }}>
+                            {selectedSdkFile.content.split("\n").length} lines • {selectedSdkFile.content.length} chars
+                          </span>
+                        </div>
+
+                        <div style={{ display: "flex", gap: 8 }}>
+                          <button
+                            className="btn btn-secondary btn-sm"
+                            style={{ fontSize: 11, padding: "4px 10px" }}
+                            onClick={() => {
+                              navigator.clipboard.writeText(selectedSdkFile.content);
+                              setSdkCopied(true);
+                              setTimeout(() => setSdkCopied(false), 2000);
+                              showToast(`Copied ${selectedSdkFile.path} to clipboard!`, "success");
+                            }}
+                          >
+                            {sdkCopied ? "✓ Copied!" : "📋 Copy File"}
+                          </button>
+                          <button
+                            className="btn btn-secondary btn-sm"
+                            style={{ fontSize: 11, padding: "4px 10px" }}
+                            onClick={() => {
+                              const filename = selectedSdkFile.path.split("/").pop();
+                              downloadTextFile(filename, selectedSdkFile.content);
+                              showToast(`Downloaded ${filename}`, "success");
+                            }}
+                          >
+                            📥 Download
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Code Body */}
+                      <pre
+                        style={{
+                          margin: 0,
+                          padding: 16,
+                          fontFamily: "var(--font-mono)",
+                          fontSize: 12,
+                          lineHeight: 1.6,
+                          color: selectedSdkFile.path.endsWith(".ts") ? "#93c5fd" : selectedSdkFile.path.endsWith(".py") ? "#a7f3d0" : "var(--neon-green)",
+                          background: "#080a0f",
+                          maxHeight: 520,
+                          overflowY: "auto",
+                          overflowX: "auto",
+                          whiteSpace: "pre",
+                        }}
+                      >
+                        {selectedSdkFile.content}
+                      </pre>
+                    </div>
+                  ) : (
+                    <div style={{ padding: 40, textAlign: "center", color: "var(--text-muted)" }}>
+                      Select a file from the package list to view code.
+                    </div>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <div style={{ padding: "40px 20px", textAlign: "center", background: "var(--bg-card)", border: "1px dashed var(--border)", borderRadius: 8 }}>
+                <div style={{ fontSize: 32, marginBottom: 8 }}>📦</div>
+                <div style={{ fontSize: 14, fontWeight: 700, color: "var(--text-primary)" }}>
+                  {sdkLoading ? "Generating SDK Bundles..." : "No SDK Generated Yet"}
+                </div>
+                <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 4 }}>
+                  Click <strong>"⚡ Regenerate SDKs"</strong> above to produce complete TypeScript, Python, and cURL libraries for this project.
                 </div>
               </div>
             )}

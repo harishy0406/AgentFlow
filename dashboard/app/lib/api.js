@@ -375,3 +375,22 @@ export async function runProjectLoadTest(projectId, {
   });
 }
 
+// ---------------------------------------------------------------------------
+// Multi-Language Client SDK Generator
+// ---------------------------------------------------------------------------
+
+export async function getProjectSdkCatalog(projectId) {
+  return request(`/projects/${projectId}/sdk`);
+}
+
+export async function getProjectSdkBundle(projectId, language) {
+  return request(`/projects/${projectId}/sdk/${language}`);
+}
+
+export async function generateProjectSdk(projectId) {
+  return request(`/projects/${projectId}/generate-sdk`, {
+    method: "POST",
+  });
+}
+
+
