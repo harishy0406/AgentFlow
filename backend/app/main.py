@@ -1807,5 +1807,56 @@ def trigger_sdk_generation_endpoint(
         raise HTTPException(status_code=500, detail=str(e))
 
 
+# ---------------------------------------------------------------------------
+# Phase 9: Webhook & Event Broker Architecture Engine
+# ---------------------------------------------------------------------------
+
+from .agents.webhook_engine import generate_project_event_catalog, simulate_webhook_dispatch
+
+@app.get("/projects/{project_id}/events", response_model=schemas.EventCatalogOut)
+def get_project_events_endpoint(
+    project_id: UUID,
+    db: Session = Depends(get_db)
+):
+    """
+    Returns full CloudEvents domain catalog, cryptographic webhook dispatcher code,
+    and Docker Compose event broker configurations.
+    """
+    try:
+        catalog = generate_project_event_catalog(project_id=project_id, db=db)
+        return catalog
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/projects/{project_id}/test-webhook", response_model=schemas.WebhookDeliveryResult)
+def simulate_webhook_dispatch_endpoint(
+    project_id: UUID,
+    payload: schemas.WebhookDeliverySimulationRequest,
+    db: Session = Depends(get_db)
+):
+    """
+    Simulates real-time cryptographic webhook delivery with authentic HMAC-SHA256 signature,
+    headers, and delivery lifecycle metadata.
+    """
+    try:
+        result = simulate_webhook_dispatch(
+            project_id=project_id,
+            event_type=payload.event_type,
+            target_url=payload.target_url,
+            secret_key=payload.secret_key,
+            custom_payload=payload.custom_payload,
+            db=db
+        )
+        return result
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+
 
 

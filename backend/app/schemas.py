@@ -603,3 +603,46 @@ class SdkCatalogOut(BaseModel):
     packages: Dict[str, SdkBundleOut]
 
 
+# ---------------------------------------------------------------------------
+# Webhook & Event Broker Schemas
+# ---------------------------------------------------------------------------
+
+class EventDefinition(BaseModel):
+    event_type: str
+    entity: str
+    action: str
+    schema_spec: Dict[str, Any]
+    description: str
+
+
+class WebhookDeliverySimulationRequest(BaseModel):
+    event_type: str
+    target_url: str = "https://api.example.com/webhooks"
+    secret_key: Optional[str] = "whsec_agentflow_default_secret_key"
+    custom_payload: Optional[Dict[str, Any]] = None
+
+
+class WebhookDeliveryResult(BaseModel):
+    delivery_id: str
+    event_type: str
+    target_url: str
+    timestamp: str
+    headers: Dict[str, str]
+    payload: Dict[str, Any]
+    hmac_signature: str
+    status_code: int
+    duration_ms: float
+    delivered: bool
+    retry_policy: Dict[str, Any]
+
+
+class EventCatalogOut(BaseModel):
+    project_id: UUID
+    project_name: str
+    events: List[EventDefinition] = []
+    dispatcher_code: str
+    consumer_code: str
+    broker_docker_compose: str
+
+
+
