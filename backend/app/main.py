@@ -1857,6 +1857,54 @@ def simulate_webhook_dispatch_endpoint(
         raise HTTPException(status_code=500, detail=str(e))
 
 
+# ---------------------------------------------------------------------------
+# Phase 10: OpenTelemetry Distributed Tracing & APM Metrics Engine
+# ---------------------------------------------------------------------------
+
+from .agents.telemetry_engine import generate_project_telemetry_bundle
+
+@app.get("/projects/{project_id}/telemetry", response_model=schemas.TelemetryBundleOut)
+def get_project_telemetry_endpoint(
+    project_id: UUID,
+    db: Session = Depends(get_db)
+):
+    """
+    Returns complete OpenTelemetry collector config, Prometheus scrape settings,
+    fastapi tracing middleware, and pre-built Grafana golden signals dashboard.
+    """
+    try:
+        bundle = generate_project_telemetry_bundle(project_id=project_id, db=db)
+        return bundle
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/projects/{project_id}/telemetry/grafana-dashboard")
+def download_grafana_dashboard_endpoint(
+    project_id: UUID,
+    db: Session = Depends(get_db)
+):
+    """
+    Downloads the importable Grafana Dashboard JSON file for this project.
+    """
+    try:
+        bundle = generate_project_telemetry_bundle(project_id=project_id, db=db)
+        dashboard_json = json.dumps(bundle["grafana_dashboard_json"], indent=2)
+        filename = f"{bundle['project_name'].lower().replace(' ', '_')}_grafana_dashboard.json"
+        return Response(
+            content=dashboard_json,
+            media_type="application/json",
+            headers={"Content-Disposition": f"attachment; filename={filename}"}
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+
 
 
 

@@ -645,4 +645,27 @@ class EventCatalogOut(BaseModel):
     broker_docker_compose: str
 
 
+# ---------------------------------------------------------------------------
+# OpenTelemetry & APM Observability Schemas
+# ---------------------------------------------------------------------------
+
+class TelemetryMetricSpec(BaseModel):
+    name: str
+    type: str  # COUNTER, HISTOGRAM, GAUGE
+    description: str
+    labels: List[str] = []
+
+
+class TelemetryBundleOut(BaseModel):
+    project_id: UUID
+    project_name: str
+    collector_config_yaml: str
+    prometheus_config_yaml: str
+    middleware_python_code: str
+    docker_compose_yaml: str
+    grafana_dashboard_json: Dict[str, Any]
+    metrics_catalog: List[TelemetryMetricSpec] = []
+
+
+
 
