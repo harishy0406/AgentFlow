@@ -393,4 +393,42 @@ export async function generateProjectSdk(projectId) {
   });
 }
 
+// ---------------------------------------------------------------------------
+// Webhook & Event Broker Architecture Engine
+// ---------------------------------------------------------------------------
+
+export async function getProjectEventCatalog(projectId) {
+  return request(`/projects/${projectId}/events`);
+}
+
+export async function simulateWebhookDispatch(projectId, {
+  eventType,
+  targetUrl = "https://api.example.com/webhooks",
+  secretKey = "whsec_agentflow_default_secret_key",
+  customPayload = null,
+} = {}) {
+  return request(`/projects/${projectId}/test-webhook`, {
+    method: "POST",
+    body: JSON.stringify({
+      event_type: eventType,
+      target_url: targetUrl,
+      secret_key: secretKey,
+      custom_payload: customPayload,
+    }),
+  });
+}
+
+// ---------------------------------------------------------------------------
+// OpenTelemetry & APM Observability Engine
+// ---------------------------------------------------------------------------
+
+export async function getProjectTelemetry(projectId) {
+  return request(`/projects/${projectId}/telemetry`);
+}
+
+export function getGrafanaDashboardDownloadUrl(projectId) {
+  return `${API_BASE}/projects/${projectId}/telemetry/grafana-dashboard`;
+}
+
+
 
