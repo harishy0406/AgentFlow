@@ -1951,8 +1951,62 @@ def detect_breaking_changes_endpoint(
         raise HTTPException(status_code=500, detail=str(e))
 
 
+# ---------------------------------------------------------------------------
+# Phase 12: Multi-Cloud Infrastructure as Code (Terraform & Kubernetes) Engine
+# ---------------------------------------------------------------------------
+
+from .agents.iac_generator import generate_project_iac_bundle, generate_all_iac_packages
+
+@app.get("/projects/{project_id}/iac", response_model=schemas.IacCatalogOut)
+def get_project_iac_catalog_endpoint(
+    project_id: UUID,
+    db: Session = Depends(get_db)
+):
+    """
+    Returns complete multi-cloud Infrastructure as Code (IaC) catalog, including
+    AWS Terraform (ECS Fargate + RDS), GCP Terraform (Cloud Run + Cloud SQL),
+    production Kubernetes manifests, and environment matrices.
+    """
+    try:
+        catalog = generate_all_iac_packages(project_id=str(project_id), db=db)
+        return catalog
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
+@app.get("/projects/{project_id}/iac/{provider}", response_model=schemas.IacBundleOut)
+def get_project_iac_bundle_endpoint(
+    project_id: UUID,
+    provider: str,
+    db: Session = Depends(get_db)
+):
+    """
+    Returns infrastructure files and deployment workflow steps for a specific cloud provider.
+    Supported providers: 'aws', 'gcp', 'kubernetes', 'env'.
+    """
+    try:
+        bundle = generate_project_iac_bundle(project_id=str(project_id), provider=provider, db=db)
+        return bundle
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
-
+@app.post("/projects/{project_id}/generate-iac", response_model=schemas.IacCatalogOut)
+def trigger_iac_generation_endpoint(
+    project_id: UUID,
+    db: Session = Depends(get_db)
+):
+    """
+    Generates and returns complete multi-cloud IaC packages catalog for the project.
+    """
+    try:
+        catalog = generate_all_iac_packages(project_id=str(project_id), db=db)
+        return catalog
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))

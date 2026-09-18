@@ -704,6 +704,27 @@ class BreakingChangeCheckRequest(BaseModel):
     updated_api_spec: str
 
 
+# ---------------------------------------------------------------------------
+# Multi-Cloud Infrastructure as Code (Terraform & Kubernetes) Schemas
+# ---------------------------------------------------------------------------
+
+class IacFile(BaseModel):
+    path: str
+    content: str
+    provider: str  # aws, gcp, kubernetes, env
+    description: Optional[str] = None
 
 
+class IacBundleOut(BaseModel):
+    project_id: UUID
+    project_name: str
+    provider: str  # aws, gcp, kubernetes, env
+    files: List[IacFile] = []
+    deployment_steps: List[str] = []
 
+
+class IacCatalogOut(BaseModel):
+    project_id: UUID
+    project_name: str
+    available_providers: List[str] = []
+    packages: Dict[str, IacBundleOut] = {}
