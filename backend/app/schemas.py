@@ -667,5 +667,43 @@ class TelemetryBundleOut(BaseModel):
     metrics_catalog: List[TelemetryMetricSpec] = []
 
 
+# ---------------------------------------------------------------------------
+# Semantic API Changelog & Breaking Change Detector Schemas
+# ---------------------------------------------------------------------------
+
+class ApiChangeItem(BaseModel):
+    category: str  # BREAKING, NON_BREAKING_ADD, DEPRECATION, MODIFICATION
+    endpoint: str
+    method: str
+    description: str
+    impact: str  # HIGH, MEDIUM, LOW
+    remediation: Optional[str] = None
+
+
+class SemVerRecommendation(BaseModel):
+    current_version: str
+    suggested_version: str
+    bump_type: str  # MAJOR, MINOR, PATCH
+    rationale: str
+
+
+class ChangelogReport(BaseModel):
+    project_id: UUID
+    project_name: str
+    version_tag: str
+    semver: SemVerRecommendation
+    breaking_changes_count: int
+    total_changes_count: int
+    changes: List[ApiChangeItem] = []
+    markdown_changelog: str
+    release_notes: str
+
+
+class BreakingChangeCheckRequest(BaseModel):
+    previous_api_spec: Optional[str] = None
+    updated_api_spec: str
+
+
+
 
 

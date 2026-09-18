@@ -1904,6 +1904,54 @@ def download_grafana_dashboard_endpoint(
         raise HTTPException(status_code=500, detail=str(e))
 
 
+# ---------------------------------------------------------------------------
+# Phase 11: Semantic API Changelog & Breaking Change Detector Engine
+# ---------------------------------------------------------------------------
+
+from .agents.changelog_engine import generate_project_changelog
+
+@app.get("/projects/{project_id}/changelog", response_model=schemas.ChangelogReport)
+def get_project_changelog_endpoint(
+    project_id: UUID,
+    db: Session = Depends(get_db)
+):
+    """
+    Analyzes API contract deltas, detects breaking changes, recommends SemVer bumps,
+    and returns Keep-a-Changelog release notes.
+    """
+    try:
+        report = generate_project_changelog(project_id=project_id, db=db)
+        return report
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/projects/{project_id}/detect-breaking-changes", response_model=schemas.ChangelogReport)
+def detect_breaking_changes_endpoint(
+    project_id: UUID,
+    payload: schemas.BreakingChangeCheckRequest,
+    db: Session = Depends(get_db)
+):
+    """
+    Compares the project's current API specification against an updated or candidate specification,
+    classifying contract modifications and recommending a SemVer bump.
+    """
+    try:
+        report = generate_project_changelog(
+            project_id=project_id,
+            db=db,
+            target_api_spec=payload.updated_api_spec
+        )
+        return report
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+
 
 
 
