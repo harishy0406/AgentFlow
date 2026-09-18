@@ -53,6 +53,11 @@ import {
   simulateWebhookDispatch,
   getProjectTelemetry,
   getGrafanaDashboardDownloadUrl,
+  getProjectChangelog,
+  detectBreakingChanges,
+  getProjectIacCatalog,
+  getProjectIacBundle,
+  generateProjectIac,
 } from "./lib/api";
 
 function RadialGauge({ value = 0, size = 110, strokeWidth = 10, label = "", color = "#00FF66", subtext = "" }) {
@@ -186,8 +191,17 @@ export default function Home() {
   const [telemetrySubTab, setTelemetrySubTab] = useState("collector");
   const [activeOpsMode, setActiveOpsMode] = useState("webhooks");
 
-
-
+  // Semantic Changelog & CloudOps IaC state
+  const [changelogReport, setChangelogReport] = useState(null);
+  const [changelogLoading, setChangelogLoading] = useState(false);
+  const [candidateSpec, setCandidateSpec] = useState("");
+  const [testingCandidateSpec, setTestingCandidateSpec] = useState(false);
+  const [iacCatalog, setIacCatalog] = useState(null);
+  const [iacLoading, setIacLoading] = useState(false);
+  const [selectedIacProvider, setSelectedIacProvider] = useState("aws");
+  const [selectedIacFile, setSelectedIacFile] = useState(null);
+  const [iacCopied, setIacCopied] = useState(false);
+  const [cloudOpsMode, setCloudOpsMode] = useState("changelog"); // 'changelog' | 'iac'
   const downloadTextFile = (filename, text, mime = "text/plain") => {
     const blob = new Blob([text], { type: mime });
     const url = URL.createObjectURL(blob);
@@ -1337,6 +1351,36 @@ export default function Home() {
                 disabled={!currentProject}
               >
                 ⚡ Events &amp; Telemetry
+              </button>
+              <button
+                className={`tab ${activeTab === "changelog-cloudops" ? "active" : ""}`}
+                onClick={async () => {
+                  setActiveTab("changelog-cloudops");
+                  if (currentProject) {
+                    setChangelogLoading(true);
+                    setIacLoading(true);
+                    try {
+                      const [clReport, iacCat] = await Promise.all([
+                        getProjectChangelog(currentProject.id),
+                        getProjectIacCatalog(currentProject.id),
+                      ]);
+                      setChangelogReport(clReport);
+                      setIacCatalog(iacCat);
+                      const defaultPkg = iacCat?.packages?.[selectedIacProvider] || iacCat?.packages?.aws;
+                      if (defaultPkg?.files?.length > 0) {
+                        setSelectedIacFile(defaultPkg.files[0]);
+                      }
+                    } catch (err) {
+                      showToast(err.message, "error");
+                    } finally {
+                      setChangelogLoading(false);
+                      setIacLoading(false);
+                    }
+                  }
+                }}
+                disabled={!currentProject}
+              >
+                📜 Changelog &amp; CloudOps
               </button>
             </div>
 
@@ -5169,6 +5213,620 @@ export default function Home() {
                   <pre style={{ margin: 0, padding: 16, background: "#080a0f", borderRadius: 8, color: "#C084FC", fontFamily: "var(--font-mono)", fontSize: 11, lineHeight: 1.5, maxHeight: 420, overflowY: "auto", whiteSpace: "pre" }}>
                     {JSON.stringify(telemetryBundle.grafana_dashboard_json, null, 2)}
                   </pre>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Tab: Semantic API Changelog & Multi-Cloud CloudOps IaC Studio */}
+        {activeTab === "changelog-cloudops" && currentProject && (
+          <div className="card">
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 20, flexWrap: "wrap", gap: 12 }}>
+              <div>
+                <h2 className="card-title" style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <span>📜</span> Semantic Changelog &amp; CloudOps IaC Studio
+                </h2>
+                <p style={{ color: "var(--text-muted)", fontSize: 13, margin: "4px 0 0" }}>
+                  Automated contract diffing, breaking change classification, and SemVer recommendations alongside multi-cloud Terraform (AWS &amp; GCP) and production Kubernetes orchestration manifests.
+                </p>
+              </div>
+
+              {/* Mode Switcher Pills */}
+              <div style={{ display: "flex", gap: 8, background: "var(--bg-secondary)", padding: 4, borderRadius: 8, border: "1px solid var(--border)" }}>
+                <button
+                  onClick={() => setCloudOpsMode("changelog")}
+                  style={{
+                    padding: "6px 14px",
+                    borderRadius: 6,
+                    fontSize: 12,
+                    fontWeight: cloudOpsMode === "changelog" ? 700 : 500,
+                    cursor: "pointer",
+                    background: cloudOpsMode === "changelog" ? "var(--neon-green)" : "transparent",
+                    color: cloudOpsMode === "changelog" ? "#000000" : "var(--text-secondary)",
+                    border: "none",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 6,
+                  }}
+                >
+                  <span>📜</span>
+                  <span>API Changelog &amp; Breaking Changes</span>
+                </button>
+                <button
+                  onClick={() => setCloudOpsMode("iac")}
+                  style={{
+                    padding: "6px 14px",
+                    borderRadius: 6,
+                    fontSize: 12,
+                    fontWeight: cloudOpsMode === "iac" ? 700 : 500,
+                    cursor: "pointer",
+                    background: cloudOpsMode === "iac" ? "var(--neon-green)" : "transparent",
+                    color: cloudOpsMode === "iac" ? "#000000" : "var(--text-secondary)",
+                    border: "none",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 6,
+                  }}
+                >
+                  <span>☁️</span>
+                  <span>Multi-Cloud IaC (Terraform &amp; K8s)</span>
+                </button>
+              </div>
+            </div>
+
+            {/* VIEW 1: Semantic API Changelog & Breaking Change Detector */}
+            {cloudOpsMode === "changelog" && (
+              <div>
+                {/* Actions bar */}
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20, flexWrap: "wrap", gap: 10 }}>
+                  <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+                    <button
+                      className="btn btn-primary btn-sm"
+                      disabled={changelogLoading}
+                      onClick={async () => {
+                        setChangelogLoading(true);
+                        try {
+                          const res = await getProjectChangelog(currentProject.id);
+                          setChangelogReport(res);
+                          showToast("Refreshed semantic changelog!", "success");
+                        } catch (err) {
+                          showToast(err.message, "error");
+                        } finally {
+                          setChangelogLoading(false);
+                        }
+                      }}
+                    >
+                      {changelogLoading ? "⏳ Analyzing..." : "⚡ Re-analyze Contracts"}
+                    </button>
+                    {changelogReport && (
+                      <span style={{ fontSize: 12, color: "var(--text-muted)" }}>
+                        Current Tag: <strong style={{ color: "var(--text-primary)" }}>{changelogReport.version_tag}</strong>
+                      </span>
+                    )}
+                  </div>
+
+                  {changelogReport && (
+                    <div style={{ display: "flex", gap: 8 }}>
+                      <button
+                        className="btn btn-secondary btn-sm"
+                        onClick={() => {
+                          navigator.clipboard.writeText(changelogReport.markdown_changelog);
+                          showToast("Copied Keep-a-Changelog Markdown to clipboard!", "success");
+                        }}
+                      >
+                        📋 Copy Release Notes
+                      </button>
+                      <button
+                        className="btn btn-secondary btn-sm"
+                        onClick={() => {
+                          downloadTextFile("CHANGELOG.md", changelogReport.markdown_changelog);
+                          showToast("Downloaded CHANGELOG.md", "success");
+                        }}
+                      >
+                        📥 Download CHANGELOG.md
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                {changelogLoading ? (
+                  <div style={{ padding: 40, textAlign: "center", color: "var(--text-muted)" }}>
+                    <div className="spinner" style={{ margin: "0 auto 12px" }} />
+                    Analyzing OpenAPI specifications and calculating semantic deltas...
+                  </div>
+                ) : changelogReport ? (
+                  <div>
+                    {/* SemVer Recommendation Banner */}
+                    <div
+                      style={{
+                        background:
+                          changelogReport.semver?.bump_type === "MAJOR"
+                            ? "rgba(239, 68, 68, 0.12)"
+                            : changelogReport.semver?.bump_type === "MINOR"
+                            ? "rgba(16, 185, 129, 0.12)"
+                            : "rgba(56, 189, 248, 0.12)",
+                        border: `1px solid ${
+                          changelogReport.semver?.bump_type === "MAJOR"
+                            ? "#EF4444"
+                            : changelogReport.semver?.bump_type === "MINOR"
+                            ? "#10B981"
+                            : "#38BDF8"
+                        }`,
+                        borderRadius: 8,
+                        padding: "16px 20px",
+                        marginBottom: 20,
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                        flexWrap: "wrap",
+                        gap: 16,
+                      }}
+                    >
+                      <div>
+                        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
+                          <span
+                            style={{
+                              padding: "4px 8px",
+                              borderRadius: 4,
+                              fontSize: 11,
+                              fontWeight: 800,
+                              fontFamily: "var(--font-mono)",
+                              background:
+                                changelogReport.semver?.bump_type === "MAJOR"
+                                  ? "#EF4444"
+                                  : changelogReport.semver?.bump_type === "MINOR"
+                                  ? "#10B981"
+                                  : "#38BDF8",
+                              color: "#000000",
+                            }}
+                          >
+                            {changelogReport.semver?.bump_type} BUMP
+                          </span>
+                          <span style={{ fontSize: 16, fontWeight: 700, color: "var(--text-primary)" }}>
+                            Recommended Version: <span style={{ color: "var(--neon-green)" }}>{changelogReport.semver?.suggested_version}</span>
+                            <span style={{ fontSize: 12, color: "var(--text-muted)", marginLeft: 6 }}>
+                              (from {changelogReport.semver?.current_version})
+                            </span>
+                          </span>
+                        </div>
+                        <div style={{ fontSize: 12, color: "var(--text-secondary)", marginTop: 4 }}>
+                          {changelogReport.semver?.rationale}
+                        </div>
+                      </div>
+
+                      <div style={{ display: "flex", gap: 12 }}>
+                        <div style={{ textAlign: "center", background: "rgba(0,0,0,0.3)", padding: "8px 14px", borderRadius: 6 }}>
+                          <div style={{ fontSize: 18, fontWeight: 800, color: changelogReport.breaking_changes_count > 0 ? "#EF4444" : "var(--text-muted)" }}>
+                            {changelogReport.breaking_changes_count}
+                          </div>
+                          <div style={{ fontSize: 10, color: "var(--text-muted)", textTransform: "uppercase" }}>Breaking</div>
+                        </div>
+                        <div style={{ textAlign: "center", background: "rgba(0,0,0,0.3)", padding: "8px 14px", borderRadius: 6 }}>
+                          <div style={{ fontSize: 18, fontWeight: 800, color: "var(--text-primary)" }}>
+                            {changelogReport.total_changes_count}
+                          </div>
+                          <div style={{ fontSize: 10, color: "var(--text-muted)", textTransform: "uppercase" }}>Total Deltas</div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Interactive Candidate Spec Delta Simulator */}
+                    <div
+                      style={{
+                        background: "var(--bg-secondary)",
+                        border: "1px solid var(--border)",
+                        borderRadius: 8,
+                        padding: 16,
+                        marginBottom: 20,
+                      }}
+                    >
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8, flexWrap: "wrap", gap: 8 }}>
+                        <div>
+                          <strong style={{ fontSize: 13, color: "var(--text-primary)" }}>
+                            🧪 Live Contract Candidate Spec Simulator
+                          </strong>
+                          <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 2 }}>
+                            Simulate breaking changes against prospective routes before committing to production.
+                          </div>
+                        </div>
+                        <button
+                          className="btn btn-primary btn-sm"
+                          disabled={testingCandidateSpec || !candidateSpec.trim()}
+                          onClick={async () => {
+                            setTestingCandidateSpec(true);
+                            try {
+                              const res = await detectBreakingChanges(currentProject.id, candidateSpec);
+                              setChangelogReport(res);
+                              showToast(`Analysis complete: ${res.breaking_changes_count} breaking changes detected!`, "success");
+                            } catch (err) {
+                              showToast(err.message, "error");
+                            } finally {
+                              setTestingCandidateSpec(false);
+                            }
+                          }}
+                        >
+                          {testingCandidateSpec ? "Testing..." : "⚡ Test Candidate Spec"}
+                        </button>
+                      </div>
+                      <textarea
+                        className="form-textarea"
+                        placeholder="Paste OpenAPI spec, YAML, or route definitions here to test for breaking changes..."
+                        value={candidateSpec}
+                        onChange={(e) => setCandidateSpec(e.target.value)}
+                        style={{ height: 90, fontSize: 11, fontFamily: "var(--font-mono)", background: "#080a0f" }}
+                      />
+                    </div>
+
+                    {/* Changes Classification List */}
+                    <div style={{ marginBottom: 24 }}>
+                      <h4 style={{ fontSize: 13, textTransform: "uppercase", color: "var(--text-muted)", marginBottom: 10 }}>
+                        Detected API Modifications ({changelogReport.changes?.length || 0})
+                      </h4>
+
+                      {changelogReport.changes?.length === 0 ? (
+                        <div style={{ padding: 24, textAlign: "center", background: "var(--bg-secondary)", borderRadius: 6, color: "var(--text-muted)", fontSize: 12 }}>
+                          No contract modifications detected. API is fully backward compatible.
+                        </div>
+                      ) : (
+                        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                          {changelogReport.changes.map((item, idx) => {
+                            const isBreaking = item.category === "BREAKING";
+                            const isAdd = item.category === "NON_BREAKING_ADD";
+                            const badgeColor = isBreaking ? "#EF4444" : isAdd ? "#10B981" : "#F59E0B";
+                            return (
+                              <div
+                                key={idx}
+                                style={{
+                                  background: "var(--bg-secondary)",
+                                  border: `1px solid ${isBreaking ? "rgba(239, 68, 68, 0.4)" : "var(--border)"}`,
+                                  borderRadius: 6,
+                                  padding: 12,
+                                  display: "flex",
+                                  justifyContent: "space-between",
+                                  alignItems: "flex-start",
+                                  gap: 12,
+                                  flexWrap: "wrap",
+                                }}
+                              >
+                                <div style={{ flex: 1, minWidth: 260 }}>
+                                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+                                    <span
+                                      style={{
+                                        fontSize: 9,
+                                        fontWeight: 800,
+                                        padding: "2px 6px",
+                                        borderRadius: 3,
+                                        background: badgeColor,
+                                        color: "#000000",
+                                        fontFamily: "var(--font-mono)",
+                                      }}
+                                    >
+                                      {item.category}
+                                    </span>
+                                    <span
+                                      style={{
+                                        fontSize: 10,
+                                        fontWeight: 700,
+                                        padding: "1px 5px",
+                                        borderRadius: 3,
+                                        background: "rgba(255,255,255,0.06)",
+                                        color: "var(--text-primary)",
+                                        fontFamily: "var(--font-mono)",
+                                      }}
+                                    >
+                                      {item.method}
+                                    </span>
+                                    <span style={{ fontSize: 12, fontWeight: 600, color: "var(--text-primary)", fontFamily: "var(--font-mono)" }}>
+                                      {item.endpoint}
+                                    </span>
+                                    <span
+                                      style={{
+                                        fontSize: 9,
+                                        padding: "1px 4px",
+                                        borderRadius: 2,
+                                        color: item.impact === "HIGH" ? "#EF4444" : "#93C5FD",
+                                        border: `1px solid ${item.impact === "HIGH" ? "rgba(239, 68, 68, 0.3)" : "rgba(147, 197, 253, 0.3)"}`,
+                                      }}
+                                    >
+                                      {item.impact} IMPACT
+                                    </span>
+                                  </div>
+                                  <div style={{ fontSize: 12, color: "var(--text-secondary)" }}>
+                                    {item.description}
+                                  </div>
+                                  {item.remediation && (
+                                    <div style={{ fontSize: 11, color: "var(--neon-green)", marginTop: 4, fontFamily: "var(--font-mono)" }}>
+                                      💡 Remediation: {item.remediation}
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Markdown Keep-a-Changelog Viewer */}
+                    <div>
+                      <h4 style={{ fontSize: 13, textTransform: "uppercase", color: "var(--text-muted)", marginBottom: 8 }}>
+                        Release Notes Preview (Keep-a-Changelog Standard)
+                      </h4>
+                      <pre
+                        style={{
+                          margin: 0,
+                          padding: 16,
+                          background: "#080a0f",
+                          borderRadius: 8,
+                          color: "#A7F3D0",
+                          fontFamily: "var(--font-mono)",
+                          fontSize: 12,
+                          lineHeight: 1.6,
+                          maxHeight: 360,
+                          overflowY: "auto",
+                          whiteSpace: "pre-wrap",
+                        }}
+                      >
+                        {changelogReport.markdown_changelog}
+                      </pre>
+                    </div>
+                  </div>
+                ) : (
+                  <div style={{ padding: 40, textAlign: "center", background: "var(--bg-secondary)", borderRadius: 8 }}>
+                    <div style={{ fontSize: 32, marginBottom: 8 }}>📜</div>
+                    <div style={{ fontSize: 14, fontWeight: 700, color: "var(--text-primary)" }}>
+                      No Changelog Generated
+                    </div>
+                    <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 4 }}>
+                      Click <strong>"⚡ Re-analyze Contracts"</strong> above to inspect contract modifications and determine SemVer bump.
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* VIEW 2: Multi-Cloud IaC (Terraform & Kubernetes) */}
+            {cloudOpsMode === "iac" && (
+              <div>
+                {/* Actions & Provider Selector */}
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20, flexWrap: "wrap", gap: 10 }}>
+                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                    {[
+                      { id: "aws", name: "AWS (ECS Fargate + RDS)", icon: "🟧" },
+                      { id: "gcp", name: "Google Cloud (Cloud Run)", icon: "🟦" },
+                      { id: "kubernetes", name: "Kubernetes Manifests", icon: "☸️" },
+                      { id: "env", name: "Environment Matrix", icon: "⚙️" },
+                    ].map((prov) => {
+                      const isSelected = selectedIacProvider === prov.id;
+                      return (
+                        <button
+                          key={prov.id}
+                          onClick={() => {
+                            setSelectedIacProvider(prov.id);
+                            const pkg = iacCatalog?.packages?.[prov.id];
+                            if (pkg?.files?.length > 0) {
+                              setSelectedIacFile(pkg.files[0]);
+                            }
+                          }}
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 6,
+                            padding: "6px 14px",
+                            borderRadius: 6,
+                            background: isSelected ? "rgba(0, 255, 102, 0.12)" : "var(--bg-secondary)",
+                            border: `1px solid ${isSelected ? "var(--neon-green)" : "var(--border)"}`,
+                            color: isSelected ? "var(--neon-green)" : "var(--text-secondary)",
+                            fontWeight: isSelected ? 700 : 500,
+                            cursor: "pointer",
+                            fontSize: 12,
+                          }}
+                        >
+                          <span>{prov.icon}</span>
+                          <span>{prov.name}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  <div style={{ display: "flex", gap: 8 }}>
+                    <button
+                      className="btn btn-primary btn-sm"
+                      disabled={iacLoading}
+                      onClick={async () => {
+                        setIacLoading(true);
+                        try {
+                          const res = await generateProjectIac(currentProject.id);
+                          setIacCatalog(res);
+                          const pkg = res?.packages?.[selectedIacProvider];
+                          if (pkg?.files?.length > 0) {
+                            setSelectedIacFile(pkg.files[0]);
+                          }
+                          showToast("Regenerated multi-cloud IaC packages!", "success");
+                        } catch (err) {
+                          showToast(err.message, "error");
+                        } finally {
+                          setIacLoading(false);
+                        }
+                      }}
+                    >
+                      {iacLoading ? "⏳ Provisioning..." : "⚡ Regenerate IaC"}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Deployment Steps Bar */}
+                {iacCatalog?.packages?.[selectedIacProvider]?.deployment_steps?.length > 0 && (
+                  <div
+                    style={{
+                      background: "var(--bg-secondary)",
+                      border: "1px solid var(--border)",
+                      borderRadius: 8,
+                      padding: "12px 16px",
+                      marginBottom: 20,
+                    }}
+                  >
+                    <div style={{ fontSize: 11, textTransform: "uppercase", color: "var(--neon-green)", fontWeight: 700, marginBottom: 6 }}>
+                      📋 Production Deployment Execution Plan
+                    </div>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                      {iacCatalog.packages[selectedIacProvider].deployment_steps.map((step, sIdx) => (
+                        <div key={sIdx} style={{ fontSize: 12, color: "var(--text-primary)", fontFamily: "var(--font-mono)" }}>
+                          {step}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* 2-Column Split: File Explorer + Code Viewer */}
+                {iacCatalog?.packages?.[selectedIacProvider] ? (
+                  <div style={{ display: "grid", gridTemplateColumns: "280px 1fr", gap: 16 }}>
+                    {/* Left File Tree */}
+                    <div
+                      style={{
+                        background: "var(--bg-secondary)",
+                        border: "1px solid var(--border)",
+                        borderRadius: 8,
+                        padding: 12,
+                        maxHeight: 520,
+                        overflowY: "auto",
+                      }}
+                    >
+                      <div style={{ fontSize: 11, textTransform: "uppercase", color: "var(--text-muted)", marginBottom: 8, fontWeight: 700 }}>
+                        Files ({iacCatalog.packages[selectedIacProvider].files?.length || 0})
+                      </div>
+                      <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                        {iacCatalog.packages[selectedIacProvider].files?.map((file, fIdx) => {
+                          const isSelected = selectedIacFile?.path === file.path;
+                          return (
+                            <div
+                              key={fIdx}
+                              onClick={() => setSelectedIacFile(file)}
+                              style={{
+                                padding: "8px 10px",
+                                borderRadius: 6,
+                                cursor: "pointer",
+                                background: isSelected ? "rgba(0, 255, 102, 0.1)" : "transparent",
+                                border: `1px solid ${isSelected ? "rgba(0, 255, 102, 0.3)" : "transparent"}`,
+                                display: "flex",
+                                flexDirection: "column",
+                                gap: 2,
+                              }}
+                            >
+                              <div style={{ fontSize: 12, fontWeight: 600, color: isSelected ? "var(--neon-green)" : "var(--text-primary)", fontFamily: "var(--font-mono)" }}>
+                                {file.path.endsWith(".tf") && "🏗️ "}
+                                {file.path.endsWith(".yaml") && "☸️ "}
+                                {file.path.includes(".env") && "⚙️ "}
+                                {file.path}
+                              </div>
+                              {file.description && (
+                                <div style={{ fontSize: 10, color: "var(--text-muted)" }}>
+                                  {file.description}
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* Right Code Viewer */}
+                    <div
+                      style={{
+                        background: "#080a0f",
+                        border: "1px solid var(--border)",
+                        borderRadius: 8,
+                        overflow: "hidden",
+                      }}
+                    >
+                      {selectedIacFile ? (
+                        <div>
+                          <div
+                            style={{
+                              padding: "10px 16px",
+                              background: "var(--bg-secondary)",
+                              borderBottom: "1px solid var(--border)",
+                              display: "flex",
+                              justifyContent: "space-between",
+                              alignItems: "center",
+                            }}
+                          >
+                            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                              <strong style={{ fontSize: 12, fontFamily: "var(--font-mono)", color: "var(--text-primary)" }}>
+                                {selectedIacFile.path}
+                              </strong>
+                              <span style={{ fontSize: 11, color: "var(--text-muted)" }}>
+                                {selectedIacFile.content.split("\n").length} lines
+                              </span>
+                            </div>
+
+                            <div style={{ display: "flex", gap: 8 }}>
+                              <button
+                                className="btn btn-secondary btn-sm"
+                                style={{ fontSize: 11, padding: "3px 8px" }}
+                                onClick={() => {
+                                  navigator.clipboard.writeText(selectedIacFile.content);
+                                  setIacCopied(true);
+                                  setTimeout(() => setIacCopied(false), 2000);
+                                  showToast(`Copied ${selectedIacFile.path}!`, "success");
+                                }}
+                              >
+                                {iacCopied ? "✓ Copied" : "📋 Copy File"}
+                              </button>
+                              <button
+                                className="btn btn-secondary btn-sm"
+                                style={{ fontSize: 11, padding: "3px 8px" }}
+                                onClick={() => {
+                                  const fname = selectedIacFile.path.split("/").pop();
+                                  downloadTextFile(fname, selectedIacFile.content);
+                                  showToast(`Downloaded ${fname}`, "success");
+                                }}
+                              >
+                                📥 Download
+                              </button>
+                            </div>
+                          </div>
+
+                          <pre
+                            style={{
+                              margin: 0,
+                              padding: 16,
+                              fontFamily: "var(--font-mono)",
+                              fontSize: 12,
+                              lineHeight: 1.6,
+                              color: selectedIacFile.path.endsWith(".tf")
+                                ? "#C084FC"
+                                : selectedIacFile.path.endsWith(".yaml")
+                                ? "#38BDF8"
+                                : "var(--neon-green)",
+                              maxHeight: 460,
+                              overflowY: "auto",
+                              overflowX: "auto",
+                              whiteSpace: "pre",
+                            }}
+                          >
+                            {selectedIacFile.content}
+                          </pre>
+                        </div>
+                      ) : (
+                        <div style={{ padding: 40, textAlign: "center", color: "var(--text-muted)" }}>
+                          Select an infrastructure file from the left column to preview code.
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ) : (
+                  <div style={{ padding: 40, textAlign: "center", background: "var(--bg-secondary)", borderRadius: 8 }}>
+                    <div style={{ fontSize: 32, marginBottom: 8 }}>☁️</div>
+                    <div style={{ fontSize: 14, fontWeight: 700, color: "var(--text-primary)" }}>
+                      {iacLoading ? "Generating Cloud Infrastructure..." : "No Infrastructure Generated Yet"}
+                    </div>
+                    <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 4 }}>
+                      Click <strong>"⚡ Regenerate IaC"</strong> above to produce complete Terraform modules and Kubernetes manifests.
+                    </div>
+                  </div>
                 )}
               </div>
             )}

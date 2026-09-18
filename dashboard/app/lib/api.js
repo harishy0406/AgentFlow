@@ -430,5 +430,38 @@ export function getGrafanaDashboardDownloadUrl(projectId) {
   return `${API_BASE}/projects/${projectId}/telemetry/grafana-dashboard`;
 }
 
+// ---------------------------------------------------------------------------
+// Semantic API Changelog & Breaking Change Detector
+// ---------------------------------------------------------------------------
 
+export async function getProjectChangelog(projectId) {
+  return request(`/projects/${projectId}/changelog`);
+}
 
+export async function detectBreakingChanges(projectId, updatedApiSpec, previousApiSpec = null) {
+  return request(`/projects/${projectId}/detect-breaking-changes`, {
+    method: "POST",
+    body: JSON.stringify({
+      updated_api_spec: updatedApiSpec,
+      previous_api_spec: previousApiSpec,
+    }),
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Multi-Cloud Infrastructure as Code (Terraform & Kubernetes)
+// ---------------------------------------------------------------------------
+
+export async function getProjectIacCatalog(projectId) {
+  return request(`/projects/${projectId}/iac`);
+}
+
+export async function getProjectIacBundle(projectId, provider) {
+  return request(`/projects/${projectId}/iac/${provider}`);
+}
+
+export async function generateProjectIac(projectId) {
+  return request(`/projects/${projectId}/generate-iac`, {
+    method: "POST",
+  });
+}
