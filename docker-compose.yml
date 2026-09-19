@@ -112,9 +112,21 @@ services:
       - "4317:4317"
       - "4318:4318"
 
+  ollama:
+    image: ollama/ollama:latest
+    container_name: agentflow-ollama
+    profiles: ["offline-ai"]
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    restart: unless-stopped
+
 volumes:
   postgres_data:
   redis_data:
   prometheus_data:
   grafana_data:
   rabbitmq_data:
+  ollama_data:
+
