@@ -787,3 +787,27 @@ class GraphQLSchemaOut(BaseModel):
     resolver_code_python: str
     resolver_code_typescript: str
 
+
+# ---------------------------------------------------------------------------
+# API Gateway Policies & Reverse Proxy Configuration Schemas
+# ---------------------------------------------------------------------------
+
+class GatewayConfigFile(BaseModel):
+    target: str  # kong, nginx, envoy, traefik
+    filename: str
+    content: str
+    format: str  # yaml, conf
+    description: str
+    rate_limit_policy: Optional[str] = None
+    cors_enabled: bool = True
+    auth_policy: Optional[str] = None
+
+
+class GatewayCatalogOut(BaseModel):
+    project_id: UUID
+    project_name: str
+    available_targets: List[str] = []
+    configs: Dict[str, GatewayConfigFile] = {}
+    summary_markdown: str
+
+

@@ -2208,3 +2208,60 @@ def download_project_graphql_sdl(
         raise HTTPException(status_code=500, detail=f"Failed to download GraphQL SDL: {str(e)}")
 
 
+# ---------------------------------------------------------------------------
+# Phase 16: API Gateway & Reverse Proxy Configuration Engine
+# ---------------------------------------------------------------------------
+
+from .agents.gateway_generator import generate_all_gateway_configs
+
+
+@app.get("/projects/{project_id}/gateway-configs", response_model=schemas.GatewayCatalogOut)
+def get_project_gateway_configs(
+    project_id: UUID,
+    db: Session = Depends(get_db)
+):
+    """
+    Returns complete API Gateway and edge reverse-proxy configurations
+    for Kong, Nginx, Envoy, and Traefik with rate-limiting, CORS, and security policies.
+    """
+    project = db.query(models.Project).filter(models.Project.id == project_id).first()
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    try:
+        return generate_all_gateway_configs(str(project_id), db)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to generate gateway configurations: {str(e)}")
+
+
+@app.get("/projects/{project_id}/gateway-configs/{target}/download")
+def download_project_gateway_config(
+    project_id: UUID,
+    target: str,
+    db: Session = Depends(get_db)
+):
+    """
+    Downloads an individual API Gateway configuration file (e.g. kong.yml, nginx.conf, envoy.yaml, traefik.yml).
+    """
+    project = db.query(models.Project).filter(models.Project.id == project_id).first()
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    catalog = generate_all_gateway_configs(str(project_id), db)
+    norm_target = target.lower().strip()
+    config_file = catalog.configs.get(norm_target)
+    if not config_file:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Gateway target '{target}' not supported. Choose from: {', '.join(catalog.available_targets)}"
+        )
+
+    media_type = "application/x-yaml" if config_file.format == "yaml" else "text/plain"
+    return Response(
+        content=config_file.content,
+        media_type=media_type,
+        headers={"Content-Disposition": f'attachment; filename="{config_file.filename}"'}
+    )
+
+
+
