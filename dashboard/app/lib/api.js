@@ -465,3 +465,13 @@ export async function generateProjectIac(projectId) {
     method: "POST",
   });
 }
+
+// ---------------------------------------------------------------------------
+// Landscape Presentation PDF (Deterministic ReportLab Generator)
+// ---------------------------------------------------------------------------
+
+export function getPresentationPdfUrl(projectId, inline = false) {
+  const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+  const endpoint = inline ? "preview-presentation-pdf" : "presentation-pdf";
+  return `${API_BASE}/projects/${projectId}/${endpoint}`;
+}

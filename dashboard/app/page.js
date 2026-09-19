@@ -58,6 +58,7 @@ import {
   getProjectIacCatalog,
   getProjectIacBundle,
   generateProjectIac,
+  getPresentationPdfUrl,
 } from "./lib/api";
 
 function RadialGauge({ value = 0, size = 110, strokeWidth = 10, label = "", color = "#00FF66", subtext = "" }) {
@@ -602,6 +603,34 @@ export default function Home() {
                 📦 ZIP
               </a>
               <a
+                href={getPresentationPdfUrl(currentProject.id)}
+                target="_blank"
+                rel="noreferrer"
+                className="btn btn-primary btn-sm"
+                style={{
+                  textDecoration: "none",
+                  fontSize: 12,
+                  padding: "5px 12px",
+                  background: "linear-gradient(135deg, #00FF66 0%, #00B8D9 100%)",
+                  color: "#0A0E1A",
+                  fontWeight: 700,
+                  border: "none",
+                }}
+                title="Download complete executive landscape presentation slide deck (PDF)"
+              >
+                📑 Slide Deck (.pdf)
+              </a>
+              <a
+                href={getPresentationPdfUrl(currentProject.id, true)}
+                target="_blank"
+                rel="noreferrer"
+                className="btn btn-secondary btn-sm"
+                style={{ textDecoration: "none", fontSize: 12, padding: "5px 10px" }}
+                title="Preview landscape presentation slide deck in browser"
+              >
+                👁️ Preview Deck
+              </a>
+              <a
                 href={getOpenApiSpecDownloadUrl(currentProject.id)}
                 target="_blank"
                 rel="noreferrer"
@@ -1073,12 +1102,42 @@ export default function Home() {
                   ⬇️ Download Source Bundle
                 </button>
               </div>
-              <div className="bento-card">
-                <h4 style={{ fontSize: 16, fontWeight: 700, marginBottom: 6 }}>Docker Compose Bundle</h4>
-                <p style={{ color: "var(--text-secondary)", fontSize: 13, marginBottom: 14 }}>Pre-configured Dockerfiles and multi-container configs.</p>
-                <button className="btn btn-secondary btn-sm" onClick={() => showToast("Downloading docker-compose.yml...", "success")}>
-                  ⬇️ Download Docker Package
-                </button>
+              <div className="bento-card" style={{ border: "1px solid rgba(0, 255, 102, 0.25)", background: "rgba(0, 255, 102, 0.03)" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+                  <h4 style={{ fontSize: 16, fontWeight: 700, margin: 0, color: "var(--neon-green)" }}>📑 Executive Slide Deck (.pdf)</h4>
+                  <span className="badge badge-green" style={{ fontSize: 10 }}>PURE-CODE</span>
+                </div>
+                <p style={{ color: "var(--text-secondary)", fontSize: 13, marginBottom: 14 }}>
+                  Deterministic landscape presentation PDF generated from live project schema, API contracts, telemetry, and architecture specs with zero AI hallucinations.
+                </p>
+                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                  {currentProject ? (
+                    <>
+                      <a
+                        href={getPresentationPdfUrl(currentProject.id)}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="btn btn-primary btn-sm"
+                        style={{ textDecoration: "none" }}
+                      >
+                        ⬇️ Download Deck (.pdf)
+                      </a>
+                      <a
+                        href={getPresentationPdfUrl(currentProject.id, true)}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="btn btn-secondary btn-sm"
+                        style={{ textDecoration: "none" }}
+                      >
+                        👁️ Preview Deck
+                      </a>
+                    </>
+                  ) : (
+                    <span style={{ fontSize: 12, color: "var(--text-muted)" }}>
+                      Select or create a project in Studio to export its slide deck.
+                    </span>
+                  )}
+                </div>
               </div>
             </div>
           </div>
@@ -2120,6 +2179,24 @@ export default function Home() {
                   }}
                 >
                   📦 Download Complete (.zip)
+                </a>
+                <a
+                  href={getPresentationPdfUrl(currentProject.id)}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="btn btn-secondary"
+                  style={{
+                    textDecoration: "none",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 8,
+                    border: "1px solid var(--neon-green)",
+                    color: "var(--neon-green)",
+                    fontWeight: 600,
+                  }}
+                  title="Export executive landscape presentation slide deck (PDF)"
+                >
+                  📑 Export Slide Deck (.pdf)
                 </a>
               </div>
             </div>
