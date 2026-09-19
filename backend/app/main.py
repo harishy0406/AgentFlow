@@ -2010,3 +2010,77 @@ def trigger_iac_generation_endpoint(
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+# ---------------------------------------------------------------------------
+# Phase 13: Deterministic Landscape Presentation PDF Report Engine
+# ---------------------------------------------------------------------------
+
+from .reports.pdf_presentation import generate_project_presentation_pdf
+
+@app.get("/projects/{project_id}/presentation-pdf")
+def download_project_presentation_pdf(
+    project_id: UUID,
+    db: Session = Depends(get_db)
+):
+    """
+    Generates and streams a deterministic, landscape presentation slide-deck PDF
+    synthesizing the project overview, system architecture, database schema,
+    API contracts, engineering tasks, and multi-cloud deployment specs.
+    """
+    try:
+        project = db.query(models.Project).filter(models.Project.id == project_id).first()
+        if not project:
+            raise HTTPException(status_code=404, detail="Project not found")
+
+        pdf_bytes = generate_project_presentation_pdf(str(project_id), db)
+        slug = sanitize_project_slug(project.name)
+        filename = f"{slug}_presentation.pdf"
+
+        return Response(
+            content=pdf_bytes,
+            media_type="application/pdf",
+            headers={
+                "Content-Disposition": f'attachment; filename="{filename}"',
+                "Content-Length": str(len(pdf_bytes)),
+            }
+        )
+    except HTTPException:
+        raise
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to generate presentation PDF: {str(e)}")
+
+
+@app.get("/projects/{project_id}/preview-presentation-pdf")
+def preview_project_presentation_pdf(
+    project_id: UUID,
+    db: Session = Depends(get_db)
+):
+    """
+    Renders presentation PDF inline for browser viewing or embedding.
+    """
+    try:
+        project = db.query(models.Project).filter(models.Project.id == project_id).first()
+        if not project:
+            raise HTTPException(status_code=404, detail="Project not found")
+
+        pdf_bytes = generate_project_presentation_pdf(str(project_id), db)
+        slug = sanitize_project_slug(project.name)
+        filename = f"{slug}_presentation.pdf"
+
+        return Response(
+            content=pdf_bytes,
+            media_type="application/pdf",
+            headers={
+                "Content-Disposition": f'inline; filename="{filename}"',
+                "Content-Length": str(len(pdf_bytes)),
+            }
+        )
+    except HTTPException:
+        raise
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to render presentation PDF: {str(e)}")
