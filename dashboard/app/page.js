@@ -59,6 +59,8 @@ import {
   getProjectIacBundle,
   generateProjectIac,
   getPresentationPdfUrl,
+  getProjectGraphQL,
+  getGraphQLSchemaDownloadUrl,
 } from "./lib/api";
 
 function RadialGauge({ value = 0, size = 110, strokeWidth = 10, label = "", color = "#00FF66", subtext = "" }) {
@@ -203,6 +205,13 @@ export default function Home() {
   const [selectedIacFile, setSelectedIacFile] = useState(null);
   const [iacCopied, setIacCopied] = useState(false);
   const [cloudOpsMode, setCloudOpsMode] = useState("changelog"); // 'changelog' | 'iac'
+
+  // GraphQL Explorer state
+  const [graphqlData, setGraphqlData] = useState(null);
+  const [graphqlLoading, setGraphqlLoading] = useState(false);
+  const [showGraphqlModal, setShowGraphqlModal] = useState(false);
+  const [graphqlSubTab, setGraphqlSubTab] = useState("sdl"); // 'sdl' | 'queries' | 'python' | 'typescript'
+
   const downloadTextFile = (filename, text, mime = "text/plain") => {
     const blob = new Blob([text], { type: mime });
     const url = URL.createObjectURL(blob);
@@ -640,6 +649,27 @@ export default function Home() {
               >
                 📄 OpenAPI
               </a>
+              <button
+                className="btn btn-secondary btn-sm"
+                disabled={graphqlLoading}
+                onClick={async () => {
+                  setGraphqlLoading(true);
+                  try {
+                    const res = await getProjectGraphQL(currentProject.id);
+                    setGraphqlData(res);
+                    setShowGraphqlModal(true);
+                    showToast(`Generated GraphQL Schema with ${res.types.length} entities and ${res.queries_count} queries!`, "success");
+                  } catch (err) {
+                    showToast(err.message, "error");
+                  } finally {
+                    setGraphqlLoading(false);
+                  }
+                }}
+                style={{ fontSize: 12, padding: "5px 10px", borderColor: "#E535AB", color: "#E535AB" }}
+                title="Inspect & download GraphQL Schema (SDL), Queries, and Resolvers"
+              >
+                ◈ {graphqlLoading ? "..." : "GraphQL"}
+              </button>
               <button
                 className="btn btn-secondary btn-sm"
                 disabled={generatingMigrations}
@@ -1135,6 +1165,51 @@ export default function Home() {
                   ) : (
                     <span style={{ fontSize: 12, color: "var(--text-muted)" }}>
                       Select or create a project in Studio to export its slide deck.
+                    </span>
+                  )}
+                </div>
+              </div>
+              <div className="bento-card" style={{ border: "1px solid rgba(229, 53, 171, 0.3)", background: "rgba(229, 53, 171, 0.03)" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+                  <h4 style={{ fontSize: 16, fontWeight: 700, margin: 0, color: "#E535AB" }}>◈ GraphQL Schema (.graphql)</h4>
+                  <span className="badge" style={{ fontSize: 10, background: "rgba(229, 53, 171, 0.2)", color: "#E535AB", border: "1px solid #E535AB" }}>APOLLO & STRAWBERRY</span>
+                </div>
+                <p style={{ color: "var(--text-secondary)", fontSize: 13, marginBottom: 14 }}>
+                  Complete GraphQL SDL schema, Query &amp; Mutation root types, sample queries, and executable Python &amp; TypeScript resolver stubs.
+                </p>
+                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                  {currentProject ? (
+                    <>
+                      <a
+                        href={getGraphQLSchemaDownloadUrl(currentProject.id)}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="btn btn-primary btn-sm"
+                        style={{ textDecoration: "none", background: "#E535AB", borderColor: "#E535AB", color: "#fff" }}
+                      >
+                        ⬇️ Download .graphql SDL
+                      </a>
+                      <button
+                        className="btn btn-secondary btn-sm"
+                        onClick={async () => {
+                          setGraphqlLoading(true);
+                          try {
+                            const res = await getProjectGraphQL(currentProject.id);
+                            setGraphqlData(res);
+                            setShowGraphqlModal(true);
+                          } catch (err) {
+                            showToast(err.message, "error");
+                          } finally {
+                            setGraphqlLoading(false);
+                          }
+                        }}
+                      >
+                        👁️ Explore GraphQL Studio
+                      </button>
+                    </>
+                  ) : (
+                    <span style={{ fontSize: 12, color: "var(--text-muted)" }}>
+                      Select or create a project in Studio to export its GraphQL schema.
                     </span>
                   )}
                 </div>
@@ -6654,6 +6729,252 @@ export default function Home() {
                       </span>
                     </div>
                   ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* GraphQL Studio Explorer Modal */}
+      {showGraphqlModal && graphqlData && (
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: "rgba(0, 0, 0, 0.85)",
+            backdropFilter: "blur(8px)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 1000,
+            padding: 20,
+          }}
+        >
+          <div
+            style={{
+              background: "var(--bg-card)",
+              border: "1px solid rgba(229, 53, 171, 0.4)",
+              borderRadius: 12,
+              width: "100%",
+              maxWidth: 960,
+              maxHeight: "90vh",
+              display: "flex",
+              flexDirection: "column",
+              boxShadow: "0 10px 40px rgba(229, 53, 171, 0.18)",
+              overflow: "hidden",
+            }}
+          >
+            {/* Modal Header */}
+            <div
+              style={{
+                padding: "16px 20px",
+                borderBottom: "1px solid var(--border)",
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                background: "var(--bg-secondary)",
+              }}
+            >
+              <div>
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <h3 style={{ margin: 0, fontSize: 16, fontFamily: "var(--font-display)", color: "#E535AB" }}>
+                    ◈ GraphQL Schema &amp; Resolvers Studio
+                  </h3>
+                  <span className="badge" style={{ fontSize: 10, background: "rgba(229, 53, 171, 0.15)", color: "#E535AB", border: "1px solid #E535AB" }}>
+                    {graphqlData.types?.length || 0} ENTITIES • {graphqlData.queries_count || 0} QUERIES
+                  </span>
+                </div>
+                <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 2 }}>
+                  Production GraphQL SDL schema and executable resolver stubs for {graphqlData.project_name}
+                </div>
+              </div>
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <a
+                  href={getGraphQLSchemaDownloadUrl(graphqlData.project_id)}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="btn btn-primary btn-sm"
+                  style={{ textDecoration: "none", background: "#E535AB", borderColor: "#E535AB", color: "#fff" }}
+                >
+                  ⬇️ Download .graphql
+                </a>
+                <button
+                  className="btn btn-secondary btn-sm"
+                  onClick={() => setShowGraphqlModal(false)}
+                  style={{ padding: "4px 8px" }}
+                >
+                  ✕
+                </button>
+              </div>
+            </div>
+
+            {/* Modal Navigation Tabs */}
+            <div
+              style={{
+                display: "flex",
+                gap: 8,
+                padding: "10px 20px",
+                borderBottom: "1px solid var(--border)",
+                background: "rgba(0,0,0,0.2)",
+              }}
+            >
+              {[
+                { id: "sdl", label: "📄 Schema SDL (.graphql)" },
+                { id: "queries", label: "⚡ Sample Queries & Mutations" },
+                { id: "python", label: "🐍 Python (Strawberry)" },
+                { id: "typescript", label: "📘 TypeScript (Apollo)" },
+              ].map((tab) => (
+                <button
+                  key={tab.id}
+                  className={`tab ${graphqlSubTab === tab.id ? "active" : ""}`}
+                  onClick={() => setGraphqlSubTab(tab.id)}
+                  style={{
+                    fontSize: 12,
+                    padding: "6px 14px",
+                    borderColor: graphqlSubTab === tab.id ? "#E535AB" : "transparent",
+                    color: graphqlSubTab === tab.id ? "#E535AB" : "var(--text-secondary)",
+                  }}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+
+            {/* Modal Body */}
+            <div style={{ padding: 20, overflowY: "auto", flex: 1 }}>
+              {graphqlSubTab === "sdl" && (
+                <div>
+                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8, alignItems: "center" }}>
+                    <span style={{ fontSize: 12, color: "var(--text-muted)" }}>Raw GraphQL Schema Definition (SDL):</span>
+                    <button
+                      className="btn btn-secondary btn-sm"
+                      onClick={() => {
+                        navigator.clipboard.writeText(graphqlData.schema_sdl);
+                        showToast("Copied GraphQL SDL to clipboard!", "success");
+                      }}
+                    >
+                      📋 Copy SDL
+                    </button>
+                  </div>
+                  <pre
+                    style={{
+                      background: "var(--bg-primary)",
+                      border: "1px solid var(--border)",
+                      borderRadius: 8,
+                      padding: 16,
+                      fontSize: 12,
+                      fontFamily: "var(--font-mono)",
+                      color: "var(--text-primary)",
+                      overflowX: "auto",
+                      whiteSpace: "pre-wrap",
+                      margin: 0,
+                    }}
+                  >
+                    {graphqlData.schema_sdl}
+                  </pre>
+                </div>
+              )}
+
+              {graphqlSubTab === "queries" && (
+                <div>
+                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8, alignItems: "center" }}>
+                    <span style={{ fontSize: 12, color: "var(--text-muted)" }}>Ready-to-execute GraphiQL Queries &amp; Mutations:</span>
+                    <button
+                      className="btn btn-secondary btn-sm"
+                      onClick={() => {
+                        navigator.clipboard.writeText(graphqlData.query_examples);
+                        showToast("Copied sample queries to clipboard!", "success");
+                      }}
+                    >
+                      📋 Copy Queries
+                    </button>
+                  </div>
+                  <pre
+                    style={{
+                      background: "var(--bg-primary)",
+                      border: "1px solid var(--border)",
+                      borderRadius: 8,
+                      padding: 16,
+                      fontSize: 12,
+                      fontFamily: "var(--font-mono)",
+                      color: "var(--neon-green)",
+                      overflowX: "auto",
+                      whiteSpace: "pre-wrap",
+                      margin: 0,
+                    }}
+                  >
+                    {graphqlData.query_examples}
+                  </pre>
+                </div>
+              )}
+
+              {graphqlSubTab === "python" && (
+                <div>
+                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8, alignItems: "center" }}>
+                    <span style={{ fontSize: 12, color: "var(--text-muted)" }}>Strawberry GraphQL Resolver Implementation (FastAPI / ASGI):</span>
+                    <button
+                      className="btn btn-secondary btn-sm"
+                      onClick={() => {
+                        navigator.clipboard.writeText(graphqlData.resolver_code_python);
+                        showToast("Copied Python resolver code!", "success");
+                      }}
+                    >
+                      📋 Copy Python
+                    </button>
+                  </div>
+                  <pre
+                    style={{
+                      background: "var(--bg-primary)",
+                      border: "1px solid var(--border)",
+                      borderRadius: 8,
+                      padding: 16,
+                      fontSize: 12,
+                      fontFamily: "var(--font-mono)",
+                      color: "#38BDF8",
+                      overflowX: "auto",
+                      whiteSpace: "pre-wrap",
+                      margin: 0,
+                    }}
+                  >
+                    {graphqlData.resolver_code_python}
+                  </pre>
+                </div>
+              )}
+
+              {graphqlSubTab === "typescript" && (
+                <div>
+                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8, alignItems: "center" }}>
+                    <span style={{ fontSize: 12, color: "var(--text-muted)" }}>Apollo Server Types &amp; Resolvers Map (TypeScript):</span>
+                    <button
+                      className="btn btn-secondary btn-sm"
+                      onClick={() => {
+                        navigator.clipboard.writeText(graphqlData.resolver_code_typescript);
+                        showToast("Copied TypeScript resolver code!", "success");
+                      }}
+                    >
+                      📋 Copy TypeScript
+                    </button>
+                  </div>
+                  <pre
+                    style={{
+                      background: "var(--bg-primary)",
+                      border: "1px solid var(--border)",
+                      borderRadius: 8,
+                      padding: 16,
+                      fontSize: 12,
+                      fontFamily: "var(--font-mono)",
+                      color: "#FCD34D",
+                      overflowX: "auto",
+                      whiteSpace: "pre-wrap",
+                      margin: 0,
+                    }}
+                  >
+                    {graphqlData.resolver_code_typescript}
+                  </pre>
                 </div>
               )}
             </div>

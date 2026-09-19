@@ -475,3 +475,17 @@ export function getPresentationPdfUrl(projectId, inline = false) {
   const endpoint = inline ? "preview-presentation-pdf" : "presentation-pdf";
   return `${API_BASE}/projects/${projectId}/${endpoint}`;
 }
+
+// ---------------------------------------------------------------------------
+// GraphQL Schema & Resolvers Engine
+// ---------------------------------------------------------------------------
+
+export async function getProjectGraphQL(projectId) {
+  return request(`/projects/${projectId}/graphql`);
+}
+
+export function getGraphQLSchemaDownloadUrl(projectId) {
+  const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+  return `${API_BASE}/projects/${projectId}/graphql/schema.graphql`;
+}
+

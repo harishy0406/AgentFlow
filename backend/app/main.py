@@ -2156,3 +2156,55 @@ def trigger_generate_project_adrs(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to recompute ADRs: {str(e)}")
 
+
+# ---------------------------------------------------------------------------
+# Phase 15: GraphQL Schema & Resolvers Engine
+# ---------------------------------------------------------------------------
+
+from .agents.graphql_generator import generate_project_graphql
+
+
+@app.get("/projects/{project_id}/graphql", response_model=schemas.GraphQLSchemaOut)
+def get_project_graphql(
+    project_id: UUID,
+    db: Session = Depends(get_db)
+):
+    """
+    Generates a production-ready GraphQL schema SDL, Query/Mutation root types,
+    sample queries, and executable Python (Strawberry) / TypeScript (Apollo) resolver stubs.
+    """
+    project = db.query(models.Project).filter(models.Project.id == project_id).first()
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    try:
+        return generate_project_graphql(str(project_id), db)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to generate GraphQL schema: {str(e)}")
+
+
+@app.get("/projects/{project_id}/graphql/schema.graphql")
+def download_project_graphql_sdl(
+    project_id: UUID,
+    db: Session = Depends(get_db)
+):
+    """
+    Streams the raw GraphQL SDL (schema definition language) as a downloadable .graphql file.
+    """
+    project = db.query(models.Project).filter(models.Project.id == project_id).first()
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    try:
+        gql_data = generate_project_graphql(str(project_id), db)
+        slug = sanitize_project_slug(project.name)
+        filename = f"{slug}_schema.graphql"
+        return Response(
+            content=gql_data.schema_sdl,
+            media_type="text/plain",
+            headers={"Content-Disposition": f'attachment; filename="{filename}"'}
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to download GraphQL SDL: {str(e)}")
+
+

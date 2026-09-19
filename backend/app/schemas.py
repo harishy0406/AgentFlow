@@ -755,3 +755,35 @@ class AdrCatalogOut(BaseModel):
     total_adrs: int
     adrs: List[ArchitectureDecisionRecord] = []
     index_markdown: str
+
+
+# ---------------------------------------------------------------------------
+# GraphQL Schema & Resolvers Generator Schemas
+# ---------------------------------------------------------------------------
+
+class GraphQLFieldMeta(BaseModel):
+    name: str
+    type_name: str
+    is_nullable: bool = True
+    is_list: bool = False
+    description: Optional[str] = None
+
+
+class GraphQLTypeMeta(BaseModel):
+    name: str
+    kind: str  # OBJECT, INPUT_OBJECT, ENUM, UNION
+    fields: List[GraphQLFieldMeta] = []
+    description: Optional[str] = None
+
+
+class GraphQLSchemaOut(BaseModel):
+    project_id: UUID
+    project_name: str
+    schema_sdl: str
+    types: List[GraphQLTypeMeta] = []
+    queries_count: int
+    mutations_count: int
+    query_examples: str
+    resolver_code_python: str
+    resolver_code_typescript: str
+
