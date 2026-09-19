@@ -728,3 +728,30 @@ class IacCatalogOut(BaseModel):
     project_name: str
     available_providers: List[str] = []
     packages: Dict[str, IacBundleOut] = {}
+
+
+# ---------------------------------------------------------------------------
+# Architecture Decision Records (ADR) Schemas
+# ---------------------------------------------------------------------------
+
+class ArchitectureDecisionRecord(BaseModel):
+    id: str  # e.g. "ADR-0001"
+    title: str
+    status: str  # ACCEPTED, PROPOSED, DEPRECATED, SUPERSEDED
+    date: str
+    deciders: List[str] = []
+    context: str
+    decision_drivers: List[str] = []
+    considered_options: List[str] = []
+    decision_outcome: str
+    consequences_positive: List[str] = []
+    consequences_negative: List[str] = []
+    markdown_content: str
+
+
+class AdrCatalogOut(BaseModel):
+    project_id: UUID
+    project_name: str
+    total_adrs: int
+    adrs: List[ArchitectureDecisionRecord] = []
+    index_markdown: str

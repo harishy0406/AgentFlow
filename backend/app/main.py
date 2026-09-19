@@ -2084,3 +2084,75 @@ def preview_project_presentation_pdf(
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to render presentation PDF: {str(e)}")
+
+
+# ---------------------------------------------------------------------------
+# Phase 14: Architecture Decision Records (ADR) Engine
+# ---------------------------------------------------------------------------
+
+from .agents.adr_generator import generate_project_adrs
+
+
+@app.get("/projects/{project_id}/adrs", response_model=schemas.AdrCatalogOut)
+def get_project_adrs(
+    project_id: UUID,
+    db: Session = Depends(get_db)
+):
+    """
+    Returns the comprehensive catalog of Architecture Decision Records (ADRs)
+    generated for the project based on PRD, SDD, database schema, and system specifications.
+    """
+    project = db.query(models.Project).filter(models.Project.id == project_id).first()
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    try:
+        return generate_project_adrs(str(project_id), db)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to generate ADRs: {str(e)}")
+
+
+@app.get("/projects/{project_id}/adrs/{adr_id}/markdown")
+def download_single_adr_markdown(
+    project_id: UUID,
+    adr_id: str,
+    db: Session = Depends(get_db)
+):
+    """
+    Streams a single ADR document in GitHub-flavored Markdown (MADR format).
+    """
+    project = db.query(models.Project).filter(models.Project.id == project_id).first()
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    catalog = generate_project_adrs(str(project_id), db)
+    norm_id = adr_id.upper().strip()
+    target = next((a for a in catalog.adrs if a.id.upper() == norm_id), None)
+    if not target:
+        raise HTTPException(status_code=404, detail=f"ADR with ID '{adr_id}' not found")
+
+    filename = f"{target.id.lower()}_{sanitize_project_slug(target.title)}.md"
+    return Response(
+        content=target.markdown_content,
+        media_type="text/markdown",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'}
+    )
+
+
+@app.post("/projects/{project_id}/generate-adrs", response_model=schemas.AdrCatalogOut)
+def trigger_generate_project_adrs(
+    project_id: UUID,
+    db: Session = Depends(get_db)
+):
+    """
+    Generates or recomputes the project's Architecture Decision Records catalog.
+    """
+    project = db.query(models.Project).filter(models.Project.id == project_id).first()
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    try:
+        return generate_project_adrs(str(project_id), db)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to recompute ADRs: {str(e)}")
+
