@@ -811,3 +811,25 @@ class GatewayCatalogOut(BaseModel):
     summary_markdown: str
 
 
+# ---------------------------------------------------------------------------
+# Contract-Driven Synthetic Seed Data & Factory Generator Schemas
+# ---------------------------------------------------------------------------
+
+class SeedEntityData(BaseModel):
+    table_name: str
+    row_count: int
+    sample_records: List[Dict[str, Any]] = []
+
+
+class SeedDataCatalogOut(BaseModel):
+    project_id: UUID
+    project_name: str
+    total_records: int
+    entities: List[SeedEntityData] = []
+    sql_script: str
+    json_fixture: str
+    python_factory_code: str
+    typescript_seed_code: str
+
+
+

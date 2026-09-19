@@ -489,3 +489,22 @@ export function getGraphQLSchemaDownloadUrl(projectId) {
   return `${API_BASE}/projects/${projectId}/graphql/schema.graphql`;
 }
 
+// ---------------------------------------------------------------------------
+// Synthetic Seed Data & Factory Generator
+// ---------------------------------------------------------------------------
+
+export async function getProjectSeedData(projectId, count = 5) {
+  return request(`/projects/${projectId}/seed-data?count=${count}`);
+}
+
+export function getSeedSqlDownloadUrl(projectId, count = 5) {
+  const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+  return `${API_BASE}/projects/${projectId}/seed-data/seed.sql?count=${count}`;
+}
+
+export function getSeedJsonDownloadUrl(projectId, count = 5) {
+  const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+  return `${API_BASE}/projects/${projectId}/seed-data/seeds.json?count=${count}`;
+}
+
+

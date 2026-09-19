@@ -61,6 +61,9 @@ import {
   getPresentationPdfUrl,
   getProjectGraphQL,
   getGraphQLSchemaDownloadUrl,
+  getProjectSeedData,
+  getSeedSqlDownloadUrl,
+  getSeedJsonDownloadUrl,
 } from "./lib/api";
 
 function RadialGauge({ value = 0, size = 110, strokeWidth = 10, label = "", color = "#00FF66", subtext = "" }) {
@@ -211,6 +214,12 @@ export default function Home() {
   const [graphqlLoading, setGraphqlLoading] = useState(false);
   const [showGraphqlModal, setShowGraphqlModal] = useState(false);
   const [graphqlSubTab, setGraphqlSubTab] = useState("sdl"); // 'sdl' | 'queries' | 'python' | 'typescript'
+
+  // Synthetic Seed Data state
+  const [seedData, setSeedData] = useState(null);
+  const [seedLoading, setSeedLoading] = useState(false);
+  const [showSeedModal, setShowSeedModal] = useState(false);
+  const [seedSubTab, setSeedSubTab] = useState("sql"); // 'sql' | 'json' | 'python' | 'typescript'
 
   const downloadTextFile = (filename, text, mime = "text/plain") => {
     const blob = new Blob([text], { type: mime });
@@ -669,6 +678,27 @@ export default function Home() {
                 title="Inspect & download GraphQL Schema (SDL), Queries, and Resolvers"
               >
                 ◈ {graphqlLoading ? "..." : "GraphQL"}
+              </button>
+              <button
+                className="btn btn-secondary btn-sm"
+                disabled={seedLoading}
+                onClick={async () => {
+                  setSeedLoading(true);
+                  try {
+                    const res = await getProjectSeedData(currentProject.id, 5);
+                    setSeedData(res);
+                    setShowSeedModal(true);
+                    showToast(`Generated synthetic seed fixtures with ${res.total_records} records across ${res.entities.length} tables!`, "success");
+                  } catch (err) {
+                    showToast(err.message, "error");
+                  } finally {
+                    setSeedLoading(false);
+                  }
+                }}
+                style={{ fontSize: 12, padding: "5px 10px", borderColor: "#10B981", color: "#10B981" }}
+                title="Inspect & download synthetic seed data fixtures (SQL & JSON) and test factories"
+              >
+                🌱 {seedLoading ? "..." : "Seed Data"}
               </button>
               <button
                 className="btn btn-secondary btn-sm"
@@ -1210,6 +1240,60 @@ export default function Home() {
                   ) : (
                     <span style={{ fontSize: 12, color: "var(--text-muted)" }}>
                       Select or create a project in Studio to export its GraphQL schema.
+                    </span>
+                  )}
+                </div>
+              </div>
+              <div className="bento-card" style={{ border: "1px solid rgba(16, 185, 129, 0.3)", background: "rgba(16, 185, 129, 0.03)" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+                  <h4 style={{ fontSize: 16, fontWeight: 700, margin: 0, color: "#10B981" }}>🌱 Synthetic Seed Data (.sql / .json)</h4>
+                  <span className="badge" style={{ fontSize: 10, background: "rgba(16, 185, 129, 0.2)", color: "#10B981", border: "1px solid #10B981" }}>MOCK &amp; FIXTURES</span>
+                </div>
+                <p style={{ color: "var(--text-secondary)", fontSize: 13, marginBottom: 14 }}>
+                  Transactional SQL INSERT scripts, JSON fixtures, FactoryBoy test factories, and Prisma seeders derived directly from database DDL.
+                </p>
+                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                  {currentProject ? (
+                    <>
+                      <a
+                        href={getSeedSqlDownloadUrl(currentProject.id)}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="btn btn-primary btn-sm"
+                        style={{ textDecoration: "none", background: "#10B981", borderColor: "#10B981", color: "#fff" }}
+                      >
+                        ⬇️ Download seed.sql
+                      </a>
+                      <a
+                        href={getSeedJsonDownloadUrl(currentProject.id)}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="btn btn-secondary btn-sm"
+                        style={{ textDecoration: "none" }}
+                      >
+                        ⬇️ Download seeds.json
+                      </a>
+                      <button
+                        className="btn btn-secondary btn-sm"
+                        onClick={async () => {
+                          setSeedLoading(true);
+                          try {
+                            const res = await getProjectSeedData(currentProject.id, 5);
+                            setSeedData(res);
+                            setShowSeedModal(true);
+                          } catch (err) {
+                            showToast(err.message, "error");
+                          } finally {
+                            setSeedLoading(false);
+                          }
+                        }}
+                      >
+                        👁️ Explore Seed Studio
+                      </button>
+                    </>
+                  ) : (
+                    <span style={{ fontSize: 12, color: "var(--text-muted)" }}>
+                      Select or create a project in Studio to export its seed fixtures.
                     </span>
                   )}
                 </div>
@@ -6974,6 +7058,209 @@ export default function Home() {
                     }}
                   >
                     {graphqlData.resolver_code_typescript}
+                  </pre>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Synthetic Seed Data Studio Modal */}
+      {showSeedModal && seedData && (
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: "rgba(0, 0, 0, 0.85)",
+            backdropFilter: "blur(8px)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 1000,
+            padding: 20,
+          }}
+        >
+          <div
+            style={{
+              background: "var(--bg-card)",
+              border: "1px solid rgba(16, 185, 129, 0.4)",
+              borderRadius: 12,
+              width: "100%",
+              maxWidth: 960,
+              maxHeight: "90vh",
+              display: "flex",
+              flexDirection: "column",
+              boxShadow: "0 10px 40px rgba(16, 185, 129, 0.18)",
+              overflow: "hidden",
+            }}
+          >
+            {/* Modal Header */}
+            <div
+              style={{
+                padding: "16px 20px",
+                borderBottom: "1px solid var(--border)",
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                background: "var(--bg-secondary)",
+              }}
+            >
+              <div>
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <h3 style={{ margin: 0, fontSize: 16, fontFamily: "var(--font-display)", color: "#10B981" }}>
+                    🌱 Synthetic Seed Data &amp; Test Factory Studio
+                  </h3>
+                  <span className="badge" style={{ fontSize: 10, background: "rgba(16, 185, 129, 0.15)", color: "#10B981", border: "1px solid #10B981" }}>
+                    {seedData.total_records || 0} RECORDS • {seedData.entities?.length || 0} TABLES
+                  </span>
+                </div>
+                <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 2 }}>
+                  Deterministic schema-accurate synthetic fixtures and factories for {seedData.project_name}
+                </div>
+              </div>
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <a
+                  href={getSeedSqlDownloadUrl(seedData.project_id)}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="btn btn-primary btn-sm"
+                  style={{ textDecoration: "none", background: "#10B981", borderColor: "#10B981", color: "#fff" }}
+                >
+                  ⬇️ SQL
+                </a>
+                <a
+                  href={getSeedJsonDownloadUrl(seedData.project_id)}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="btn btn-secondary btn-sm"
+                  style={{ textDecoration: "none" }}
+                >
+                  ⬇️ JSON
+                </a>
+                <button
+                  className="btn btn-secondary btn-sm"
+                  onClick={() => setShowSeedModal(false)}
+                  style={{ padding: "4px 8px" }}
+                >
+                  ✕
+                </button>
+              </div>
+            </div>
+
+            {/* Modal Navigation Tabs */}
+            <div
+              style={{
+                display: "flex",
+                gap: 8,
+                padding: "10px 20px",
+                borderBottom: "1px solid var(--border)",
+                background: "rgba(0,0,0,0.2)",
+              }}
+            >
+              {[
+                { id: "sql", label: "📄 SQL Inserts (seed.sql)" },
+                { id: "json", label: "📦 JSON Fixtures (seeds.json)" },
+                { id: "python", label: "🐍 Python (FactoryBoy)" },
+                { id: "typescript", label: "📘 TypeScript (Prisma)" },
+              ].map((tab) => (
+                <button
+                  key={tab.id}
+                  className={`tab ${seedSubTab === tab.id ? "active" : ""}`}
+                  onClick={() => setSeedSubTab(tab.id)}
+                  style={{
+                    fontSize: 12,
+                    padding: "6px 14px",
+                    borderColor: seedSubTab === tab.id ? "#10B981" : "transparent",
+                    color: seedSubTab === tab.id ? "#10B981" : "var(--text-secondary)",
+                  }}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+
+            {/* Modal Body */}
+            <div style={{ padding: 20, overflowY: "auto", flex: 1 }}>
+              {seedSubTab === "sql" && (
+                <div>
+                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8, alignItems: "center" }}>
+                    <span style={{ fontSize: 12, color: "var(--text-muted)" }}>Transactional SQL INSERT statements:</span>
+                    <button
+                      className="btn btn-secondary btn-sm"
+                      onClick={() => {
+                        navigator.clipboard.writeText(seedData.sql_script);
+                        showToast("Copied SQL script to clipboard!", "success");
+                      }}
+                    >
+                      📋 Copy SQL
+                    </button>
+                  </div>
+                  <pre style={{ background: "var(--bg-primary)", border: "1px solid var(--border)", borderRadius: 8, padding: 16, fontSize: 12, fontFamily: "var(--font-mono)", color: "var(--neon-green)", overflowX: "auto", whiteSpace: "pre-wrap", margin: 0 }}>
+                    {seedData.sql_script}
+                  </pre>
+                </div>
+              )}
+
+              {seedSubTab === "json" && (
+                <div>
+                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8, alignItems: "center" }}>
+                    <span style={{ fontSize: 12, color: "var(--text-muted)" }}>Structured JSON Fixture by Table:</span>
+                    <button
+                      className="btn btn-secondary btn-sm"
+                      onClick={() => {
+                        navigator.clipboard.writeText(seedData.json_fixture);
+                        showToast("Copied JSON fixture to clipboard!", "success");
+                      }}
+                    >
+                      📋 Copy JSON
+                    </button>
+                  </div>
+                  <pre style={{ background: "var(--bg-primary)", border: "1px solid var(--border)", borderRadius: 8, padding: 16, fontSize: 12, fontFamily: "var(--font-mono)", color: "#38BDF8", overflowX: "auto", whiteSpace: "pre-wrap", margin: 0 }}>
+                    {seedData.json_fixture}
+                  </pre>
+                </div>
+              )}
+
+              {seedSubTab === "python" && (
+                <div>
+                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8, alignItems: "center" }}>
+                    <span style={{ fontSize: 12, color: "var(--text-muted)" }}>FactoryBoy Test Factory Classes (factories.py):</span>
+                    <button
+                      className="btn btn-secondary btn-sm"
+                      onClick={() => {
+                        navigator.clipboard.writeText(seedData.python_factory_code);
+                        showToast("Copied Python factory code!", "success");
+                      }}
+                    >
+                      📋 Copy Python
+                    </button>
+                  </div>
+                  <pre style={{ background: "var(--bg-primary)", border: "1px solid var(--border)", borderRadius: 8, padding: 16, fontSize: 12, fontFamily: "var(--font-mono)", color: "#FCD34D", overflowX: "auto", whiteSpace: "pre-wrap", margin: 0 }}>
+                    {seedData.python_factory_code}
+                  </pre>
+                </div>
+              )}
+
+              {seedSubTab === "typescript" && (
+                <div>
+                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8, alignItems: "center" }}>
+                    <span style={{ fontSize: 12, color: "var(--text-muted)" }}>Prisma Client Database Seeder (seed.ts):</span>
+                    <button
+                      className="btn btn-secondary btn-sm"
+                      onClick={() => {
+                        navigator.clipboard.writeText(seedData.typescript_seed_code);
+                        showToast("Copied TypeScript seeder code!", "success");
+                      }}
+                    >
+                      📋 Copy TypeScript
+                    </button>
+                  </div>
+                  <pre style={{ background: "var(--bg-primary)", border: "1px solid var(--border)", borderRadius: 8, padding: 16, fontSize: 12, fontFamily: "var(--font-mono)", color: "var(--text-primary)", overflowX: "auto", whiteSpace: "pre-wrap", margin: 0 }}>
+                    {seedData.typescript_seed_code}
                   </pre>
                 </div>
               )}

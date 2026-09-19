@@ -2264,4 +2264,84 @@ def download_project_gateway_config(
     )
 
 
+# ---------------------------------------------------------------------------
+# Phase 17: Contract-Driven Synthetic Seed Data & Factory Engine
+# ---------------------------------------------------------------------------
+
+from .agents.seed_data_generator import generate_project_seed_data
+
+
+@app.get("/projects/{project_id}/seed-data", response_model=schemas.SeedDataCatalogOut)
+def get_project_seed_data(
+    project_id: UUID,
+    count: int = Query(5, ge=1, le=50),
+    db: Session = Depends(get_db)
+):
+    """
+    Generates contract-accurate synthetic seed data fixtures, SQL insert scripts,
+    JSON datasets, and Python (FactoryBoy) / TypeScript (Prisma) seed factories.
+    """
+    project = db.query(models.Project).filter(models.Project.id == project_id).first()
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    try:
+        return generate_project_seed_data(str(project_id), db, count_per_table=count)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to generate seed data: {str(e)}")
+
+
+@app.get("/projects/{project_id}/seed-data/seed.sql")
+def download_project_seed_sql(
+    project_id: UUID,
+    count: int = Query(5, ge=1, le=50),
+    db: Session = Depends(get_db)
+):
+    """
+    Downloads transactional SQL INSERT statements for seeding local or test databases.
+    """
+    project = db.query(models.Project).filter(models.Project.id == project_id).first()
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    try:
+        data = generate_project_seed_data(str(project_id), db, count_per_table=count)
+        slug = sanitize_project_slug(project.name)
+        filename = f"{slug}_seed.sql"
+        return Response(
+            content=data.sql_script,
+            media_type="application/sql",
+            headers={"Content-Disposition": f'attachment; filename="{filename}"'}
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to download seed SQL: {str(e)}")
+
+
+@app.get("/projects/{project_id}/seed-data/seeds.json")
+def download_project_seed_json(
+    project_id: UUID,
+    count: int = Query(5, ge=1, le=50),
+    db: Session = Depends(get_db)
+):
+    """
+    Downloads raw JSON fixture formatted by entity collection for mock APIs and testing.
+    """
+    project = db.query(models.Project).filter(models.Project.id == project_id).first()
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    try:
+        data = generate_project_seed_data(str(project_id), db, count_per_table=count)
+        slug = sanitize_project_slug(project.name)
+        filename = f"{slug}_seeds.json"
+        return Response(
+            content=data.json_fixture,
+            media_type="application/json",
+            headers={"Content-Disposition": f'attachment; filename="{filename}"'}
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to download seed JSON: {str(e)}")
+
+
+
 
