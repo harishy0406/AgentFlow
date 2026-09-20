@@ -1640,7 +1640,7 @@ export default function Home() {
                 {/* Starter Templates */}
                 <div style={{ marginBottom: 20 }}>
                   <label className="form-label" style={{ marginBottom: 8, display: "block" }}>
-                    🚀 Quick Starter Templates (1-Click Fill)
+                    Starter Architecture Templates
                   </label>
                   <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 10 }}>
                     {[
@@ -1680,10 +1680,10 @@ export default function Home() {
                           cursor: "pointer",
                           transition: "all 0.15s ease",
                         }}
-                        onMouseEnter={(e) => e.currentTarget.style.borderColor = "var(--accent-blue)"}
+                        onMouseEnter={(e) => e.currentTarget.style.borderColor = "var(--border-hover)"}
                         onMouseLeave={(e) => e.currentTarget.style.borderColor = "var(--border)"}
                       >
-                        <div style={{ fontSize: 10, color: "var(--accent-blue)", fontWeight: 700, textTransform: "uppercase" }}>
+                        <div style={{ fontSize: 10, color: "var(--text-muted)", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.5px" }}>
                           {t.tag}
                         </div>
                         <div style={{ fontSize: 12, fontWeight: 600, color: "var(--text-primary)", marginTop: 2 }}>
@@ -1718,10 +1718,10 @@ export default function Home() {
                 </div>
                 <div style={{ display: "flex", gap: 12 }}>
                   <button type="submit" className="btn btn-primary" disabled={loading}>
-                    {loading ? (<><span className="spinner" /> Thinking...</>) : "🧠 Get Clarifying Questions"}
+                    {loading ? (<><span className="spinner" /> Thinking...</>) : "Get Clarifying Questions"}
                   </button>
                   <button type="button" className="btn btn-secondary" disabled={loading} onClick={handleSkipClarify}>
-                    ⚡ Skip & Generate Directly
+                    Skip &amp; Generate Directly
                   </button>
                 </div>
               </form>
@@ -1732,7 +1732,7 @@ export default function Home() {
             {clarifyStep === "questions" && (
               <div>
                 <div className="form-group">
-                  <label className="form-label">🤖 Agent's Clarifying Questions</label>
+                  <label className="form-label">Agent Clarification Questions</label>
                   <div className="artifact-content" style={{ marginBottom: 16, whiteSpace: "pre-wrap" }}>
                     {clarifyQuestions}
                   </div>
@@ -1749,10 +1749,10 @@ export default function Home() {
                 </div>
                 <div style={{ display: "flex", gap: 12 }}>
                   <button className="btn btn-primary" disabled={loading} onClick={handleCreateWithClarifications}>
-                    {loading ? (<><span className="spinner" /> Generating...</>) : "🚀 Create & Generate"}
+                    {loading ? (<><span className="spinner" /> Generating...</>) : "Create Project &amp; Generate"}
                   </button>
                   <button className="btn btn-secondary" onClick={() => setClarifyStep("brief")}>
-                    ← Back
+                    &larr; Back
                   </button>
                 </div>
               </div>
@@ -1904,7 +1904,7 @@ export default function Home() {
                           ? `${(currentArt.quality_signal_score * 100).toFixed(0)}%`
                           : "N/A"}
                       </strong>{" "}
-                      • Model: <span style={{ color: "var(--accent-purple)" }}>{currentArt.generated_by_model || "claude-3-haiku"}</span>
+                      • Model: <span style={{ color: "var(--text-primary)", fontWeight: 600 }}>{currentArt.generated_by_model || "claude-3-haiku"}</span>
                     </div>
                   </div>
 
@@ -1925,8 +1925,8 @@ export default function Home() {
                       }}
                     >
                       <div>
-                        <h4 style={{ fontSize: 14, fontWeight: 700, margin: 0, display: "flex", alignItems: "center", gap: 6, color: "var(--neon-green)" }}>
-                          <span>🗄️</span> Automated SQL DDL &amp; Alembic Migrations
+                        <h4 style={{ fontSize: 14, fontWeight: 700, margin: 0, color: "var(--text-primary)" }}>
+                          Automated SQL DDL &amp; Alembic Migrations
                         </h4>
                         <div style={{ fontSize: 12, color: "var(--text-secondary)", marginTop: 4 }}>
                           Extract relational tables, column types, and Alembic revision scripts from this schema.
@@ -2321,15 +2321,15 @@ export default function Home() {
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
               <div>
                 <h2 className="card-title" style={{ marginBottom: 4 }}>
-                  🚀 Generated Codebase
+                  Generated Codebase
                 </h2>
                 <p style={{ color: "var(--text-muted)", fontSize: 13 }}>
                   Executable project files generated by the Software Engineer Agent.
                 </p>
               </div>
-              <div style={{ display: "flex", gap: 10 }}>
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                 <button
-                  className="btn btn-secondary"
+                  className="btn btn-secondary btn-sm"
                   disabled={verifyingCode || !codeData?.files?.length}
                   onClick={async () => {
                     setVerifyingCode(true);
@@ -2347,42 +2347,25 @@ export default function Home() {
                       setVerifyingCode(false);
                     }
                   }}
-                  style={{ display: "flex", alignItems: "center", gap: 6 }}
                 >
-                  {verifyingCode ? "⏳ Verifying..." : "🧪 Run Smoke Tests"}
+                  {verifyingCode ? "Verifying..." : "Run Smoke Tests"}
                 </button>
                 <a
                   href={getDownloadZipUrl(currentProject.id)}
-                  className="btn btn-primary"
-                  style={{
-                    textDecoration: "none",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 8,
-                    background: "#2ea043",
-                    color: "#fff",
-                    fontWeight: 600,
-                  }}
+                  className="btn btn-primary btn-sm"
+                  style={{ textDecoration: "none" }}
                 >
-                  📦 Download Complete (.zip)
+                  Download (.zip)
                 </a>
                 <a
                   href={getPresentationPdfUrl(currentProject.id)}
                   target="_blank"
                   rel="noreferrer"
-                  className="btn btn-secondary"
-                  style={{
-                    textDecoration: "none",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 8,
-                    border: "1px solid var(--neon-green)",
-                    color: "var(--neon-green)",
-                    fontWeight: 600,
-                  }}
+                  className="btn btn-secondary btn-sm"
+                  style={{ textDecoration: "none" }}
                   title="Export executive landscape presentation slide deck (PDF)"
                 >
-                  📑 Export Slide Deck (.pdf)
+                  Export Slide Deck (.pdf)
                 </a>
               </div>
             </div>
@@ -2632,7 +2615,7 @@ export default function Home() {
             </p>
             <div style={{ display: "flex", gap: 12, marginBottom: 24 }}>
               <button
-                className="btn btn-primary"
+                className="btn btn-primary btn-sm"
                 disabled={driftLoading}
                 onClick={async () => {
                   setDriftLoading(true);
@@ -2648,10 +2631,10 @@ export default function Home() {
                   }
                 }}
               >
-                {driftLoading ? (<><span className="spinner" /> Auditing...</>) : "🔍 Run Audit"}
+                {driftLoading ? (<><span className="spinner" /> Auditing...</>) : "Run Audit"}
               </button>
               <button
-                className="btn btn-secondary"
+                className="btn btn-secondary btn-sm"
                 onClick={async () => {
                   try {
                     const d = await listDrifts(currentProject.id);
@@ -2659,7 +2642,7 @@ export default function Home() {
                   } catch (err) { showToast(err.message, "error"); }
                 }}
               >
-                🔄 Refresh List
+                Refresh List
               </button>
             </div>
 
@@ -2694,7 +2677,7 @@ export default function Home() {
                           } catch (err) { showToast(err.message, "error"); }
                         }}
                       >
-                        🔧 Auto-Fix
+                        Auto-Fix
                       </button>
                       <button
                         className="btn btn-secondary btn-sm"
@@ -2707,7 +2690,7 @@ export default function Home() {
                           } catch (err) { showToast(err.message, "error"); }
                         }}
                       >
-                        ✕ Dismiss
+                        Dismiss
                       </button>
                     </div>
                   )}
@@ -2717,13 +2700,13 @@ export default function Home() {
           </div>
         )}
 
-        {/* Tab: Metrics (Phase 3 + Cyber SVG Health Gauges & Audit Exporter) */}
+        {/* Tab: Metrics */}
         {activeTab === "metrics" && currentProject && (
           <div className="card">
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20, flexWrap: "wrap", gap: 12 }}>
               <div>
                 <h2 className="card-title" style={{ margin: 0 }}>
-                  📊 System Health Gauges &amp; Telemetry
+                  System Health &amp; Metrics
                 </h2>
                 <p style={{ color: "var(--text-secondary)", fontSize: 13, marginTop: 4 }}>
                   Real-time multi-dimensional readiness metrics, token burn rates, and cryptographic audit logs.
@@ -2759,7 +2742,7 @@ export default function Home() {
                     showToast("Downloaded JSON Audit Telemetry Report!", "success");
                   }}
                 >
-                  📥 Export Audit JSON
+                  Export Audit JSON
                 </button>
                 <button
                   className="btn btn-primary btn-sm"
@@ -2779,7 +2762,7 @@ export default function Home() {
                     showToast("Downloaded CSV Audit Telemetry Report!", "success");
                   }}
                 >
-                  📊 Export CSV
+                  Export CSV
                 </button>
               </div>
             </div>
@@ -2790,32 +2773,32 @@ export default function Home() {
                 value={projectHealth?.overall_readiness_pct || 0}
                 label="Overall Readiness"
                 subtext={projectHealth?.readiness_label || "Calculating..."}
-                color={projectHealth?.overall_readiness_pct >= 80 ? "var(--neon-green)" : "var(--accent-yellow)"}
+                color={projectHealth?.overall_readiness_pct >= 80 ? "var(--terminal-green)" : "var(--accent-yellow)"}
               />
               <RadialGauge
                 value={projectHealth?.consistency_score_pct || 100}
                 label="Consistency Index"
                 subtext={`${projectHealth?.open_drifts_count || 0} Drifts Active`}
-                color={projectHealth?.consistency_score_pct >= 90 ? "#33FF85" : "var(--accent-red)"}
+                color={projectHealth?.consistency_score_pct >= 90 ? "var(--terminal-green)" : "var(--accent-red)"}
               />
               <RadialGauge
                 value={projectHealth?.artifact_completion_pct || 0}
                 label="DAG Pipeline"
                 subtext={`${projectHealth?.artifacts_generated || 0}/6 Synchronized`}
-                color="var(--accent-cyan)"
+                color="var(--text-primary)"
               />
               <RadialGauge
                 value={verificationData ? verificationData.verification_score_pct : 100}
                 label="AST Code Cleanliness"
                 subtext={verificationData?.all_passed ? "All Smoke Tests Passed" : "Static Syntax Verified"}
-                color="var(--accent-blue)"
+                color="var(--text-secondary)"
               />
             </div>
 
             {/* Summary Stats & Token Analytics */}
             <div className="grid-3" style={{ marginBottom: 24 }}>
               <div className="stat-card">
-                <div className="stat-value" style={{ color: "#3fb950" }}>
+                <div className="stat-value" style={{ color: "var(--terminal-green)" }}>
                   ${analyticsData ? analyticsData.total_cost_usd.toFixed(4) : "0.0000"}
                 </div>
                 <div className="stat-label">
@@ -2823,7 +2806,7 @@ export default function Home() {
                 </div>
               </div>
               <div className="stat-card">
-                <div className="stat-value" style={{ color: "var(--accent-blue)" }}>
+                <div className="stat-value" style={{ color: "var(--text-primary)" }}>
                   {analyticsData ? analyticsData.total_tokens_used.toLocaleString() : "0"}
                 </div>
                 <div className="stat-label">Total Tokens Processed</div>
@@ -2840,7 +2823,7 @@ export default function Home() {
             {analyticsData && analyticsData.by_model.length > 0 && (
               <div style={{ marginBottom: 24, background: "var(--bg-secondary)", borderRadius: 8, padding: 16 }}>
                 <h4 style={{ fontSize: 13, fontWeight: 700, marginBottom: 10, display: "flex", alignItems: "center", gap: 6 }}>
-                  <span>💸</span> Multi-Model Cost &amp; Token Breakdown
+                  Multi-Model Cost &amp; Token Breakdown
                 </h4>
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 10 }}>
                   {analyticsData.by_model.map((m) => (
@@ -2857,7 +2840,7 @@ export default function Home() {
                       <div style={{ fontSize: 11, color: "var(--text-secondary)", marginTop: 4 }}>
                         {m.calls_count} calls • {m.total_tokens.toLocaleString()} tokens
                       </div>
-                      <div style={{ fontSize: 13, fontWeight: 700, color: "#3fb950", marginTop: 4 }}>
+                      <div style={{ fontSize: 13, fontWeight: 700, color: "var(--terminal-green)", marginTop: 4 }}>
                         ${m.total_cost_usd.toFixed(4)}
                       </div>
                     </div>
@@ -2885,7 +2868,7 @@ export default function Home() {
                       <td style={{ padding: "8px 12px", fontWeight: 600 }}>
                         {a.artifact_type.replace("_", " ")}
                       </td>
-                      <td style={{ padding: "8px 12px", color: "var(--accent-purple)" }}>
+                      <td style={{ padding: "8px 12px", color: "var(--text-secondary)" }}>
                         {a.generated_by_model || "default"}
                       </td>
                       <td style={{ padding: "8px 12px", textAlign: "center" }}>v{a.version}</td>
@@ -2908,7 +2891,7 @@ export default function Home() {
         {/* Tab: Evaluations (Phase 6) */}
         {activeTab === "evaluations" && (
           <div className="card">
-            <h2 className="card-title">Evaluation Runs (Phase 6 Benchmarking)</h2>
+            <h2 className="card-title">Evaluation Runs &amp; Benchmarks</h2>
             <p style={{ color: "var(--text-muted)", fontSize: 13, marginBottom: 16 }}>
               Run automated benchmarking across the test corpus to compare AgentFlow vs baselines.
             </p>
@@ -2918,7 +2901,7 @@ export default function Home() {
               {["agentflow", "single-llm", "multi-agent-no-graph"].map((bt) => (
                 <button
                   key={bt}
-                  className="btn btn-primary"
+                  className="btn btn-primary btn-sm"
                   onClick={async () => {
                     try {
                       showToast(`Starting ${bt} evaluation run...`, "info");
@@ -2929,11 +2912,11 @@ export default function Home() {
                     } catch (err) { showToast(err.message, "error"); }
                   }}
                 >
-                  🚀 Run: {bt}
+                  Run: {bt}
                 </button>
               ))}
               <button
-                className="btn btn-secondary"
+                className="btn btn-secondary btn-sm"
                 onClick={async () => {
                   try {
                     const runs = await listEvalRuns();
@@ -2941,7 +2924,7 @@ export default function Home() {
                   } catch (err) { showToast(err.message, "error"); }
                 }}
               >
-                🔄 Load Past Runs
+                Load Past Runs
               </button>
             </div>
 
@@ -3007,7 +2990,7 @@ export default function Home() {
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
               <div>
                 <h2 className="card-title" style={{ marginBottom: 4 }}>
-                  📜 Project Activity Timeline
+                  Project Activity Timeline
                 </h2>
                 <p style={{ color: "var(--text-muted)", fontSize: 13 }}>
                   Chronological audit trail of agent runs, section edits, rollbacks, and code updates.
@@ -3028,7 +3011,7 @@ export default function Home() {
                   }
                 }}
               >
-                🔄 Refresh Timeline
+                Refresh Timeline
               </button>
             </div>
 
@@ -3056,10 +3039,10 @@ export default function Home() {
                         borderRadius: "50%",
                         background:
                           evt.badge_type === "fresh"
-                            ? "#2ea043"
+                            ? "var(--terminal-green)"
                             : evt.badge_type === "drifted"
-                            ? "#f85149"
-                            : "#d29922",
+                            ? "var(--accent-red)"
+                            : "var(--accent-yellow)",
                         border: "2px solid var(--bg-card)",
                       }}
                     />
@@ -3111,7 +3094,7 @@ export default function Home() {
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
               <div>
                 <h2 className="card-title" style={{ marginBottom: 4 }}>
-                  🏢 Multi-Project Workspaces &amp; Mesh Contracts
+                  Multi-Project Workspaces &amp; Mesh Contracts
                 </h2>
                 <p style={{ color: "var(--text-secondary)", fontSize: 13 }}>
                   Group microservices into distributed system workspaces and validate cross-service API contract compatibility.
@@ -3121,7 +3104,7 @@ export default function Home() {
 
             {/* Create Workspace Form */}
             <div className="bento-card" style={{ marginBottom: 24 }}>
-              <h4 style={{ fontSize: 15, fontWeight: 700, marginBottom: 12 }}>➕ Create New System Workspace</h4>
+              <h4 style={{ fontSize: 15, fontWeight: 700, marginBottom: 12 }}>Create New System Workspace</h4>
               <form
                 onSubmit={async (e) => {
                   e.preventDefault();
@@ -3199,7 +3182,7 @@ export default function Home() {
                               }
                             }}
                           >
-                            🔗 Link Active Project
+                            Link Active Project
                           </button>
                         )}
                         <button
@@ -3218,7 +3201,7 @@ export default function Home() {
                             }
                           }}
                         >
-                          🕸️ Mesh Topology
+                          Mesh Topology
                         </button>
                         <button
                           className="btn btn-primary btn-sm"
@@ -3236,7 +3219,7 @@ export default function Home() {
                             }
                           }}
                         >
-                          ⚡ Validate Mesh Contracts
+                          Validate Mesh Contracts
                         </button>
                       </div>
                     </div>
@@ -3250,7 +3233,7 @@ export default function Home() {
                         {ws.projects && ws.projects.length > 0 ? (
                           ws.projects.map((p) => (
                             <span key={p.id} className="badge badge-green" style={{ fontSize: 12, padding: "4px 10px" }}>
-                              ⚙️ {p.name}
+                              {p.name}
                             </span>
                           ))
                         ) : (
@@ -3265,18 +3248,18 @@ export default function Home() {
 
             {/* Interactive SVG Cross-Service Mesh Network Topology Viewer */}
             {workspaceTopology && (
-              <div className="bento-card" style={{ marginTop: 24, borderColor: "#38BDF8", boxShadow: "0 8px 32px rgba(56, 189, 248, 0.15)" }}>
+              <div className="bento-card" style={{ marginTop: 24 }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
                   <div>
-                    <h4 style={{ fontSize: 16, fontWeight: 700, color: "#38BDF8", margin: 0, display: "flex", alignItems: "center", gap: 8 }}>
-                      <span>🕸️</span> Cross-Service Network Topology &amp; Architecture Matrix
+                    <h4 style={{ fontSize: 16, fontWeight: 700, color: "var(--text-primary)", margin: 0 }}>
+                      Cross-Service Network Topology &amp; Architecture Matrix
                     </h4>
                     <div style={{ fontSize: 12, color: "var(--text-secondary)", marginTop: 2 }}>
                       {workspaceTopology.workspace_name} — {workspaceTopology.nodes_count} active services, {workspaceTopology.edges_count} communication channels
                     </div>
                   </div>
                   <button className="btn btn-secondary btn-sm" onClick={() => setWorkspaceTopology(null)}>
-                    ✕ Close Topology
+                    Close Topology
                   </button>
                 </div>
 
@@ -3284,25 +3267,25 @@ export default function Home() {
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 12, marginBottom: 20 }}>
                   <div style={{ background: "var(--bg-secondary)", padding: 12, borderRadius: 8, border: "1px solid var(--border)" }}>
                     <div style={{ fontSize: 11, color: "var(--text-muted)" }}>SERVICES IN MESH</div>
-                    <div style={{ fontSize: 18, fontWeight: 800, color: "var(--neon-green)", marginTop: 2 }}>
+                    <div style={{ fontSize: 18, fontWeight: 800, color: "var(--text-primary)", marginTop: 2 }}>
                       {workspaceTopology.nodes_count} Nodes
                     </div>
                   </div>
                   <div style={{ background: "var(--bg-secondary)", padding: 12, borderRadius: 8, border: "1px solid var(--border)" }}>
                     <div style={{ fontSize: 11, color: "var(--text-muted)" }}>INTER-SERVICE RPC EDGES</div>
-                    <div style={{ fontSize: 18, fontWeight: 800, color: "#38BDF8", marginTop: 2 }}>
+                    <div style={{ fontSize: 18, fontWeight: 800, color: "var(--text-primary)", marginTop: 2 }}>
                       {workspaceTopology.edges_count} Channels
                     </div>
                   </div>
                   <div style={{ background: "var(--bg-secondary)", padding: 12, borderRadius: 8, border: "1px solid var(--border)" }}>
                     <div style={{ fontSize: 11, color: "var(--text-muted)" }}>EXPORTED REST ENDPOINTS</div>
-                    <div style={{ fontSize: 18, fontWeight: 800, color: "#FBBF24", marginTop: 2 }}>
+                    <div style={{ fontSize: 18, fontWeight: 800, color: "var(--text-primary)", marginTop: 2 }}>
                       {workspaceTopology.total_endpoints} Endpoints
                     </div>
                   </div>
                   <div style={{ background: "var(--bg-secondary)", padding: 12, borderRadius: 8, border: "1px solid var(--border)" }}>
                     <div style={{ fontSize: 11, color: "var(--text-muted)" }}>MESH HEALTH SLA</div>
-                    <div style={{ fontSize: 18, fontWeight: 800, color: "var(--neon-green)", marginTop: 2 }}>
+                    <div style={{ fontSize: 18, fontWeight: 800, color: "var(--terminal-green)", marginTop: 2 }}>
                       {workspaceTopology.mesh_health_score}%
                     </div>
                   </div>
@@ -3311,7 +3294,7 @@ export default function Home() {
                 {/* SVG Visual Mesh Topology Graph */}
                 <div
                   style={{
-                    background: "#040705",
+                    background: "var(--bg-card)",
                     border: "1px solid var(--border)",
                     borderRadius: 8,
                     padding: 24,
@@ -3322,8 +3305,8 @@ export default function Home() {
                   <svg width="100%" height="220" viewBox="0 0 800 220" style={{ minWidth: 600 }}>
                     <defs>
                       <linearGradient id="edgeGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-                        <stop offset="0%" stopColor="#00FF66" stopOpacity="0.8" />
-                        <stop offset="100%" stopColor="#38BDF8" stopOpacity="0.8" />
+                        <stop offset="0%" stopColor="#888888" stopOpacity="0.8" />
+                        <stop offset="100%" stopColor="#EDEDED" stopOpacity="0.8" />
                       </linearGradient>
                     </defs>
 
@@ -3351,7 +3334,7 @@ export default function Home() {
                                 cx={(x1 + x2) / 2}
                                 cy={(y1 + y2) / 2}
                                 r="4"
-                                fill="#38BDF8"
+                                fill="var(--text-primary)"
                               />
                             </g>
                           );
@@ -3363,7 +3346,7 @@ export default function Home() {
                       const cx = 120 + (i * (560 / Math.max(1, workspaceTopology.nodes.length - 1)));
                       const cy = i % 2 === 0 ? 80 : 140;
                       const isGateway = node.type === "gateway";
-                      const strokeColor = isGateway ? "#38BDF8" : "var(--neon-green)";
+                      const strokeColor = isGateway ? "#EDEDED" : "var(--terminal-green)";
 
                       return (
                         <g key={node.id} style={{ cursor: "pointer" }}>
@@ -3371,9 +3354,9 @@ export default function Home() {
                             cx={cx}
                             cy={cy}
                             r="32"
-                            fill="#0A100D"
+                            fill="var(--bg-secondary)"
                             stroke={strokeColor}
-                            strokeWidth="2.5"
+                            strokeWidth="2"
                           />
                           <text
                             x={cx}
@@ -3413,7 +3396,7 @@ export default function Home() {
 
                 {/* Cross-Service RPC Dependency Matrix Table */}
                 <h5 style={{ fontSize: 13, fontWeight: 700, color: "var(--text-primary)", marginBottom: 10 }}>
-                  ⚡ Inter-Service Communication Channels &amp; SLAs
+                  Inter-Service Communication Channels &amp; SLAs
                 </h5>
                 <div style={{ overflowX: "auto" }}>
                   <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
@@ -3430,10 +3413,10 @@ export default function Home() {
                     <tbody>
                       {workspaceTopology.edges?.map((e) => (
                         <tr key={e.id} style={{ borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
-                          <td style={{ padding: "8px 12px", color: "var(--neon-green)", fontWeight: 700 }}>
+                          <td style={{ padding: "8px 12px", color: "var(--text-primary)", fontWeight: 700 }}>
                             {e.source_name}
                           </td>
-                          <td style={{ padding: "8px 12px", color: "#38BDF8", fontWeight: 700 }}>
+                          <td style={{ padding: "8px 12px", color: "var(--text-secondary)", fontWeight: 700 }}>
                             {e.target_name}
                           </td>
                           <td style={{ padding: "8px 12px" }}>{e.protocol}</td>
@@ -3443,7 +3426,7 @@ export default function Home() {
                               {e.auth_mode}
                             </span>
                           </td>
-                          <td style={{ padding: "8px 12px", color: "var(--neon-green)" }}>{e.sla_status}</td>
+                          <td style={{ padding: "8px 12px", color: "var(--terminal-green)" }}>{e.sla_status}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -3454,13 +3437,13 @@ export default function Home() {
 
             {/* Live Cross-Service Contract Validation Results Modal/Card */}
             {contractValidation && (
-              <div className="bento-card" style={{ marginTop: 24, borderColor: "var(--neon-green)" }}>
+              <div className="bento-card" style={{ marginTop: 24 }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-                  <h4 style={{ fontSize: 16, fontWeight: 700, color: "var(--neon-green)" }}>
-                    ✔ Cross-Service Contract Alignment Report
+                  <h4 style={{ fontSize: 16, fontWeight: 700, color: "var(--text-primary)" }}>
+                    Cross-Service Contract Alignment Report
                   </h4>
                   <button className="btn btn-secondary btn-sm" onClick={() => setContractValidation(null)}>
-                    ✕ Close
+                    Close
                   </button>
                 </div>
                 <p style={{ fontSize: 13, color: "var(--text-primary)", marginBottom: 14 }}>
