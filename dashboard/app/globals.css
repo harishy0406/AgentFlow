@@ -248,8 +248,8 @@ html, body {
 /* Floating AI Agent Pet ("Flowy") */
 .agent-pet-wrapper {
   position: fixed;
-  bottom: 24px;
-  left: 24px;
+  bottom: 84px;
+  right: 28px;
   z-index: 990;
   display: flex;
   flex-direction: column;
@@ -297,8 +297,8 @@ html, body {
 /* Pet Speech / Thought Bubble */
 .pet-speech-bubble {
   position: absolute;
-  bottom: 78px;
-  left: -10px;
+  bottom: 74px;
+  right: -6px;
   min-width: 200px;
   max-width: 260px;
   background: var(--bg-card);
@@ -318,7 +318,7 @@ html, body {
   content: "";
   position: absolute;
   bottom: -5px;
-  left: 36px;
+  right: 24px;
   width: 9px;
   height: 9px;
   background: var(--bg-card);
@@ -1332,30 +1332,19 @@ html, body {
   border-color: #444444;
 }
 
-/* Redesigned Multi-Column Engineering & Developer Footer */
+/* Clean SuperFact-Style Minimalist Footer */
 .footer {
   border-top: 1px solid var(--border);
-  background: var(--footer-bg);
-  padding: 56px 32px 30px;
+  background: var(--bg-primary);
+  padding: 44px 32px 28px;
   margin-top: auto;
   color: var(--text-secondary);
   position: relative;
   z-index: 10;
 }
 
-.footer::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 10%;
-  right: 10%;
-  height: 1px;
-  background: linear-gradient(90deg, transparent 0%, var(--terminal-green) 50%, transparent 100%);
-  opacity: 0.35;
-}
-
 .footer-container {
-  max-width: 1480px;
+  max-width: 1380px;
   margin: 0 auto;
   display: flex;
   flex-direction: column;
@@ -1364,76 +1353,38 @@ html, body {
 
 .footer-grid {
   display: grid;
-  grid-template-columns: 1.4fr 1fr 1fr 1fr;
-  gap: 36px;
+  grid-template-columns: 1.8fr 1fr 1fr 1.2fr 1.4fr;
+  gap: 32px;
 }
 
-@media (max-width: 1100px) {
+@media (max-width: 1024px) {
   .footer-grid {
     grid-template-columns: 1fr 1fr;
+    gap: 28px;
   }
 }
 
 @media (max-width: 640px) {
   .footer-grid {
     grid-template-columns: 1fr;
-    gap: 28px;
+    gap: 24px;
   }
 }
 
-.footer-col-title {
-  font-family: var(--font-mono);
-  font-size: 11px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: var(--text-primary);
-  margin-bottom: 16px;
+.footer-brand-col {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.footer-brand-logo {
   display: flex;
   align-items: center;
   gap: 8px;
+  cursor: pointer;
 }
 
-.footer-creator-card {
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 18px 20px;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  transition: all 0.2s ease;
-  position: relative;
-}
-
-.footer-creator-card:hover {
-  border-color: var(--terminal-green-border);
-  box-shadow: 0 6px 24px rgba(0, 255, 102, 0.06);
-}
-
-.footer-creator-header {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.footer-creator-avatar {
-  width: 42px;
-  height: 42px;
-  border-radius: 10px;
-  background: var(--brand-icon-bg);
-  color: var(--brand-icon-color);
-  font-weight: 800;
-  font-size: 15px;
-  font-family: var(--font-mono);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: 1px solid var(--border);
-  box-shadow: var(--shadow-glow);
-}
-
-.footer-creator-name {
+.footer-brand-name {
   font-family: var(--font-display);
   font-size: 16px;
   font-weight: 700;
@@ -1441,28 +1392,33 @@ html, body {
   letter-spacing: -0.3px;
 }
 
-.footer-creator-id {
-  font-family: var(--font-mono);
-  font-size: 12px;
-  color: var(--terminal-green);
-  font-weight: 600;
-}
-
-.footer-creator-inst {
+.footer-brand-desc {
   font-size: 12.5px;
   color: var(--text-secondary);
-  display: flex;
-  align-items: center;
-  gap: 7px;
+  line-height: 1.5;
+  max-width: 250px;
+}
+
+.footer-col-title {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-primary);
+  margin-bottom: 14px;
 }
 
 .footer-links-list {
   list-style: none;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 9px;
+  padding: 0;
+  margin: 0;
 }
 
+.footer-links-list li,
 .footer-links-list li button,
 .footer-links-list li a {
   font-size: 12.5px;
@@ -1472,50 +1428,35 @@ html, body {
   border: none;
   padding: 0;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: color 0.15s ease;
   font-family: inherit;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
   text-align: left;
+  line-height: 1.4;
 }
 
 .footer-links-list li button:hover,
 .footer-links-list li a:hover {
   color: var(--text-primary);
-  transform: translateX(3px);
 }
 
-.footer-bottom-bar {
+.footer-dev-highlight {
+  color: #2563EB !important;
+  font-weight: 600 !important;
+  margin-top: 4px;
+}
+
+[data-theme="dark"] .footer-dev-highlight {
+  color: #38BDF8 !important;
+}
+
+.footer-sub-bar {
   border-top: 1px solid var(--border);
   padding-top: 20px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   flex-wrap: wrap;
-  gap: 14px;
+  gap: 16px;
   font-size: 12px;
-}
-
-.footer-bottom-badges {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-
-.footer-badge {
-  font-family: var(--font-mono);
-  font-size: 11px;
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  color: var(--text-secondary);
-  padding: 3px 8px;
-  border-radius: 6px;
-  transition: all 0.15s ease;
-}
-
-.footer-badge:hover {
-  border-color: var(--border-hover);
-  color: var(--text-primary);
+  color: var(--text-muted);
 }
