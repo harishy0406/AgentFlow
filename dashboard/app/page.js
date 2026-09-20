@@ -293,6 +293,78 @@ export default function Home() {
   ]);
   const [simStats, setSimStats] = useState({ tokens: 0, costUsd: 0, latencyMs: 0 });
 
+  // HelixQL-Style Hero Mockup Window Interactive State
+  const HERO_MOCKUP_SCENARIOS = [
+    {
+      id: "gujarat-orders",
+      query: "Who made the most orders from Gujarat this month?",
+      badge1: "✓ AST validated · SELECT only",
+      badge2: "⚡ EXPLAIN cost: 0.4ms",
+      statusMsg: "Zero rows left the firewall until execution",
+      tableCols: ["Name", "City", "Orders"],
+      tableRows: [
+        { c1: "Priya Shah", c2: "Ahmedabad", c3: "42" },
+        { c1: "Rohan Mehta", c2: "Surat", c3: "37" },
+        { c1: "Ananya Patel", c2: "Vadodara", c3: "31" },
+      ],
+      optTitle: "OPTIMIZER",
+      optStats: [
+        { label: "Plan", val: "Index Scan", isTeal: false },
+        { label: "Rows (est.)", val: "128", isTeal: false },
+        { label: "Cost", val: "0.4ms", isTeal: true },
+      ]
+    },
+    {
+      id: "rate-limiter",
+      query: "Generate high-throughput Redis distributed rate limiter",
+      badge1: "✓ AST validated · SYNTAX safe",
+      badge2: "⚡ P99 latency: 0.8ms",
+      statusMsg: "Zero unhandled exceptions · 100% type-checked",
+      tableCols: ["Worker Node", "Region", "Throughput"],
+      tableRows: [
+        { c1: "edge-worker-01", c2: "ap-south-1", c3: "14,280 req/s" },
+        { c1: "edge-worker-02", c2: "us-east-1", c3: "18,940 req/s" },
+        { c1: "edge-worker-03", c2: "eu-west-1", c3: "12,410 req/s" },
+      ],
+      optTitle: "DAG ENGINE",
+      optStats: [
+        { label: "Pipeline", val: "In-Memory", isTeal: false },
+        { label: "Concurrency", val: "10k req/s", isTeal: false },
+        { label: "Cost", val: "0.02ms", isTeal: true },
+      ]
+    },
+    {
+      id: "enterprise-churn",
+      query: "Find high-churn enterprise subscriptions expiring in 7 days",
+      badge1: "✓ AST validated · READ-ONLY",
+      badge2: "⚡ Pipeline runtime: 1.1ms",
+      statusMsg: "Encrypted TLS 1.3 · Air-gapped VPC gateway",
+      tableCols: ["Tenant", "ARR", "Risk Score"],
+      tableRows: [
+        { c1: "Acme Logistics", c2: "$120,000", c3: "94%" },
+        { c1: "Fintech Nexus", c2: "$85,000", c3: "88%" },
+        { c1: "CloudScale AI", c2: "$64,000", c3: "81%" },
+      ],
+      optTitle: "RISK MODEL",
+      optStats: [
+        { label: "Plan", val: "Hash Aggregate", isTeal: false },
+        { label: "High Risk", val: "3 Accounts", isTeal: false },
+        { label: "Latency", val: "1.1ms", isTeal: true },
+      ]
+    }
+  ];
+
+  const [heroMockupIdx, setHeroMockupIdx] = useState(0);
+  const [heroMockupRunning, setHeroMockupRunning] = useState(false);
+
+  const handleHeroMockupRun = () => {
+    setHeroMockupRunning(true);
+    setTimeout(() => {
+      setHeroMockupIdx((prev) => (prev + 1) % HERO_MOCKUP_SCENARIOS.length);
+      setHeroMockupRunning(false);
+    }, 300);
+  };
+
   useEffect(() => {
     try {
       const saved = localStorage.getItem("agentflow_theme");
@@ -831,30 +903,190 @@ export default function Home() {
         <div key={saasTab} className="tab-view-container">
           {/* Top Hero Banner & Live DAG Simulator */}
           {saasTab === "home" && (
-          <div style={{ marginBottom: 48, textAlign: "center", padding: "48px 20px 24px" }}>
-            <div className="badge badge-green" style={{ marginBottom: 20, padding: "5px 14px", fontSize: 12, borderRadius: 20 }}>
-              <span className="pulse-beacon" style={{ marginRight: 6 }} />
-              AUTONOMOUS 7-AGENT ORCHESTRATION PLATFORM
+          <div style={{ marginBottom: 48 }}>
+            {/* HelixQL-Style Split Hero Section */}
+            <div className="split-hero-wrapper">
+              <div className="split-hero-container">
+                {/* Left Column: Firewall Badge, Punchy Headline, Paragraph, Actions */}
+                <div className="hero-left-col">
+                  <div className="hero-firewall-pill">
+                    <span className="hero-pill-dot" />
+                    Your data never leaves your firewall
+                  </div>
+
+                  <h1 className="hero-split-title">
+                    Ask your database a question.<br />
+                    Get safe, validated SQL{" "}
+                    <span className="hero-title-teal">instantly</span>.
+                  </h1>
+
+                  <p className="hero-split-desc">
+                    AgentFlow turns plain-English questions and requirements into SQL and software your team can run — validated by a strict read-only guardrail and cost-checked before a single row or commit is ever touched. Runs as a desktop app inside your network; only schema metadata ever reaches the cloud.
+                  </p>
+
+                  <div className="hero-split-actions">
+                    <button
+                      className="btn-hero-teal"
+                      onClick={() => {
+                        setSaasTab("studio");
+                        setActiveTab("create");
+                      }}
+                    >
+                      Get started free
+                    </button>
+
+                    <button
+                      className="btn-hero-dark"
+                      onClick={() => setSaasTab("download")}
+                      title="Download AgentFlow native desktop app"
+                    >
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                        <polyline points="7 10 12 15 17 10" />
+                        <line x1="12" y1="15" x2="12" y2="3" />
+                      </svg>
+                      Download desktop app
+                    </button>
+                  </div>
+
+                  <div className="hero-split-guarantee">
+                    Free tier included · No credit card required
+                  </div>
+                </div>
+
+                {/* Right Column: Interactive Desktop App Window Mockup */}
+                <div className="hero-mockup-window">
+                  <div className="mockup-window-header">
+                    <div className="mockup-dots">
+                      <span className="mockup-dot red" />
+                      <span className="mockup-dot yellow" />
+                      <span className="mockup-dot green" />
+                    </div>
+                    <div className="mockup-window-title">
+                      HelixQL Desktop — connected to prod-analytics
+                    </div>
+                  </div>
+
+                  <div className="mockup-window-body">
+                    {/* Query Search Bar */}
+                    <div className="mockup-query-bar">
+                      <div className="mockup-query-text">
+                        <span className="mockup-query-prompt">&rsaquo;</span>
+                        <span>{HERO_MOCKUP_SCENARIOS[heroMockupIdx].query}</span>
+                      </div>
+                      <button
+                        className="mockup-run-btn"
+                        onClick={handleHeroMockupRun}
+                        disabled={heroMockupRunning}
+                        title="Click to execute AST validation run"
+                      >
+                        {heroMockupRunning ? "..." : "Run"}
+                      </button>
+                    </div>
+
+                    {/* Badges and Notice Row */}
+                    <div className="mockup-badges-row">
+                      <span className="mockup-badge-teal">
+                        {HERO_MOCKUP_SCENARIOS[heroMockupIdx].badge1}
+                      </span>
+                      <span className="mockup-badge-teal">
+                        {HERO_MOCKUP_SCENARIOS[heroMockupIdx].badge2}
+                      </span>
+                    </div>
+
+                    <div className="mockup-status-msg">
+                      {HERO_MOCKUP_SCENARIOS[heroMockupIdx].statusMsg}
+                    </div>
+
+                    {/* Code Snippet Box */}
+                    <div className="mockup-code-block">
+                      {heroMockupIdx === 0 && (
+                        <pre style={{ margin: 0 }}>
+                          <span className="mockup-code-keyword">SELECT </span>u.name, u.city, <span className="mockup-code-func">COUNT</span>(o.id) <span className="mockup-code-keyword">AS </span>order_count{"\n"}
+                          <span className="mockup-code-keyword">FROM </span>users u{"\n"}
+                          <span className="mockup-code-keyword">JOIN </span>orders o <span className="mockup-code-keyword">ON </span>o.user_id = u.id{"\n"}
+                          <span className="mockup-code-keyword">WHERE </span>u.state = <span className="mockup-code-str">'Gujarat'</span>{"\n"}
+                          {"  "}<span className="mockup-code-keyword">AND </span>o.created_at &gt;= <span className="mockup-code-func">date_trunc</span>(<span className="mockup-code-str">'month'</span>, <span className="mockup-code-func">now</span>()){"\n"}
+                          <span className="mockup-code-keyword">GROUP BY </span>u.name, u.city{"\n"}
+                          <span className="mockup-code-keyword">ORDER BY </span>order_count <span className="mockup-code-keyword">DESC LIMIT </span>3;
+                        </pre>
+                      )}
+                      {heroMockupIdx === 1 && (
+                        <pre style={{ margin: 0 }}>
+                          <span className="mockup-code-func">@limiter</span>.<span className="mockup-code-keyword">route</span>(<span className="mockup-code-str">"/api/v1/checkout"</span>, methods=[<span className="mockup-code-str">"POST"</span>]){"\n"}
+                          <span className="mockup-code-keyword">async def </span><span className="mockup-code-func">rate_limited_checkout</span>(request: Request):{"\n"}
+                          {"    "}client_ip = request.client.host{"\n"}
+                          {"    "}key = f<span className="mockup-code-str">"rate_limit:&#123;client_ip&#125;:&#123;int(time.time() // 60)&#125;"</span>{"\n"}
+                          {"    "}current = <span className="mockup-code-keyword">await </span>redis.<span className="mockup-code-func">incr</span>(key){"\n"}
+                          {"    "}<span className="mockup-code-keyword">if </span>current == 1: <span className="mockup-code-keyword">await </span>redis.<span className="mockup-code-func">expire</span>(key, 60){"\n"}
+                          {"    "}<span className="mockup-code-keyword">if </span>current &gt; 120: <span className="mockup-code-keyword">raise </span>HTTPException(status_code=429){"\n"}
+                          {"    "}<span className="mockup-code-keyword">return await </span><span className="mockup-code-func">process_checkout</span>(request)
+                        </pre>
+                      )}
+                      {heroMockupIdx === 2 && (
+                        <pre style={{ margin: 0 }}>
+                          <span className="mockup-code-keyword">SELECT </span>s.tenant_name, s.tier, s.arr_usd, s.risk_score{"\n"}
+                          <span className="mockup-code-keyword">FROM </span>subscriptions s{"\n"}
+                          <span className="mockup-code-keyword">WHERE </span>s.expires_at &lt;= <span className="mockup-code-func">now</span>() + <span className="mockup-code-func">INTERVAL </span><span className="mockup-code-str">'7 days'</span>{"\n"}
+                          {"  "}<span className="mockup-code-keyword">AND </span>s.health_index &lt; 0.45{"\n"}
+                          {"  "}<span className="mockup-code-keyword">AND </span>s.auto_renew = false{"\n"}
+                          <span className="mockup-code-keyword">ORDER BY </span>s.arr_usd <span className="mockup-code-keyword">DESC LIMIT </span>3;
+                        </pre>
+                      )}
+                    </div>
+
+                    {/* Bottom Split Row: Data Table + Optimizer */}
+                    <div className="mockup-bottom-grid">
+                      <div className="mockup-table-card">
+                        <table className="mockup-table">
+                          <thead>
+                            <tr>
+                              {HERO_MOCKUP_SCENARIOS[heroMockupIdx].tableCols.map((col, cIdx) => (
+                                <th key={cIdx}>{col}</th>
+                              ))}
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {HERO_MOCKUP_SCENARIOS[heroMockupIdx].tableRows.map((row, rIdx) => (
+                              <tr key={rIdx}>
+                                <td>{row.c1}</td>
+                                <td>{row.c2}</td>
+                                <td className="mockup-number-teal">{row.c3}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+
+                      <div className="mockup-opt-card">
+                        <div className="mockup-opt-header">
+                          {HERO_MOCKUP_SCENARIOS[heroMockupIdx].optTitle}
+                        </div>
+                        {HERO_MOCKUP_SCENARIOS[heroMockupIdx].optStats.map((st, sIdx) => (
+                          <div key={sIdx} className="mockup-opt-row">
+                            <span>{st.label}</span>
+                            <span className={`mockup-opt-val ${st.isTeal ? "teal" : ""}`}>{st.val}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
-            <h1 style={{ fontFamily: "var(--font-display)", fontSize: 44, fontWeight: 800, letterSpacing: "-1.2px", marginBottom: 18, lineHeight: 1.15, color: "var(--text-primary)" }}>
-              Deterministic Software Engineering. <br />
-              <span style={{ color: "var(--text-secondary)" }}>
-                Orchestrated by a 7-Agent DAG Fleet.
-              </span>
-            </h1>
-            <p style={{ maxWidth: 740, margin: "0 auto 32px", fontSize: 15.5, color: "var(--text-secondary)", lineHeight: 1.65 }}>
-              Single-shot prompts generate unmaintainable, drifted code. AgentFlow compiles structured Product Requirements, Architecture, Relational Schemas, and OpenAPI Specifications into production-ready software with AST verification and diff-aware micro-regeneration.
-            </p>
-            <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap", marginBottom: 40 }}>
-              <button className="btn btn-primary btn-lg" onClick={() => setSaasTab("studio")}>
-                Launch Studio Workspace &rarr;
-              </button>
-              <button className="btn btn-secondary btn-lg" onClick={() => setSaasTab("docs")}>
-                Documentation &amp; Quickstart
-              </button>
-              <button className="btn btn-secondary btn-lg" onClick={() => setSaasTab("pricing")}>
-                Editions &amp; Pricing
-              </button>
+
+            {/* Architecture Section Header & Live DAG Playground */}
+            <div style={{ textAlign: "center", marginBottom: 28, marginTop: 28 }}>
+              <div className="badge badge-green" style={{ marginBottom: 12, padding: "5px 14px", fontSize: 11.5, borderRadius: 20 }}>
+                <span className="pulse-beacon" style={{ marginRight: 6 }} />
+                7-AGENT TOPOLOGICAL DAG FLEET
+              </div>
+              <h2 style={{ fontFamily: "var(--font-display)", fontSize: 26, fontWeight: 700, letterSpacing: "-0.5px", color: "var(--text-primary)", marginBottom: 8 }}>
+                Deterministic Architecture Runtime Simulator
+              </h2>
+              <p style={{ maxWidth: 640, margin: "0 auto", fontSize: 14, color: "var(--text-secondary)", lineHeight: 1.6 }}>
+                Simulate how AgentFlow coordinates 7 specialized AI agents with topological dependency tracking, AST static verification, and isolated context windows.
+              </p>
             </div>
 
             {/* Interactive Hero Live Playground */}
