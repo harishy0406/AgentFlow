@@ -6057,62 +6057,44 @@ export default function Home() {
         )}
       </div>
 
-      {/* Universal Minimalist Footer */}
+      {/* Sleek Minimalist Developer Footer */}
       <footer className="footer">
         <div className="footer-container">
-          <div className="footer-grid">
-            <div className="footer-brand">
-              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                <div className="brand-icon" style={{ width: 26, height: 26, fontSize: 12 }}>AF</div>
-                <span className="footer-brand-title">AgentFlow</span>
-              </div>
-              <p className="footer-brand-desc">
-                Adaptive multi-agent workflow orchestration platform for autonomous software engineering, architecture drift repair, and production artifact generation.
-              </p>
-              <div className="footer-status-indicator">
-                <span className="pulse-beacon" /> All 7 autonomous agent systems operational
-              </div>
+          <div className="footer-main">
+            <div className="footer-brand-compact">
+              <div className="brand-icon" style={{ width: 22, height: 22, fontSize: 11 }}>AF</div>
+              <span className="footer-brand-title">AgentFlow</span>
+              <span className="footer-version">v0.8.0</span>
+              <span className="footer-status-indicator">
+                <span className="pulse-beacon" /> 7 Agents Active
+              </span>
             </div>
 
-            <div className="footer-column">
-              <h4>Platform</h4>
-              <ul>
-                <li><button onClick={() => { setSaasTab("studio"); setActiveTab("create"); }}>Studio Workspace</button></li>
-                <li><button onClick={() => setSaasTab("features")}>Features &amp; Capabilities</button></li>
-                <li><button onClick={() => setSaasTab("workflow")}>Agent Workflow DAG</button></li>
-                <li><button onClick={() => setSaasTab("pricing")}>Pricing &amp; Editions</button></li>
-              </ul>
-            </div>
-
-            <div className="footer-column">
-              <h4>Resources</h4>
-              <ul>
-                <li><button onClick={() => setSaasTab("docs")}>Documentation &amp; Setup</button></li>
-                <li><button onClick={() => setSaasTab("download")}>Download &amp; Export</button></li>
-                <li><a href="https://github.com" target="_blank" rel="noreferrer">GitHub Repository</a></li>
-                <li><button onClick={() => setSaasTab("about")}>Architecture &amp; Team</button></li>
-              </ul>
-            </div>
-
-            <div className="footer-column">
-              <h4>System</h4>
-              <ul>
-                <li><span>LangGraph Core 0.2.x</span></li>
-                <li><span>FastAPI Backend 0.6.0</span></li>
-                <li><span>Next.js 16.3 Turbopack</span></li>
-                <li><span>Multi-Provider Model Hub</span></li>
-              </ul>
-            </div>
+            <nav className="footer-nav">
+              <button onClick={() => setSaasTab("home")}>Home</button>
+              <button onClick={() => { setSaasTab("studio"); setActiveTab("create"); }}>Studio</button>
+              <button onClick={() => setSaasTab("features")}>Features</button>
+              <button onClick={() => setSaasTab("workflow")}>Workflow</button>
+              <button onClick={() => setSaasTab("pricing")}>Pricing</button>
+              <button onClick={() => setSaasTab("docs")}>Docs</button>
+              <button onClick={() => setSaasTab("download")}>Download</button>
+              <button onClick={() => setSaasTab("about")}>About</button>
+              <a href="https://github.com" target="_blank" rel="noreferrer">GitHub</a>
+            </nav>
           </div>
 
-          <div className="footer-bottom">
-            <div>&copy; {new Date().getFullYear()} AgentFlow Orchestration Platform. All rights reserved.</div>
-            <div style={{ display: "flex", gap: 16 }}>
-              <span>Deterministic Architecture</span>
-              <span>•</span>
-              <span>Human-In-The-Loop Verification</span>
-              <span>•</span>
-              <span>Multi-Modal Telemetry</span>
+          <div className="footer-sub">
+            <div className="footer-copy">
+              &copy; {new Date().getFullYear()} AgentFlow. Autonomous 7-agent DAG orchestration.
+            </div>
+            <div className="footer-meta">
+              <span>LangGraph Core</span>
+              <span className="footer-sep">•</span>
+              <span>FastAPI</span>
+              <span className="footer-sep">•</span>
+              <span>Next.js 16</span>
+              <span className="footer-sep">•</span>
+              <span style={{ color: "var(--terminal-green)" }}>AST-Verified</span>
             </div>
           </div>
         </div>
