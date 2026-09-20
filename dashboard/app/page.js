@@ -539,60 +539,47 @@ export default function Home() {
   };
 
   return (
-    <div className={`dashboard ${scanlines ? "scanlines" : ""}`}>
-      {/* Cyberpunk Top Navbar */}
+    <div className="dashboard">
+      {/* Minimalist Top Navbar */}
       <nav className="navbar">
         <div className="navbar-brand" onClick={() => setSaasTab("studio")}>
-          <span className="brand-terminal-tag">&gt;_</span>
-          <h1>AgentFlow::AI</h1>
-          <span className="navbar-version">v0.8.0</span>
-          <span className="badge badge-green" style={{ marginLeft: 6, fontSize: 10 }}>
-            <span className="pulse-beacon" style={{ marginRight: 4 }} /> 7 AGENTS ONLINE
+          <div className="brand-icon">AF</div>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <h1>AgentFlow</h1>
+            <span className="navbar-version">v0.8.0</span>
+          </div>
+          <span className="badge badge-green" style={{ marginLeft: 6, fontSize: 11 }}>
+            <span className="pulse-beacon" style={{ marginRight: 5 }} /> 7 AGENTS ACTIVE
           </span>
         </div>
 
         {/* Global SaaS Navigation Links */}
         <div className="navbar-links">
           <button className={`nav-link ${saasTab === "studio" ? "active" : ""}`} onClick={() => setSaasTab("studio")}>
-            ⚡ Studio
+            Studio
           </button>
           <button className={`nav-link ${saasTab === "features" ? "active" : ""}`} onClick={() => setSaasTab("features")}>
-            🍱 Features
+            Features
           </button>
           <button className={`nav-link ${saasTab === "workflow" ? "active" : ""}`} onClick={() => setSaasTab("workflow")}>
-            🔄 Workflow
+            Workflow
           </button>
           <button className={`nav-link ${saasTab === "pricing" ? "active" : ""}`} onClick={() => setSaasTab("pricing")}>
-            💎 Pricing
+            Pricing
           </button>
           <button className={`nav-link ${saasTab === "docs" ? "active" : ""}`} onClick={() => setSaasTab("docs")}>
-            📖 Docs &amp; Setup
+            Docs &amp; Setup
           </button>
           <button className={`nav-link ${saasTab === "download" ? "active" : ""}`} onClick={() => setSaasTab("download")}>
-            📦 Download
+            Download
           </button>
           <button className={`nav-link ${saasTab === "about" ? "active" : ""}`} onClick={() => setSaasTab("about")}>
-            ℹ️ About
+            About
           </button>
         </div>
 
         <div className="navbar-actions">
-          <button
-            className="theme-toggle-btn"
-            onClick={() => setScanlines(!scanlines)}
-            title="Toggle Retro CRT Scanlines"
-          >
-            📺 CRT {scanlines ? "ON" : "OFF"}
-          </button>
-          <button
-            className="theme-toggle-btn"
-            onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-            title="Toggle Dark/Light Mode"
-          >
-            {theme === "dark" ? "☀️ Light" : "🌙 Cyber"}
-          </button>
-
-          {currentProject && (
+          {currentProject ? (
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
               {projectHealth && (
                 <span
@@ -600,171 +587,141 @@ export default function Home() {
                     display: "inline-flex",
                     alignItems: "center",
                     gap: 6,
-                    background: projectHealth.overall_readiness_pct >= 80 ? "rgba(0, 255, 102, 0.15)" : "rgba(245, 158, 11, 0.15)",
-                    border: `1px solid ${projectHealth.overall_readiness_pct >= 80 ? "var(--neon-green)" : "var(--accent-yellow)"}`,
-                    borderRadius: 12,
-                    padding: "2px 8px",
+                    background: projectHealth.overall_readiness_pct >= 80 ? "rgba(0, 255, 102, 0.08)" : "rgba(229, 168, 59, 0.08)",
+                    border: `1px solid ${projectHealth.overall_readiness_pct >= 80 ? "rgba(0, 255, 102, 0.3)" : "rgba(229, 168, 59, 0.3)"}`,
+                    borderRadius: 6,
+                    padding: "4px 8px",
                     fontSize: 11,
                     fontWeight: 600,
-                    color: projectHealth.overall_readiness_pct >= 80 ? "var(--neon-green)" : "var(--accent-yellow)",
+                    color: projectHealth.overall_readiness_pct >= 80 ? "var(--terminal-green)" : "var(--accent-yellow)",
                   }}
                 >
                   <span style={{ fontSize: 8 }}>●</span>
                   {projectHealth.overall_readiness_pct}% ({projectHealth.readiness_label})
                 </span>
               )}
-              <a
-                href={getDownloadZipUrl(currentProject.id)}
-                className="btn btn-primary btn-sm"
-                style={{ textDecoration: "none", fontSize: 12, padding: "5px 12px" }}
-              >
-                📦 ZIP
-              </a>
+
               <a
                 href={getPresentationPdfUrl(currentProject.id)}
                 target="_blank"
                 rel="noreferrer"
                 className="btn btn-primary btn-sm"
-                style={{
-                  textDecoration: "none",
-                  fontSize: 12,
-                  padding: "5px 12px",
-                  background: "linear-gradient(135deg, #00FF66 0%, #00B8D9 100%)",
-                  color: "#0A0E1A",
-                  fontWeight: 700,
-                  border: "none",
-                }}
-                title="Download complete executive landscape presentation slide deck (PDF)"
+                title="Download executive landscape presentation slide deck (PDF)"
               >
-                📑 Slide Deck (.pdf)
+                Slide Deck (.pdf)
               </a>
+
               <a
                 href={getPresentationPdfUrl(currentProject.id, true)}
                 target="_blank"
                 rel="noreferrer"
                 className="btn btn-secondary btn-sm"
-                style={{ textDecoration: "none", fontSize: 12, padding: "5px 10px" }}
                 title="Preview landscape presentation slide deck in browser"
               >
-                👁️ Preview Deck
+                Preview Deck
               </a>
-              <a
-                href={getOpenApiSpecDownloadUrl(currentProject.id)}
-                target="_blank"
-                rel="noreferrer"
-                className="btn btn-secondary btn-sm"
-                style={{ textDecoration: "none", fontSize: 12, padding: "5px 10px" }}
-                title="Download OpenAPI 3.0.3 Swagger JSON specification"
-              >
-                📄 OpenAPI
-              </a>
-              <button
-                className="btn btn-secondary btn-sm"
-                disabled={graphqlLoading}
-                onClick={async () => {
-                  setGraphqlLoading(true);
-                  try {
-                    const res = await getProjectGraphQL(currentProject.id);
-                    setGraphqlData(res);
-                    setShowGraphqlModal(true);
-                    showToast(`Generated GraphQL Schema with ${res.types.length} entities and ${res.queries_count} queries!`, "success");
-                  } catch (err) {
-                    showToast(err.message, "error");
-                  } finally {
-                    setGraphqlLoading(false);
-                  }
-                }}
-                style={{ fontSize: 12, padding: "5px 10px", borderColor: "#E535AB", color: "#E535AB" }}
-                title="Inspect & download GraphQL Schema (SDL), Queries, and Resolvers"
-              >
-                ◈ {graphqlLoading ? "..." : "GraphQL"}
-              </button>
-              <button
-                className="btn btn-secondary btn-sm"
-                disabled={seedLoading}
-                onClick={async () => {
-                  setSeedLoading(true);
-                  try {
-                    const res = await getProjectSeedData(currentProject.id, 5);
-                    setSeedData(res);
-                    setShowSeedModal(true);
-                    showToast(`Generated synthetic seed fixtures with ${res.total_records} records across ${res.entities.length} tables!`, "success");
-                  } catch (err) {
-                    showToast(err.message, "error");
-                  } finally {
-                    setSeedLoading(false);
-                  }
-                }}
-                style={{ fontSize: 12, padding: "5px 10px", borderColor: "#10B981", color: "#10B981" }}
-                title="Inspect & download synthetic seed data fixtures (SQL & JSON) and test factories"
-              >
-                🌱 {seedLoading ? "..." : "Seed Data"}
-              </button>
-              <button
-                className="btn btn-secondary btn-sm"
-                disabled={generatingMigrations}
-                onClick={async () => {
-                  setGeneratingMigrations(true);
-                  try {
-                    const mig = await generateProjectMigrations(currentProject.id);
-                    setMigrationData(mig);
-                    setShowMigrationModal(true);
-                    showToast(`Generated ${mig.tables_count} tables SQL DDL & Alembic scripts!`, "success");
-                  } catch (err) {
-                    showToast(err.message, "error");
-                  } finally {
-                    setGeneratingMigrations(false);
-                  }
-                }}
-                style={{ fontSize: 12, padding: "5px 10px" }}
-                title="Generate and inspect SQL DDL & Alembic Migrations"
-              >
-                🛠️ {generatingMigrations ? "..." : "Migrations"}
-              </button>
-              <button
-                className="btn btn-secondary btn-sm"
-                disabled={generatingPostman}
-                onClick={async () => {
-                  setGeneratingPostman(true);
-                  try {
-                    const res = await generatePostmanCollection(currentProject.id);
-                    setPostmanData(res.collection);
-                    setShowPostmanModal(true);
-                    showToast(`Generated Postman Collection with ${res.folders_count} folder modules!`, "success");
-                  } catch (err) {
-                    showToast(err.message, "error");
-                  } finally {
-                    setGeneratingPostman(false);
-                  }
-                }}
-                style={{ fontSize: 12, padding: "5px 10px" }}
-                title="Generate and inspect Postman Collection v2.1.0"
-              >
-                📬 {generatingPostman ? "..." : "Postman"}
-              </button>
-              <button
-                className="btn btn-secondary btn-sm"
-                onClick={async () => {
-                  setActiveTab("devops");
-                  setCicdLoading(true);
-                  try {
-                    const res = await getProjectCicdPipeline(currentProject.id);
-                    setCicdData(res);
-                    if (res.files && res.files.length > 0) {
-                      setSelectedCicdFile(res.files[0]);
+
+              <div className="nav-group">
+                <a
+                  href={getDownloadZipUrl(currentProject.id)}
+                  className="nav-group-btn"
+                  title="Download complete project repository ZIP"
+                  style={{ textDecoration: "none" }}
+                >
+                  ZIP
+                </a>
+                <a
+                  href={getOpenApiSpecDownloadUrl(currentProject.id)}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="nav-group-btn"
+                  title="Download OpenAPI 3.0.3 specification"
+                  style={{ textDecoration: "none" }}
+                >
+                  OpenAPI
+                </a>
+                <button
+                  className="nav-group-btn"
+                  disabled={graphqlLoading}
+                  onClick={async () => {
+                    setGraphqlLoading(true);
+                    try {
+                      const res = await getProjectGraphQL(currentProject.id);
+                      setGraphqlData(res);
+                      setShowGraphqlModal(true);
+                      showToast(`Generated GraphQL Schema with ${res.types.length} entities and ${res.queries_count} queries!`, "success");
+                    } catch (err) {
+                      showToast(err.message, "error");
+                    } finally {
+                      setGraphqlLoading(false);
                     }
-                    showToast("Opened DevOps & CI/CD Hub!", "info");
-                  } catch (err) {
-                    showToast(err.message, "error");
-                  } finally {
-                    setCicdLoading(false);
-                  }
-                }}
-                style={{ fontSize: 12, padding: "5px 10px" }}
-                title="Open DevOps & CI/CD Automation Hub"
-              >
-                🚀 DevOps
-              </button>
+                  }}
+                  title="Inspect & download GraphQL Schema, Queries, and Resolvers"
+                >
+                  {graphqlLoading ? "..." : "GraphQL"}
+                </button>
+                <button
+                  className="nav-group-btn"
+                  disabled={seedLoading}
+                  onClick={async () => {
+                    setSeedLoading(true);
+                    try {
+                      const res = await getProjectSeedData(currentProject.id, 5);
+                      setSeedData(res);
+                      setShowSeedModal(true);
+                      showToast(`Generated synthetic seed fixtures with ${res.total_records} records across ${res.entities.length} tables!`, "success");
+                    } catch (err) {
+                      showToast(err.message, "error");
+                    } finally {
+                      setSeedLoading(false);
+                    }
+                  }}
+                  title="Inspect & download synthetic seed fixtures"
+                >
+                  {seedLoading ? "..." : "Seed Data"}
+                </button>
+                <button
+                  className="nav-group-btn"
+                  disabled={generatingMigrations}
+                  onClick={async () => {
+                    setGeneratingMigrations(true);
+                    try {
+                      const mig = await generateProjectMigrations(currentProject.id);
+                      setMigrationData(mig);
+                      setShowMigrationModal(true);
+                      showToast(`Generated ${mig.tables_count} tables SQL DDL & Alembic scripts!`, "success");
+                    } catch (err) {
+                      showToast(err.message, "error");
+                    } finally {
+                      setGeneratingMigrations(false);
+                    }
+                  }}
+                  title="Generate SQL DDL & Alembic Migrations"
+                >
+                  {generatingMigrations ? "..." : "Migrations"}
+                </button>
+                <button
+                  className="nav-group-btn"
+                  disabled={generatingPostman}
+                  onClick={async () => {
+                    setGeneratingPostman(true);
+                    try {
+                      const res = await generatePostmanCollection(currentProject.id);
+                      setPostmanData(res.collection);
+                      setShowPostmanModal(true);
+                      showToast(`Generated Postman Collection with ${res.folders_count} folder modules!`, "success");
+                    } catch (err) {
+                      showToast(err.message, "error");
+                    } finally {
+                      setGeneratingPostman(false);
+                    }
+                  }}
+                  title="Generate Postman Collection"
+                >
+                  {generatingPostman ? "..." : "Postman"}
+                </button>
+              </div>
+
               <button
                 className="btn btn-secondary btn-sm"
                 disabled={forking}
@@ -781,11 +738,21 @@ export default function Home() {
                     setForking(false);
                   }
                 }}
-                style={{ fontSize: 12, padding: "5px 10px" }}
+                title="Fork active project"
               >
-                <span>🍴</span> {forking ? "..." : "Fork"}
+                Fork
               </button>
             </div>
+          ) : (
+            <button
+              className="btn btn-primary btn-sm"
+              onClick={() => {
+                setSaasTab("studio");
+                setActiveTab("create");
+              }}
+            >
+              Get Started
+            </button>
           )}
         </div>
       </nav>
@@ -1320,286 +1287,339 @@ export default function Home() {
         {/* VIEW: LIVE STUDIO (Standard Workspace) */}
         {saasTab === "studio" && (
           <div>
-            {/* Tab Bar */}
-            <div className="tabs">
-              <button
-                className={`tab ${activeTab === "create" ? "active" : ""}`}
-                onClick={() => setActiveTab("create")}
-              >
-                New Project
-              </button>
-              <button
-                className={`tab ${activeTab === "projects" ? "active" : ""}`}
-                onClick={() => { setActiveTab("projects"); handleLoadProjects(); }}
-              >
-                Projects
-              </button>
-              <button
-                className={`tab ${activeTab === "graph" ? "active" : ""}`}
-                onClick={() => setActiveTab("graph")}
-                disabled={!currentProject}
-              >
-                Dependency Graph
-              </button>
-              <button
-                className={`tab ${activeTab === "artifacts" ? "active" : ""}`}
-                onClick={() => setActiveTab("artifacts")}
-                disabled={!currentProject}
-              >
-                Artifacts
-              </button>
-              <button
-                className={`tab ${activeTab === "code" ? "active" : ""}`}
-                onClick={async () => {
-                  setActiveTab("code");
-                  if (currentProject) {
-                    setCodeLoading(true);
-                    try {
-                      const res = await getCodeFiles(currentProject.id);
-                      setCodeData(res);
-                      if (res.files && res.files.length > 0) {
-                        setSelectedCodeFile(res.files[0]);
+            {/* Studio Categorized Sub-navigation */}
+            <div style={{ marginBottom: 20 }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12, marginBottom: 12 }}>
+                {/* Category Switcher */}
+                <div className="nav-group">
+                  <button
+                    className={`nav-group-btn ${
+                      ["create", "projects", "graph", "artifacts", "code", "workspaces"].includes(activeTab)
+                        ? "active"
+                        : ""
+                    }`}
+                    onClick={() => {
+                      if (!["create", "projects", "graph", "artifacts", "code", "workspaces"].includes(activeTab)) {
+                        setActiveTab(currentProject ? "graph" : "create");
                       }
-                    } catch (err) {
-                      showToast(err.message, "error");
-                    } finally {
-                      setCodeLoading(false);
-                    }
-                  }
-                }}
-                disabled={!currentProject}
-              >
-                Codebase
-              </button>
-              <button
-                className={`tab ${activeTab === "drifts" ? "active" : ""}`}
-                onClick={() => setActiveTab("drifts")}
-                disabled={!currentProject}
-              >
-                Drifts
-              </button>
-              <button
-                className={`tab ${activeTab === "metrics" ? "active" : ""}`}
-                onClick={() => setActiveTab("metrics")}
-                disabled={!currentProject}
-              >
-                Metrics
-              </button>
-              <button
-                className={`tab ${activeTab === "timeline" ? "active" : ""}`}
-                onClick={async () => {
-                  setActiveTab("timeline");
-                  if (currentProject) {
-                    setTimelineLoading(true);
-                    try {
-                      const res = await getProjectTimeline(currentProject.id);
-                      setTimelineData(res);
-                    } catch (err) {
-                      showToast(err.message, "error");
-                    } finally {
-                      setTimelineLoading(false);
-                    }
-                  }
-                }}
-                disabled={!currentProject}
-              >
-                Timeline
-              </button>
-              <button
-                className={`tab ${activeTab === "evaluations" ? "active" : ""}`}
-                onClick={() => setActiveTab("evaluations")}
-              >
-                Evaluations
-              </button>
-              <button
-                className={`tab ${activeTab === "workspaces" ? "active" : ""}`}
-                onClick={async () => {
-                  setActiveTab("workspaces");
-                  setWorkspaceLoading(true);
-                  try {
-                    const ws = await listWorkspaces();
-                    setWorkspaces(ws);
-                  } catch (e) {
-                    showToast(e.message, "error");
-                  } finally {
-                    setWorkspaceLoading(false);
-                  }
-                }}
-              >
-                Workspaces
-              </button>
-              <button
-                className={`tab ${activeTab === "devops" ? "active" : ""}`}
-                onClick={async () => {
-                  setActiveTab("devops");
-                  if (currentProject) {
-                    setCicdLoading(true);
-                    try {
-                      const res = await getProjectCicdPipeline(currentProject.id);
-                      setCicdData(res);
-                      if (res.files && res.files.length > 0) {
-                        setSelectedCicdFile(res.files[0]);
+                    }}
+                  >
+                    Core Workspace
+                  </button>
+                  <button
+                    className={`nav-group-btn ${
+                      ["drifts", "metrics", "timeline", "evaluations", "security", "load-testing"].includes(activeTab)
+                        ? "active"
+                        : ""
+                    }`}
+                    onClick={() => {
+                      if (!["drifts", "metrics", "timeline", "evaluations", "security", "load-testing"].includes(activeTab)) {
+                        setActiveTab("metrics");
                       }
-                    } catch (err) {
-                      showToast(err.message, "error");
-                    } finally {
-                      setCicdLoading(false);
-                    }
-                  }
-                }}
-                disabled={!currentProject}
-              >
-                DevOps &amp; CI/CD
-              </button>
-              <button
-                className={`tab ${activeTab === "api-sandbox" ? "active" : ""}`}
-                onClick={async () => {
-                  setActiveTab("api-sandbox");
-                  if (currentProject) {
-                    setMockRoutesLoading(true);
-                    try {
-                      const routes = await listMockRoutes(currentProject.id);
-                      setMockRoutes(routes);
-                      if (routes && routes.length > 0) {
-                        setSelectedMockRoute(routes[0]);
-                        setMockMethod(routes[0].method || "GET");
-                        setMockPath(routes[0].path || "/");
-                        if (routes[0].sample_body) {
-                          setMockBody(JSON.stringify(routes[0].sample_body, null, 2));
+                    }}
+                  >
+                    Quality &amp; Analysis
+                  </button>
+                  <button
+                    className={`nav-group-btn ${
+                      ["devops", "api-sandbox", "sdks", "webhooks-apm", "changelog-cloudops"].includes(activeTab)
+                        ? "active"
+                        : ""
+                    }`}
+                    onClick={async () => {
+                      if (!["devops", "api-sandbox", "sdks", "webhooks-apm", "changelog-cloudops"].includes(activeTab)) {
+                        setActiveTab("devops");
+                        if (currentProject) {
+                          setCicdLoading(true);
+                          try {
+                            const res = await getProjectCicdPipeline(currentProject.id);
+                            setCicdData(res);
+                            if (res.files && res.files.length > 0) setSelectedCicdFile(res.files[0]);
+                          } catch (err) {
+                            showToast(err.message, "error");
+                          } finally {
+                            setCicdLoading(false);
+                          }
                         }
                       }
-                    } catch (err) {
-                      showToast(err.message, "error");
-                    } finally {
-                      setMockRoutesLoading(false);
-                    }
-                  }
-                }}
-                disabled={!currentProject}
-              >
-                ⚡ API Sandbox
-              </button>
-              <button
-                className={`tab ${activeTab === "security" ? "active" : ""}`}
-                onClick={async () => {
-                  setActiveTab("security");
-                  if (currentProject) {
-                    setSecurityLoading(true);
-                    try {
-                      const audit = await getSecurityAudit(currentProject.id);
-                      setSecurityAudit(audit);
-                    } catch (err) {
-                      showToast(err.message, "error");
-                    } finally {
-                      setSecurityLoading(false);
-                    }
-                  }
-                }}
-                disabled={!currentProject}
-              >
-                🛡️ Security Shield
-              </button>
-              <button
-                className={`tab ${activeTab === "load-testing" ? "active" : ""}`}
-                onClick={async () => {
-                  setActiveTab("load-testing");
-                  if (currentProject && !loadTestResult) {
-                    try {
-                      const routes = await listMockRoutes(currentProject.id);
-                      if (routes && routes.length > 0) {
-                        setLoadTestTargetEndpoint(routes[0].path);
-                        setLoadTestMethod(routes[0].method);
-                      }
-                    } catch (e) {}
-                  }
-                }}
-                disabled={!currentProject}
-              >
-                🚀 Load Testing
-              </button>
-              <button
-                className={`tab ${activeTab === "sdks" ? "active" : ""}`}
-                onClick={async () => {
-                  setActiveTab("sdks");
-                  if (currentProject) {
-                    setSdkLoading(true);
-                    try {
-                      const cat = await getProjectSdkCatalog(currentProject.id);
-                      setSdkCatalog(cat);
-                      const pkg = cat?.packages?.[selectedSdkLang] || cat?.packages?.typescript;
-                      if (pkg?.files?.length > 0) {
-                        setSelectedSdkFile(pkg.files[0]);
-                      }
-                    } catch (err) {
-                      showToast(err.message, "error");
-                    } finally {
-                      setSdkLoading(false);
-                    }
-                  }
-                }}
-                disabled={!currentProject}
-              >
-                📦 Client SDKs
-              </button>
-              <button
-                className={`tab ${activeTab === "webhooks-apm" ? "active" : ""}`}
-                onClick={async () => {
-                  setActiveTab("webhooks-apm");
-                  if (currentProject) {
-                    setEventsLoading(true);
-                    setTelemetryLoading(true);
-                    try {
-                      const [events, tel] = await Promise.all([
-                        getProjectEventCatalog(currentProject.id),
-                        getProjectTelemetry(currentProject.id),
-                      ]);
-                      setEventCatalog(events);
-                      if (events?.events?.length > 0) {
-                        setSelectedEvent(events.events[0]);
-                      }
-                      setTelemetryBundle(tel);
-                    } catch (err) {
-                      showToast(err.message, "error");
-                    } finally {
-                      setEventsLoading(false);
-                      setTelemetryLoading(false);
-                    }
-                  }
-                }}
-                disabled={!currentProject}
-              >
-                ⚡ Events &amp; Telemetry
-              </button>
-              <button
-                className={`tab ${activeTab === "changelog-cloudops" ? "active" : ""}`}
-                onClick={async () => {
-                  setActiveTab("changelog-cloudops");
-                  if (currentProject) {
-                    setChangelogLoading(true);
-                    setIacLoading(true);
-                    try {
-                      const [clReport, iacCat] = await Promise.all([
-                        getProjectChangelog(currentProject.id),
-                        getProjectIacCatalog(currentProject.id),
-                      ]);
-                      setChangelogReport(clReport);
-                      setIacCatalog(iacCat);
-                      const defaultPkg = iacCat?.packages?.[selectedIacProvider] || iacCat?.packages?.aws;
-                      if (defaultPkg?.files?.length > 0) {
-                        setSelectedIacFile(defaultPkg.files[0]);
-                      }
-                    } catch (err) {
-                      showToast(err.message, "error");
-                    } finally {
-                      setChangelogLoading(false);
-                      setIacLoading(false);
-                    }
-                  }
-                }}
-                disabled={!currentProject}
-              >
-                📜 Changelog &amp; CloudOps
-              </button>
+                    }}
+                  >
+                    DevOps &amp; Integrations
+                  </button>
+                </div>
+
+                {/* Active Project Indicator */}
+                {currentProject && (
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <span style={{ fontSize: 12, color: "var(--text-muted)" }}>Project:</span>
+                    <span style={{ fontSize: 12, fontWeight: 600, color: "var(--text-primary)", background: "var(--bg-card)", padding: "4px 10px", borderRadius: 6, border: "1px solid var(--border)" }}>
+                      {currentProject.name}
+                    </span>
+                  </div>
+                )}
+              </div>
+
+              {/* Sub-tab Pills (Filtered by Category) */}
+              <div className="tabs">
+                {/* Core Workspace Tabs */}
+                {["create", "projects", "graph", "artifacts", "code", "workspaces"].includes(activeTab) && (
+                  <>
+                    <button className={`tab ${activeTab === "create" ? "active" : ""}`} onClick={() => setActiveTab("create")}>
+                      New Project
+                    </button>
+                    <button className={`tab ${activeTab === "projects" ? "active" : ""}`} onClick={() => { setActiveTab("projects"); handleLoadProjects(); }}>
+                      Projects
+                    </button>
+                    <button className={`tab ${activeTab === "graph" ? "active" : ""}`} onClick={() => setActiveTab("graph")} disabled={!currentProject}>
+                      Architecture Graph
+                    </button>
+                    <button className={`tab ${activeTab === "artifacts" ? "active" : ""}`} onClick={() => setActiveTab("artifacts")} disabled={!currentProject}>
+                      Artifacts
+                    </button>
+                    <button
+                      className={`tab ${activeTab === "code" ? "active" : ""}`}
+                      onClick={async () => {
+                        setActiveTab("code");
+                        if (currentProject) {
+                          setCodeLoading(true);
+                          try {
+                            const res = await getCodeFiles(currentProject.id);
+                            setCodeData(res);
+                            if (res.files && res.files.length > 0) setSelectedCodeFile(res.files[0]);
+                          } catch (err) {
+                            showToast(err.message, "error");
+                          } finally {
+                            setCodeLoading(false);
+                          }
+                        }
+                      }}
+                      disabled={!currentProject}
+                    >
+                      Codebase
+                    </button>
+                    <button
+                      className={`tab ${activeTab === "workspaces" ? "active" : ""}`}
+                      onClick={async () => {
+                        setActiveTab("workspaces");
+                        setWorkspaceLoading(true);
+                        try {
+                          const ws = await listWorkspaces();
+                          setWorkspaces(ws);
+                        } catch (e) {
+                          showToast(e.message, "error");
+                        } finally {
+                          setWorkspaceLoading(false);
+                        }
+                      }}
+                    >
+                      Workspaces
+                    </button>
+                  </>
+                )}
+
+                {/* Quality & Analysis Tabs */}
+                {["drifts", "metrics", "timeline", "evaluations", "security", "load-testing"].includes(activeTab) && (
+                  <>
+                    <button className={`tab ${activeTab === "drifts" ? "active" : ""}`} onClick={() => setActiveTab("drifts")} disabled={!currentProject}>
+                      Drifts
+                    </button>
+                    <button className={`tab ${activeTab === "metrics" ? "active" : ""}`} onClick={() => setActiveTab("metrics")} disabled={!currentProject}>
+                      Metrics
+                    </button>
+                    <button
+                      className={`tab ${activeTab === "timeline" ? "active" : ""}`}
+                      onClick={async () => {
+                        setActiveTab("timeline");
+                        if (currentProject) {
+                          setTimelineLoading(true);
+                          try {
+                            const res = await getProjectTimeline(currentProject.id);
+                            setTimelineData(res);
+                          } catch (err) {
+                            showToast(err.message, "error");
+                          } finally {
+                            setTimelineLoading(false);
+                          }
+                        }
+                      }}
+                      disabled={!currentProject}
+                    >
+                      Timeline
+                    </button>
+                    <button className={`tab ${activeTab === "evaluations" ? "active" : ""}`} onClick={() => setActiveTab("evaluations")}>
+                      Evaluations
+                    </button>
+                    <button
+                      className={`tab ${activeTab === "security" ? "active" : ""}`}
+                      onClick={async () => {
+                        setActiveTab("security");
+                        if (currentProject) {
+                          setSecurityLoading(true);
+                          try {
+                            const audit = await getSecurityAudit(currentProject.id);
+                            setSecurityAudit(audit);
+                          } catch (err) {
+                            showToast(err.message, "error");
+                          } finally {
+                            setSecurityLoading(false);
+                          }
+                        }
+                      }}
+                      disabled={!currentProject}
+                    >
+                      Security Shield
+                    </button>
+                    <button
+                      className={`tab ${activeTab === "load-testing" ? "active" : ""}`}
+                      onClick={async () => {
+                        setActiveTab("load-testing");
+                        if (currentProject && !loadTestResult) {
+                          try {
+                            const routes = await listMockRoutes(currentProject.id);
+                            if (routes && routes.length > 0) {
+                              setLoadTestTargetEndpoint(routes[0].path);
+                              setLoadTestMethod(routes[0].method);
+                            }
+                          } catch (e) {}
+                        }
+                      }}
+                      disabled={!currentProject}
+                    >
+                      Load Testing
+                    </button>
+                  </>
+                )}
+
+                {/* DevOps & Integrations Tabs */}
+                {["devops", "api-sandbox", "sdks", "webhooks-apm", "changelog-cloudops"].includes(activeTab) && (
+                  <>
+                    <button
+                      className={`tab ${activeTab === "devops" ? "active" : ""}`}
+                      onClick={async () => {
+                        setActiveTab("devops");
+                        if (currentProject) {
+                          setCicdLoading(true);
+                          try {
+                            const res = await getProjectCicdPipeline(currentProject.id);
+                            setCicdData(res);
+                            if (res.files && res.files.length > 0) setSelectedCicdFile(res.files[0]);
+                          } catch (err) {
+                            showToast(err.message, "error");
+                          } finally {
+                            setCicdLoading(false);
+                          }
+                        }
+                      }}
+                      disabled={!currentProject}
+                    >
+                      DevOps &amp; CI/CD
+                    </button>
+                    <button
+                      className={`tab ${activeTab === "api-sandbox" ? "active" : ""}`}
+                      onClick={async () => {
+                        setActiveTab("api-sandbox");
+                        if (currentProject) {
+                          setMockRoutesLoading(true);
+                          try {
+                            const routes = await listMockRoutes(currentProject.id);
+                            setMockRoutes(routes);
+                            if (routes && routes.length > 0) {
+                              setSelectedMockRoute(routes[0]);
+                              setMockMethod(routes[0].method || "GET");
+                              setMockPath(routes[0].path || "/");
+                              if (routes[0].sample_body) setMockBody(JSON.stringify(routes[0].sample_body, null, 2));
+                            }
+                          } catch (err) {
+                            showToast(err.message, "error");
+                          } finally {
+                            setMockRoutesLoading(false);
+                          }
+                        }
+                      }}
+                      disabled={!currentProject}
+                    >
+                      API Sandbox
+                    </button>
+                    <button
+                      className={`tab ${activeTab === "sdks" ? "active" : ""}`}
+                      onClick={async () => {
+                        setActiveTab("sdks");
+                        if (currentProject) {
+                          setSdkLoading(true);
+                          try {
+                            const cat = await getProjectSdkCatalog(currentProject.id);
+                            setSdkCatalog(cat);
+                            const pkg = cat?.packages?.[selectedSdkLang] || cat?.packages?.typescript;
+                            if (pkg?.files?.length > 0) setSelectedSdkFile(pkg.files[0]);
+                          } catch (err) {
+                            showToast(err.message, "error");
+                          } finally {
+                            setSdkLoading(false);
+                          }
+                        }
+                      }}
+                      disabled={!currentProject}
+                    >
+                      Client SDKs
+                    </button>
+                    <button
+                      className={`tab ${activeTab === "webhooks-apm" ? "active" : ""}`}
+                      onClick={async () => {
+                        setActiveTab("webhooks-apm");
+                        if (currentProject) {
+                          setEventsLoading(true);
+                          setTelemetryLoading(true);
+                          try {
+                            const [events, tel] = await Promise.all([
+                              getProjectEventCatalog(currentProject.id),
+                              getProjectTelemetry(currentProject.id),
+                            ]);
+                            setEventCatalog(events);
+                            if (events?.events?.length > 0) setSelectedEvent(events.events[0]);
+                            setTelemetryBundle(tel);
+                          } catch (err) {
+                            showToast(err.message, "error");
+                          } finally {
+                            setEventsLoading(false);
+                            setTelemetryLoading(false);
+                          }
+                        }
+                      }}
+                      disabled={!currentProject}
+                    >
+                      Events &amp; Telemetry
+                    </button>
+                    <button
+                      className={`tab ${activeTab === "changelog-cloudops" ? "active" : ""}`}
+                      onClick={async () => {
+                        setActiveTab("changelog-cloudops");
+                        if (currentProject) {
+                          setChangelogLoading(true);
+                          setIacLoading(true);
+                          try {
+                            const [clReport, iacCat] = await Promise.all([
+                              getProjectChangelog(currentProject.id),
+                              getProjectIacCatalog(currentProject.id),
+                            ]);
+                            setChangelogReport(clReport);
+                            setIacCatalog(iacCat);
+                            const defaultPkg = iacCat?.packages?.[selectedIacProvider] || iacCat?.packages?.aws;
+                            if (defaultPkg?.files?.length > 0) setSelectedIacFile(defaultPkg.files[0]);
+                          } catch (err) {
+                            showToast(err.message, "error");
+                          } finally {
+                            setChangelogLoading(false);
+                            setIacLoading(false);
+                          }
+                        }
+                      }}
+                      disabled={!currentProject}
+                    >
+                      Changelog &amp; CloudOps
+                    </button>
+                  </>
+                )}
+              </div>
             </div>
 
         {/* Tab: Create Project (with HITL Clarification) */}
@@ -6072,7 +6092,66 @@ export default function Home() {
         )}
       </div>
 
-      {/* Toast */}
+      {/* Universal Minimalist Footer */}
+      <footer className="footer">
+        <div className="footer-container">
+          <div className="footer-grid">
+            <div className="footer-brand">
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <div className="brand-icon" style={{ width: 26, height: 26, fontSize: 12 }}>AF</div>
+                <span className="footer-brand-title">AgentFlow</span>
+              </div>
+              <p className="footer-brand-desc">
+                Adaptive multi-agent workflow orchestration platform for autonomous software engineering, architecture drift repair, and production artifact generation.
+              </p>
+              <div className="footer-status-indicator">
+                <span className="pulse-beacon" /> All 7 autonomous agent systems operational
+              </div>
+            </div>
+
+            <div className="footer-column">
+              <h4>Platform</h4>
+              <ul>
+                <li><button onClick={() => { setSaasTab("studio"); setActiveTab("create"); }}>Studio Workspace</button></li>
+                <li><button onClick={() => setSaasTab("features")}>Features &amp; Capabilities</button></li>
+                <li><button onClick={() => setSaasTab("workflow")}>Agent Workflow DAG</button></li>
+                <li><button onClick={() => setSaasTab("pricing")}>Pricing &amp; Editions</button></li>
+              </ul>
+            </div>
+
+            <div className="footer-column">
+              <h4>Resources</h4>
+              <ul>
+                <li><button onClick={() => setSaasTab("docs")}>Documentation &amp; Setup</button></li>
+                <li><button onClick={() => setSaasTab("download")}>Download &amp; Export</button></li>
+                <li><a href="https://github.com" target="_blank" rel="noreferrer">GitHub Repository</a></li>
+                <li><button onClick={() => setSaasTab("about")}>Architecture &amp; Team</button></li>
+              </ul>
+            </div>
+
+            <div className="footer-column">
+              <h4>System</h4>
+              <ul>
+                <li><span>LangGraph Core 0.2.x</span></li>
+                <li><span>FastAPI Backend 0.6.0</span></li>
+                <li><span>Next.js 16.3 Turbopack</span></li>
+                <li><span>Multi-Provider Model Hub</span></li>
+              </ul>
+            </div>
+          </div>
+
+          <div className="footer-bottom">
+            <div>&copy; {new Date().getFullYear()} AgentFlow Orchestration Platform. All rights reserved.</div>
+            <div style={{ display: "flex", gap: 16 }}>
+              <span>Deterministic Architecture</span>
+              <span>•</span>
+              <span>Human-In-The-Loop Verification</span>
+              <span>•</span>
+              <span>Multi-Modal Telemetry</span>
+            </div>
+          </div>
+        </div>
+      </footer>
       {toast && (
         <div className={`toast toast-${toast.type}`}>{toast.message}</div>
       )}
