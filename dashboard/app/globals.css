@@ -184,9 +184,9 @@ html, body {
 
 /* Navbar */
 .navbar {
-  display: flex;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
   align-items: center;
-  justify-content: space-between;
   padding: 12px 32px;
   background: var(--navbar-bg);
   border-bottom: 1px solid var(--border);
@@ -203,6 +203,7 @@ html, body {
   gap: 12px;
   cursor: pointer;
   text-decoration: none;
+  justify-self: start;
 }
 
 .navbar-brand:hover h1 {
@@ -246,6 +247,8 @@ html, body {
 .navbar-links {
   display: flex;
   align-items: center;
+  justify-content: center;
+  justify-self: center;
   gap: 6px;
 }
 
@@ -276,7 +279,24 @@ html, body {
 .navbar-actions {
   display: flex;
   align-items: center;
+  justify-content: flex-end;
+  justify-self: end;
   gap: 8px;
+}
+
+@media (max-width: 1024px) {
+  .navbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  .navbar-links {
+    order: 3;
+    width: 100%;
+    justify-content: center;
+    overflow-x: auto;
+    padding-top: 6px;
+  }
 }
 
 /* Theme Toggle Button */

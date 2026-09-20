@@ -556,13 +556,7 @@ export default function Home() {
       <nav className="navbar">
         <div className="navbar-brand" onClick={() => setSaasTab("home")}>
           <div className="brand-icon">AF</div>
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <h1>AgentFlow</h1>
-            <span className="navbar-version">v0.8.0</span>
-          </div>
-          <span className="badge badge-green" style={{ marginLeft: 6, fontSize: 11 }}>
-            <span className="pulse-beacon" style={{ marginRight: 5 }} /> 7 AGENTS ACTIVE
-          </span>
+          <h1>AgentFlow</h1>
         </div>
 
         {/* Global SaaS Navigation Links */}
