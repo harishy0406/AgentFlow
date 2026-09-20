@@ -904,7 +904,7 @@ export default function Home() {
         {saasTab === "features" && (
           <div>
             <h2 className="card-title" style={{ fontSize: 24, marginBottom: 8 }}>
-              🍱 Enterprise Architecture &amp; Features
+              Enterprise Architecture &amp; Features
             </h2>
             <p style={{ color: "var(--text-secondary)", marginBottom: 24 }}>
               Designed from first principles for multi-model determinism, verifiable AST syntax, and cost-optimized orchestration.
@@ -965,7 +965,7 @@ export default function Home() {
         {saasTab === "workflow" && (
           <div className="card">
             <h2 className="card-title" style={{ fontSize: 24, marginBottom: 8 }}>
-              🔄 Autonomous Engineering Workflow
+              Autonomous Engineering Workflow
             </h2>
             <p style={{ color: "var(--text-secondary)", marginBottom: 28 }}>
               How AgentFlow transforms a high-level product brief into synchronized production code.
@@ -980,7 +980,7 @@ export default function Home() {
                 { step: "05", title: "Production Packaging", desc: "Download in-memory .zip archives, SQL DDL migrations, or OpenAPI specs." },
               ].map((item) => (
                 <div key={item.step} className="bento-card" style={{ padding: 20 }}>
-                  <div style={{ fontFamily: "var(--font-mono)", color: "var(--neon-green)", fontSize: 24, fontWeight: 800, marginBottom: 8 }}>
+                  <div style={{ fontFamily: "var(--font-mono)", color: "var(--text-primary)", fontSize: 24, fontWeight: 800, marginBottom: 8 }}>
                     {item.step}
                   </div>
                   <h4 style={{ fontSize: 16, fontWeight: 700, marginBottom: 6 }}>{item.title}</h4>
@@ -1008,11 +1008,11 @@ export default function Home() {
               <div className="bento-card">
                 <span className="badge badge-green" style={{ marginBottom: 12 }}>OPEN SOURCE FOREVER</span>
                 <h3 style={{ fontSize: 22, fontWeight: 800 }}>Hacker OSS</h3>
-                <div style={{ fontSize: 36, fontWeight: 900, fontFamily: "var(--font-display)", margin: "14px 0", color: "var(--neon-green)" }}>
+                <div style={{ fontSize: 36, fontWeight: 900, fontFamily: "var(--font-display)", margin: "14px 0", color: "var(--text-primary)" }}>
                   $0 <span style={{ fontSize: 14, color: "var(--text-secondary)", fontWeight: 500 }}>/ month</span>
                 </div>
                 <p style={{ color: "var(--text-secondary)", fontSize: 13, marginBottom: 20 }}>
-                  Perfect for individual hackers running AgentFlow locally on their machines.
+                  Perfect for individual developers running AgentFlow locally on their workstations.
                 </p>
                 <ul style={{ listStyle: "none", fontSize: 13, color: "var(--text-primary)", display: "flex", flexDirection: "column", gap: 10, marginBottom: 24 }}>
                   <li>✓ 7-Agent Topological DAG Pipeline</li>
@@ -1028,10 +1028,10 @@ export default function Home() {
               </div>
 
               {/* Pro Tier */}
-              <div className="bento-card" style={{ borderColor: "var(--neon-green)", boxShadow: "var(--shadow-neon)" }}>
+              <div className="bento-card" style={{ border: "1px solid var(--border-hover)", background: "var(--bg-secondary)" }}>
                 <span className="badge badge-cyan" style={{ marginBottom: 12 }}>MOST POPULAR</span>
                 <h3 style={{ fontSize: 22, fontWeight: 800 }}>Pro Orchestrator</h3>
-                <div style={{ fontSize: 36, fontWeight: 900, fontFamily: "var(--font-display)", margin: "14px 0", color: "var(--accent-cyan)" }}>
+                <div style={{ fontSize: 36, fontWeight: 900, fontFamily: "var(--font-display)", margin: "14px 0", color: "var(--text-primary)" }}>
                   $29 <span style={{ fontSize: 14, color: "var(--text-secondary)", fontWeight: 500 }}>/ month</span>
                 </div>
                 <p style={{ color: "var(--text-secondary)", fontSize: 13, marginBottom: 20 }}>
@@ -1054,7 +1054,7 @@ export default function Home() {
               <div className="bento-card">
                 <span className="badge badge-amber" style={{ marginBottom: 12 }}>ENTERPRISE FLEET</span>
                 <h3 style={{ fontSize: 22, fontWeight: 800 }}>Enterprise Fleet</h3>
-                <div style={{ fontSize: 36, fontWeight: 900, fontFamily: "var(--font-display)", margin: "14px 0", color: "var(--accent-yellow)" }}>
+                <div style={{ fontSize: 36, fontWeight: 900, fontFamily: "var(--font-display)", margin: "14px 0", color: "var(--text-primary)" }}>
                   $199 <span style={{ fontSize: 14, color: "var(--text-secondary)", fontWeight: 500 }}>/ month</span>
                 </div>
                 <p style={{ color: "var(--text-secondary)", fontSize: 13, marginBottom: 20 }}>
@@ -1080,7 +1080,7 @@ export default function Home() {
         {saasTab === "docs" && (
           <div className="card">
             <h2 className="card-title" style={{ fontSize: 24, marginBottom: 8 }}>
-              📖 Documentation &amp; Local Setup Guide
+              Documentation &amp; Local Setup Guide
             </h2>
             <p style={{ color: "var(--text-secondary)", marginBottom: 24 }}>
               Setup and run the entire AgentFlow autonomous stack locally on your workstation in under 2 minutes.
@@ -1102,17 +1102,17 @@ export default function Home() {
                 <p><span className="terminal-prompt">&gt;</span> cd backend &amp;&amp; python -m venv venv &amp;&amp; source venv/bin/activate</p>
                 <p><span className="terminal-prompt">&gt;</span> pip install -r requirements.txt</p>
                 <p><span className="terminal-prompt">&gt;</span> uvicorn app.main:app --reload --port 8000</p>
-                <p style={{ color: "var(--text-muted)", margin: "8px 0" }}># 2. Start Next.js Cyberpunk Dashboard</p>
+                <p style={{ color: "var(--text-muted)", margin: "8px 0" }}># 2. Start Next.js Minimalist Dashboard</p>
                 <p><span className="terminal-prompt">&gt;</span> cd ../dashboard &amp;&amp; npm install &amp;&amp; npm run dev</p>
               </div>
             </div>
 
-            <h3 style={{ fontSize: 18, fontWeight: 700, margin: "20px 0 12px" }}>🐳 Docker Compose Setup</h3>
+            <h3 style={{ fontSize: 18, fontWeight: 700, margin: "20px 0 12px" }}>Docker Compose Setup</h3>
             <div className="terminal-window">
               <div className="terminal-body">
                 <p><span className="terminal-prompt">&gt;</span> docker-compose up --build -d</p>
-                <p style={{ color: "#38BDF8" }}>✔ Backend container running on http://localhost:8000</p>
-                <p style={{ color: "#38BDF8" }}>✔ Dashboard container running on http://localhost:3000</p>
+                <p style={{ color: "var(--terminal-green)" }}>✔ Backend container running on http://localhost:8000</p>
+                <p style={{ color: "var(--terminal-green)" }}>✔ Dashboard container running on http://localhost:3000</p>
               </div>
             </div>
           </div>
@@ -1122,7 +1122,7 @@ export default function Home() {
         {saasTab === "download" && (
           <div className="card">
             <h2 className="card-title" style={{ fontSize: 24, marginBottom: 8 }}>
-              📦 Download &amp; Offline Packages
+              Download &amp; Offline Packages
             </h2>
             <p style={{ color: "var(--text-secondary)", marginBottom: 24 }}>
               Download packaged bundles for offline execution or deployment.
@@ -1133,12 +1133,12 @@ export default function Home() {
                 <h4 style={{ fontSize: 16, fontWeight: 700, marginBottom: 6 }}>Source Code Tarball (.zip)</h4>
                 <p style={{ color: "var(--text-secondary)", fontSize: 13, marginBottom: 14 }}>Complete backend engine, dashboard UI, and tests.</p>
                 <button className="btn btn-primary btn-sm" onClick={() => showToast("Preparing source zip archive...", "success")}>
-                  ⬇️ Download Source Bundle
+                  Download Source Bundle
                 </button>
               </div>
-              <div className="bento-card" style={{ border: "1px solid rgba(0, 255, 102, 0.25)", background: "rgba(0, 255, 102, 0.03)" }}>
+              <div className="bento-card">
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
-                  <h4 style={{ fontSize: 16, fontWeight: 700, margin: 0, color: "var(--neon-green)" }}>📑 Executive Slide Deck (.pdf)</h4>
+                  <h4 style={{ fontSize: 16, fontWeight: 700, margin: 0, color: "var(--text-primary)" }}>Executive Slide Deck (.pdf)</h4>
                   <span className="badge badge-green" style={{ fontSize: 10 }}>PURE-CODE</span>
                 </div>
                 <p style={{ color: "var(--text-secondary)", fontSize: 13, marginBottom: 14 }}>
@@ -1154,7 +1154,7 @@ export default function Home() {
                         className="btn btn-primary btn-sm"
                         style={{ textDecoration: "none" }}
                       >
-                        ⬇️ Download Deck (.pdf)
+                        Download Deck (.pdf)
                       </a>
                       <a
                         href={getPresentationPdfUrl(currentProject.id, true)}
@@ -1163,7 +1163,7 @@ export default function Home() {
                         className="btn btn-secondary btn-sm"
                         style={{ textDecoration: "none" }}
                       >
-                        👁️ Preview Deck
+                        Preview Deck
                       </a>
                     </>
                   ) : (
@@ -1173,10 +1173,10 @@ export default function Home() {
                   )}
                 </div>
               </div>
-              <div className="bento-card" style={{ border: "1px solid rgba(229, 53, 171, 0.3)", background: "rgba(229, 53, 171, 0.03)" }}>
+              <div className="bento-card">
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
-                  <h4 style={{ fontSize: 16, fontWeight: 700, margin: 0, color: "#E535AB" }}>◈ GraphQL Schema (.graphql)</h4>
-                  <span className="badge" style={{ fontSize: 10, background: "rgba(229, 53, 171, 0.2)", color: "#E535AB", border: "1px solid #E535AB" }}>APOLLO & STRAWBERRY</span>
+                  <h4 style={{ fontSize: 16, fontWeight: 700, margin: 0, color: "var(--text-primary)" }}>GraphQL Schema (.graphql)</h4>
+                  <span className="badge badge-cyan" style={{ fontSize: 10 }}>APOLLO &amp; STRAWBERRY</span>
                 </div>
                 <p style={{ color: "var(--text-secondary)", fontSize: 13, marginBottom: 14 }}>
                   Complete GraphQL SDL schema, Query &amp; Mutation root types, sample queries, and executable Python &amp; TypeScript resolver stubs.
@@ -1189,9 +1189,9 @@ export default function Home() {
                         target="_blank"
                         rel="noreferrer"
                         className="btn btn-primary btn-sm"
-                        style={{ textDecoration: "none", background: "#E535AB", borderColor: "#E535AB", color: "#fff" }}
+                        style={{ textDecoration: "none" }}
                       >
-                        ⬇️ Download .graphql SDL
+                        Download .graphql SDL
                       </a>
                       <button
                         className="btn btn-secondary btn-sm"
@@ -1208,7 +1208,7 @@ export default function Home() {
                           }
                         }}
                       >
-                        👁️ Explore GraphQL Studio
+                        Explore GraphQL Studio
                       </button>
                     </>
                   ) : (
@@ -1218,10 +1218,10 @@ export default function Home() {
                   )}
                 </div>
               </div>
-              <div className="bento-card" style={{ border: "1px solid rgba(16, 185, 129, 0.3)", background: "rgba(16, 185, 129, 0.03)" }}>
+              <div className="bento-card">
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
-                  <h4 style={{ fontSize: 16, fontWeight: 700, margin: 0, color: "#10B981" }}>🌱 Synthetic Seed Data (.sql / .json)</h4>
-                  <span className="badge" style={{ fontSize: 10, background: "rgba(16, 185, 129, 0.2)", color: "#10B981", border: "1px solid #10B981" }}>MOCK &amp; FIXTURES</span>
+                  <h4 style={{ fontSize: 16, fontWeight: 700, margin: 0, color: "var(--text-primary)" }}>Synthetic Seed Data (.sql / .json)</h4>
+                  <span className="badge badge-green" style={{ fontSize: 10 }}>MOCK &amp; FIXTURES</span>
                 </div>
                 <p style={{ color: "var(--text-secondary)", fontSize: 13, marginBottom: 14 }}>
                   Transactional SQL INSERT scripts, JSON fixtures, FactoryBoy test factories, and Prisma seeders derived directly from database DDL.
@@ -1234,9 +1234,9 @@ export default function Home() {
                         target="_blank"
                         rel="noreferrer"
                         className="btn btn-primary btn-sm"
-                        style={{ textDecoration: "none", background: "#10B981", borderColor: "#10B981", color: "#fff" }}
+                        style={{ textDecoration: "none" }}
                       >
-                        ⬇️ Download seed.sql
+                        Download seed.sql
                       </a>
                       <a
                         href={getSeedJsonDownloadUrl(currentProject.id)}
@@ -1245,7 +1245,7 @@ export default function Home() {
                         className="btn btn-secondary btn-sm"
                         style={{ textDecoration: "none" }}
                       >
-                        ⬇️ Download seeds.json
+                        Download seeds.json
                       </a>
                       <button
                         className="btn btn-secondary btn-sm"
@@ -1262,7 +1262,7 @@ export default function Home() {
                           }
                         }}
                       >
-                        👁️ Explore Seed Studio
+                        Explore Seed Studio
                       </button>
                     </>
                   ) : (
@@ -1280,7 +1280,7 @@ export default function Home() {
         {saasTab === "about" && (
           <div className="card">
             <h2 className="card-title" style={{ fontSize: 24, marginBottom: 8 }}>
-              ℹ️ About AgentFlow &amp; Determinism
+              About AgentFlow &amp; Architecture
             </h2>
             <p style={{ color: "var(--text-secondary)", lineHeight: 1.7, marginBottom: 16 }}>
               Modern generative AI fails at software engineering because single prompts try to solve too many things simultaneously. When an LLM produces a PRD, Database Schema, and Source Code in one prompt, hallucinations compound exponentially.
@@ -3470,8 +3470,8 @@ export default function Home() {
           <div className="card">
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16, flexWrap: "wrap", gap: 12 }}>
               <div>
-                <h2 className="card-title" style={{ marginBottom: 4, display: "flex", alignItems: "center", gap: 8 }}>
-                  <span>🚀</span> Enterprise DevOps &amp; CI/CD Pipeline Hub
+                <h2 className="card-title" style={{ marginBottom: 4 }}>
+                  Enterprise DevOps &amp; CI/CD Pipeline Hub
                 </h2>
                 <p style={{ color: "var(--text-secondary)", fontSize: 13 }}>
                   Production GitHub Actions workflows, multi-stage Docker builds, Compose orchestration, and automated deployment scripts.
@@ -3498,7 +3498,7 @@ export default function Home() {
                     }
                   }}
                 >
-                  ⚡ {generatingCicd ? "Generating..." : "Regenerate CI/CD"}
+                  {generatingCicd ? "Generating..." : "Regenerate CI/CD"}
                 </button>
                 <button
                   className="btn btn-primary btn-sm"
@@ -3513,7 +3513,7 @@ export default function Home() {
                       "✔ [4/6] Pytest: 48/48 unit and integration tests passed (100% coverage) [OK]",
                       "✔ [5/6] docker/build-push-action: Built multi-stage production image (142MB) [OK]",
                       "✔ [6/6] Healthcheck: GET /health responded with 200 OK in 14ms [OK]",
-                      "🚀 [DEPLOY] All CI/CD quality gates passed! Ready for production deployment."
+                      "[DEPLOY] All CI/CD quality gates passed! Ready for production deployment."
                     ];
                     steps.forEach((st, idx) => {
                       setTimeout(() => {
@@ -3526,7 +3526,7 @@ export default function Home() {
                     });
                   }}
                 >
-                  {devopsDryRunning ? "⚡ Simulating Pipeline..." : "▶️ Run CI/CD Simulation"}
+                  {devopsDryRunning ? "Simulating Pipeline..." : "Run CI/CD Simulation"}
                 </button>
               </div>
             </div>
@@ -3542,26 +3542,26 @@ export default function Home() {
             >
               <div style={{ background: "var(--bg-secondary)", border: "1px solid var(--border)", borderRadius: 8, padding: 12 }}>
                 <div style={{ fontSize: 11, color: "var(--text-muted)" }}>RUNTIME STACK</div>
-                <div style={{ fontSize: 14, fontWeight: 700, color: "var(--neon-green)", marginTop: 2 }}>
-                  🐍 Python 3.11 + FastAPI
+                <div style={{ fontSize: 14, fontWeight: 700, color: "var(--text-primary)", marginTop: 2 }}>
+                  Python 3.11 + FastAPI
                 </div>
               </div>
               <div style={{ background: "var(--bg-secondary)", border: "1px solid var(--border)", borderRadius: 8, padding: 12 }}>
                 <div style={{ fontSize: 11, color: "var(--text-muted)" }}>CONTAINER SPEC</div>
-                <div style={{ fontSize: 14, fontWeight: 700, color: "#38BDF8", marginTop: 2 }}>
-                  🐳 Multi-Stage Hardened (appuser)
+                <div style={{ fontSize: 14, fontWeight: 700, color: "var(--text-primary)", marginTop: 2 }}>
+                  Multi-Stage Hardened (appuser)
                 </div>
               </div>
               <div style={{ background: "var(--bg-secondary)", border: "1px solid var(--border)", borderRadius: 8, padding: 12 }}>
                 <div style={{ fontSize: 11, color: "var(--text-muted)" }}>CI RUNNER</div>
-                <div style={{ fontSize: 14, fontWeight: 700, color: "#FBBF24", marginTop: 2 }}>
-                  ⚡ GitHub Actions CI matrix
+                <div style={{ fontSize: 14, fontWeight: 700, color: "var(--text-primary)", marginTop: 2 }}>
+                  GitHub Actions CI matrix
                 </div>
               </div>
               <div style={{ background: "var(--bg-secondary)", border: "1px solid var(--border)", borderRadius: 8, padding: 12 }}>
                 <div style={{ fontSize: 11, color: "var(--text-muted)" }}>DEPLOYMENT STRATEGY</div>
-                <div style={{ fontSize: 14, fontWeight: 700, color: "#C084FC", marginTop: 2 }}>
-                  🔄 Zero-Downtime Rolling Update
+                <div style={{ fontSize: 14, fontWeight: 700, color: "var(--text-primary)", marginTop: 2 }}>
+                  Zero-Downtime Rolling Update
                 </div>
               </div>
             </div>
@@ -3595,7 +3595,7 @@ export default function Home() {
                     }
                   }}
                 >
-                  ⚡ Generate Enterprise CI/CD Pipeline
+                  Generate Enterprise CI/CD Pipeline
                 </button>
               </div>
             ) : (
@@ -3604,21 +3604,13 @@ export default function Home() {
                 <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                   {cicdData.files.map((f, idx) => {
                     const isSel = selectedCicdFile?.path === f.path;
-                    const icon =
-                      f.type === "workflow"
-                        ? "⚡"
-                        : f.type === "docker"
-                        ? "🐳"
-                        : f.type === "compose"
-                        ? "📦"
-                        : "📜";
                     return (
                       <div
                         key={idx}
                         onClick={() => setSelectedCicdFile(f)}
                         style={{
-                          background: isSel ? "rgba(0, 255, 102, 0.08)" : "var(--bg-secondary)",
-                          border: `1px solid ${isSel ? "var(--neon-green)" : "var(--border)"}`,
+                          background: isSel ? "var(--bg-card)" : "var(--bg-secondary)",
+                          border: `1px solid ${isSel ? "var(--border-hover)" : "var(--border)"}`,
                           borderRadius: 8,
                           padding: 12,
                           cursor: "pointer",
@@ -3626,8 +3618,8 @@ export default function Home() {
                         }}
                       >
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
-                          <strong style={{ fontSize: 13, color: isSel ? "var(--neon-green)" : "var(--text-primary)", fontFamily: "var(--font-mono)" }}>
-                            {icon} {f.name}
+                          <strong style={{ fontSize: 13, color: isSel ? "#FFFFFF" : "var(--text-primary)", fontFamily: "var(--font-mono)" }}>
+                            {f.name}
                           </strong>
                           <span className="badge badge-cyan" style={{ fontSize: 9 }}>
                             {f.type}
@@ -3649,7 +3641,6 @@ export default function Home() {
                       border: "1px solid var(--border)",
                       borderRadius: 8,
                       overflow: "hidden",
-                      boxShadow: "0 4px 20px rgba(0,0,0,0.3)",
                     }}
                   >
                     {/* Header */}
@@ -3664,8 +3655,8 @@ export default function Home() {
                       }}
                     >
                       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                        <span style={{ fontSize: 13, fontWeight: 700, color: "var(--neon-green)", fontFamily: "var(--font-mono)" }}>
-                          📁 {selectedCicdFile.path}
+                        <span style={{ fontSize: 13, fontWeight: 700, color: "var(--text-primary)", fontFamily: "var(--font-mono)" }}>
+                          {selectedCicdFile.path}
                         </span>
                         <span className="badge badge-green" style={{ fontSize: 10 }}>
                           {selectedCicdFile.language}
@@ -3680,27 +3671,27 @@ export default function Home() {
                           }}
                           style={{ fontSize: 11, padding: "3px 8px" }}
                         >
-                          📋 Copy
+                          Copy
                         </button>
                         <button
                           className="btn btn-primary btn-sm"
                           onClick={() => downloadTextFile(selectedCicdFile.name, selectedCicdFile.content, "text/plain")}
                           style={{ fontSize: 11, padding: "3px 8px" }}
                         >
-                          ⬇️ Download
+                          Download
                         </button>
                       </div>
                     </div>
 
                     {/* Pre Code */}
-                    <div style={{ padding: 16, background: "#040705", maxHeight: "500px", overflowY: "auto" }}>
+                    <div style={{ padding: 16, background: "var(--bg-primary)", maxHeight: "500px", overflowY: "auto" }}>
                       <pre
                         style={{
                           margin: 0,
                           fontFamily: "var(--font-mono)",
                           fontSize: 12,
                           lineHeight: 1.6,
-                          color: selectedCicdFile.language === "yaml" ? "#38BDF8" : selectedCicdFile.language === "dockerfile" ? "#FBBF24" : "var(--neon-green)",
+                          color: "var(--text-primary)",
                           whiteSpace: "pre-wrap",
                         }}
                       >
@@ -3727,7 +3718,7 @@ export default function Home() {
                 </div>
                 <div className="terminal-body" style={{ maxHeight: 180, overflowY: "auto" }}>
                   {devopsDryRunLogs.map((log, idx) => (
-                    <p key={idx} style={{ margin: "4px 0", color: log.includes("passed") || log.includes("✔") ? "var(--neon-green)" : "#38BDF8" }}>
+                    <p key={idx} style={{ margin: "4px 0", color: log.includes("passed") || log.includes("✔") ? "var(--terminal-green)" : "var(--text-secondary)" }}>
                       {log}
                     </p>
                   ))}
@@ -3742,8 +3733,8 @@ export default function Home() {
           <div className="card">
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 20, flexWrap: "wrap", gap: 12 }}>
               <div>
-                <h2 className="card-title" style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                  <span>⚡</span> Dynamic Mock API Sandbox &amp; Route Simulator
+                <h2 className="card-title">
+                  Dynamic Mock API Sandbox &amp; Route Simulator
                 </h2>
                 <p style={{ color: "var(--text-muted)", fontSize: 13, margin: "4px 0 0" }}>
                   Interactive live HTTP client simulator executing dynamic mock requests against your project's generated API contracts and data schemas.
@@ -3766,7 +3757,7 @@ export default function Home() {
                     }
                   }}
                 >
-                  🔄 {mockRoutesLoading ? "Reloading..." : "Reload Routes"}
+                  {mockRoutesLoading ? "Reloading..." : "Reload Routes"}
                 </button>
               </div>
             </div>
@@ -3782,29 +3773,29 @@ export default function Home() {
             >
               <div style={{ background: "var(--bg-secondary)", border: "1px solid var(--border)", borderRadius: 8, padding: 12 }}>
                 <div style={{ fontSize: 11, color: "var(--text-muted)", textTransform: "uppercase" }}>DECLARED CONTRACT ROUTES</div>
-                <div style={{ fontSize: 20, fontWeight: 800, color: "var(--neon-green)", marginTop: 2, fontFamily: "var(--font-display)" }}>
+                <div style={{ fontSize: 20, fontWeight: 800, color: "var(--text-primary)", marginTop: 2, fontFamily: "var(--font-display)" }}>
                   {mockRoutes.length} Endpoints
                 </div>
               </div>
 
               <div style={{ background: "var(--bg-secondary)", border: "1px solid var(--border)", borderRadius: 8, padding: 12 }}>
                 <div style={{ fontSize: 11, color: "var(--text-muted)", textTransform: "uppercase" }}>ACTIVE TARGET METHOD</div>
-                <div style={{ fontSize: 16, fontWeight: 700, color: mockMethod === "GET" ? "var(--neon-green)" : mockMethod === "POST" ? "#38BDF8" : mockMethod === "DELETE" ? "#F87171" : "#FBBF24", marginTop: 4, fontFamily: "var(--font-mono)" }}>
+                <div style={{ fontSize: 16, fontWeight: 700, color: "var(--text-primary)", marginTop: 4, fontFamily: "var(--font-mono)" }}>
                   {mockMethod} {mockPath}
                 </div>
               </div>
 
               <div style={{ background: "var(--bg-secondary)", border: "1px solid var(--border)", borderRadius: 8, padding: 12 }}>
                 <div style={{ fontSize: 11, color: "var(--text-muted)", textTransform: "uppercase" }}>SIMULATED LATENCY</div>
-                <div style={{ fontSize: 18, fontWeight: 800, color: "#38BDF8", marginTop: 2, fontFamily: "var(--font-display)" }}>
+                <div style={{ fontSize: 18, fontWeight: 800, color: "var(--text-primary)", marginTop: 2, fontFamily: "var(--font-display)" }}>
                   {mockResponse ? `${mockResponse.latency_ms} ms` : "Instant (12-30ms)"}
                 </div>
               </div>
 
               <div style={{ background: "var(--bg-secondary)", border: "1px solid var(--border)", borderRadius: 8, padding: 12 }}>
                 <div style={{ fontSize: 11, color: "var(--text-muted)", textTransform: "uppercase" }}>CONTRACT CONFORMANCE</div>
-                <div style={{ fontSize: 14, fontWeight: 700, color: mockResponse?.matched_contract ? "var(--neon-green)" : "var(--text-primary)", marginTop: 4 }}>
-                  {mockResponse ? (mockResponse.matched_contract ? "✔ 100% Validated" : "⚠ Synthetic Fallback") : "Ready to Simulate"}
+                <div style={{ fontSize: 14, fontWeight: 700, color: mockResponse?.matched_contract ? "var(--terminal-green)" : "var(--text-primary)", marginTop: 4 }}>
+                  {mockResponse ? (mockResponse.matched_contract ? "100% Validated" : "Synthetic Fallback") : "Ready to Simulate"}
                 </div>
               </div>
             </div>
@@ -3839,7 +3830,6 @@ export default function Home() {
                     {mockRoutes.map((r, idx) => {
                       const isSel = selectedMockRoute?.path === r.path && selectedMockRoute?.method === r.method;
                       const m = r.method.toUpperCase();
-                      const badgeColor = m === "GET" ? "var(--neon-green)" : m === "POST" ? "#38BDF8" : m === "DELETE" ? "#F87171" : "#FBBF24";
 
                       return (
                         <div
@@ -3856,8 +3846,8 @@ export default function Home() {
                           }}
                           style={{
                             padding: "10px 12px",
-                            background: isSel ? "rgba(0, 255, 102, 0.08)" : "var(--bg-secondary)",
-                            border: `1px solid ${isSel ? "var(--neon-green)" : "var(--border)"}`,
+                            background: isSel ? "var(--bg-secondary)" : "transparent",
+                            border: `1px solid ${isSel ? "var(--border-hover)" : "var(--border)"}`,
                             borderRadius: 6,
                             cursor: "pointer",
                             transition: "all 0.15s ease",
@@ -3870,9 +3860,9 @@ export default function Home() {
                                 fontWeight: 800,
                                 padding: "2px 6px",
                                 borderRadius: 4,
-                                background: `${badgeColor}20`,
-                                color: badgeColor,
-                                border: `1px solid ${badgeColor}40`,
+                                background: "var(--bg-secondary)",
+                                color: "var(--text-primary)",
+                                border: "1px solid var(--border)",
                                 fontFamily: "var(--font-mono)",
                               }}
                             >
@@ -3882,7 +3872,7 @@ export default function Home() {
                               style={{
                                 fontSize: 12,
                                 fontWeight: 600,
-                                color: isSel ? "var(--neon-green)" : "var(--text-primary)",
+                                color: isSel ? "#FFFFFF" : "var(--text-primary)",
                                 fontFamily: "var(--font-mono)",
                                 wordBreak: "break-all",
                               }}
@@ -3921,7 +3911,7 @@ export default function Home() {
                     onChange={(e) => setMockMethod(e.target.value)}
                     style={{
                       background: "var(--bg-card)",
-                      color: mockMethod === "GET" ? "var(--neon-green)" : mockMethod === "POST" ? "#38BDF8" : mockMethod === "DELETE" ? "#F87171" : "#FBBF24",
+                      color: "var(--text-primary)",
                       border: "1px solid var(--border)",
                       borderRadius: 6,
                       padding: "8px 12px",
@@ -3957,7 +3947,7 @@ export default function Home() {
                   />
 
                   <button
-                    className="btn btn-primary"
+                    className="btn btn-primary btn-sm"
                     disabled={mockExecuting}
                     onClick={async () => {
                       setMockExecuting(true);
@@ -3998,7 +3988,7 @@ export default function Home() {
                     }}
                     style={{ padding: "8px 18px", fontWeight: 700, whiteSpace: "nowrap" }}
                   >
-                    {mockExecuting ? "⚡ Executing..." : "⚡ Send Request"}
+                    {mockExecuting ? "Executing..." : "Send Request"}
                   </button>
                 </div>
 
@@ -4037,8 +4027,8 @@ export default function Home() {
                       style={{
                         width: "100%",
                         minHeight: 120,
-                        background: "#0d1117",
-                        color: "#58a6ff",
+                        background: "var(--bg-primary)",
+                        color: "var(--text-primary)",
                         border: "1px solid var(--border)",
                         borderRadius: 6,
                         padding: 10,
@@ -4058,7 +4048,6 @@ export default function Home() {
                     border: "1px solid var(--border)",
                     borderRadius: 8,
                     overflow: "hidden",
-                    boxShadow: "0 4px 20px rgba(0,0,0,0.3)",
                   }}
                 >
                   {/* Response Header Status Bar */}
@@ -4085,9 +4074,9 @@ export default function Home() {
                             fontWeight: 800,
                             padding: "2px 8px",
                             borderRadius: 4,
-                            background: mockResponse.status_code < 300 ? "rgba(0, 255, 102, 0.15)" : "rgba(248, 113, 113, 0.15)",
-                            color: mockResponse.status_code < 300 ? "var(--neon-green)" : "#F87171",
-                            border: `1px solid ${mockResponse.status_code < 300 ? "var(--neon-green)" : "#F87171"}`,
+                            background: mockResponse.status_code < 300 ? "rgba(0, 255, 102, 0.1)" : "rgba(248, 113, 113, 0.1)",
+                            color: mockResponse.status_code < 300 ? "var(--terminal-green)" : "var(--accent-red)",
+                            border: `1px solid ${mockResponse.status_code < 300 ? "var(--terminal-green)" : "var(--accent-red)"}`,
                             fontFamily: "var(--font-mono)",
                           }}
                         >
@@ -4098,17 +4087,17 @@ export default function Home() {
 
                     {mockResponse && (
                       <div style={{ display: "flex", alignItems: "center", gap: 12, fontSize: 12, color: "var(--text-muted)", fontFamily: "var(--font-mono)" }}>
-                        <span>⏱️ {mockResponse.latency_ms} ms</span>
-                        <span>📦 {JSON.stringify(mockResponse.response_body).length} bytes</span>
+                        <span>{mockResponse.latency_ms} ms</span>
+                        <span>{JSON.stringify(mockResponse.response_body).length} bytes</span>
                         {mockResponse.matched_contract && (
-                          <span style={{ color: "var(--neon-green)", fontWeight: 600 }}>✔ Contract Match</span>
+                          <span style={{ color: "var(--terminal-green)", fontWeight: 600 }}>Contract Match</span>
                         )}
                       </div>
                     )}
                   </div>
 
                   {/* Response Content Body */}
-                  <div style={{ padding: 14, background: "#080c10", minHeight: 220, maxHeight: 420, overflowY: "auto" }}>
+                  <div style={{ padding: 14, background: "var(--bg-primary)", minHeight: 220, maxHeight: 420, overflowY: "auto" }}>
                     {mockResponse ? (
                       <pre
                         style={{
@@ -4116,7 +4105,7 @@ export default function Home() {
                           fontFamily: "var(--font-mono)",
                           fontSize: 12,
                           lineHeight: 1.5,
-                          color: "var(--neon-green)",
+                          color: "var(--terminal-green)",
                           whiteSpace: "pre-wrap",
                         }}
                       >
@@ -4124,7 +4113,7 @@ export default function Home() {
                       </pre>
                     ) : (
                       <div style={{ padding: "40px 20px", textAlign: "center", color: "var(--text-muted)", fontSize: 13 }}>
-                        Select an endpoint and click <strong>"⚡ Send Request"</strong> to inspect simulated JSON response, headers, and latency.
+                        Select an endpoint and click <strong>"Send Request"</strong> to inspect simulated JSON response, headers, and latency.
                       </div>
                     )}
                   </div>
@@ -4153,9 +4142,9 @@ export default function Home() {
                             gap: 6,
                           }}
                         >
-                          <span style={{ color: h.method === "GET" ? "var(--neon-green)" : "#38BDF8", fontWeight: 700 }}>{h.method}</span>
-                          <span style={{ color: "var(--text-primary)" }}>{h.path}</span>
-                          <span style={{ color: "var(--neon-green)", fontWeight: 700 }}>{h.status}</span>
+                          <span style={{ color: "var(--text-primary)", fontWeight: 700 }}>{h.method}</span>
+                          <span style={{ color: "var(--text-secondary)" }}>{h.path}</span>
+                          <span style={{ color: "var(--terminal-green)", fontWeight: 700 }}>{h.status}</span>
                         </div>
                       ))}
                     </div>
@@ -4172,7 +4161,7 @@ export default function Home() {
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 20, flexWrap: "wrap", gap: 12 }}>
               <div>
                 <h2 className="card-title" style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                  <span>🛡️</span> Security Shield &amp; Vulnerability Remediation
+                  Security Shield &amp; Vulnerability Remediation
                 </h2>
                 <p style={{ color: "var(--text-muted)", fontSize: 13, margin: "4px 0 0" }}>
                   Automated OWASP Top 10 static AST scanner and security vulnerability analyzer verifying hardcoded secrets, SQL injections, permissive CORS, and auth gates.
@@ -4196,7 +4185,7 @@ export default function Home() {
                     }
                   }}
                 >
-                  🔍 {securityScanning ? "Scanning AST..." : "Run Security Audit"}
+                  {securityScanning ? "Scanning AST..." : "Run Security Audit"}
                 </button>
 
                 <button
@@ -4221,7 +4210,7 @@ export default function Home() {
                     }, 1200);
                   }}
                 >
-                  ⚡ {securityRemediating ? "Applying Patches..." : "Auto-Remediate Vulnerabilities"}
+                  {securityRemediating ? "Applying Patches..." : "Auto-Remediate Vulnerabilities"}
                 </button>
               </div>
             </div>
@@ -4244,15 +4233,15 @@ export default function Home() {
                     (securityAudit?.overall_score || 92) >= 90
                       ? "#00FF66"
                       : (securityAudit?.overall_score || 92) >= 75
-                      ? "#38BDF8"
+                      ? "#EDEDED"
                       : (securityAudit?.overall_score || 92) >= 60
-                      ? "#FBBF24"
-                      : "#F87171"
+                      ? "#888888"
+                      : "#EF4444"
                   }
                 />
                 <div>
                   <div style={{ fontSize: 11, color: "var(--text-muted)", textTransform: "uppercase" }}>SECURITY GRADE</div>
-                  <div style={{ fontSize: 24, fontWeight: 900, color: "var(--neon-green)", fontFamily: "var(--font-display)" }}>
+                  <div style={{ fontSize: 24, fontWeight: 900, color: "var(--terminal-green)", fontFamily: "var(--font-display)" }}>
                     {securityAudit?.security_grade || "A+"}
                   </div>
                   <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 2 }}>
@@ -4263,7 +4252,7 @@ export default function Home() {
 
               <div style={{ background: "var(--bg-secondary)", border: "1px solid var(--border)", borderRadius: 8, padding: 14 }}>
                 <div style={{ fontSize: 11, color: "var(--text-muted)", textTransform: "uppercase" }}>CRITICAL / HIGH RISKS</div>
-                <div style={{ fontSize: 24, fontWeight: 800, color: (securityAudit?.severity_counts?.CRITICAL || 0) > 0 ? "#F87171" : "var(--neon-green)", marginTop: 2, fontFamily: "var(--font-display)" }}>
+                <div style={{ fontSize: 24, fontWeight: 800, color: (securityAudit?.severity_counts?.CRITICAL || 0) > 0 ? "var(--accent-red)" : "var(--terminal-green)", marginTop: 2, fontFamily: "var(--font-display)" }}>
                   {(securityAudit?.severity_counts?.CRITICAL || 0) + (securityAudit?.severity_counts?.HIGH || 0)}
                 </div>
                 <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 4 }}>
@@ -4273,7 +4262,7 @@ export default function Home() {
 
               <div style={{ background: "var(--bg-secondary)", border: "1px solid var(--border)", borderRadius: 8, padding: 14 }}>
                 <div style={{ fontSize: 11, color: "var(--text-muted)", textTransform: "uppercase" }}>SCANNED ARTIFACTS</div>
-                <div style={{ fontSize: 24, fontWeight: 800, color: "#38BDF8", marginTop: 2, fontFamily: "var(--font-display)" }}>
+                <div style={{ fontSize: 24, fontWeight: 800, color: "var(--text-primary)", marginTop: 2, fontFamily: "var(--font-display)" }}>
                   {securityAudit?.scanned_artifacts_count || artifacts.length || 7}
                 </div>
                 <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 4 }}>
@@ -4286,8 +4275,8 @@ export default function Home() {
                 <div style={{ fontSize: 13, fontWeight: 700, color: "var(--text-primary)", marginTop: 6, fontFamily: "var(--font-mono)" }}>
                   {securityAudit?.timestamp || new Date().toLocaleTimeString()}
                 </div>
-                <div style={{ fontSize: 11, color: "var(--neon-green)", marginTop: 4 }}>
-                  ✔ Real-time AST Watcher Active
+                <div style={{ fontSize: 11, color: "var(--terminal-green)", marginTop: 4, display: "flex", alignItems: "center", gap: 6 }}>
+                  <span className="pulse-beacon" style={{ width: 6, height: 6 }} /> AST Watcher Active
                 </div>
               </div>
             </div>
@@ -4311,14 +4300,16 @@ export default function Home() {
                       key={sev}
                       onClick={() => setSecurityFilterSeverity(sev)}
                       style={{
-                        padding: "3px 8px",
-                        fontSize: 10,
+                        padding: "4px 10px",
+                        fontSize: 11,
                         fontWeight: 700,
                         borderRadius: 4,
-                        background: securityFilterSeverity === sev ? "var(--neon-green)" : "var(--bg-secondary)",
-                        color: securityFilterSeverity === sev ? "#000" : "var(--text-muted)",
+                        background: securityFilterSeverity === sev ? "var(--text-primary)" : "var(--bg-secondary)",
+                        color: securityFilterSeverity === sev ? "var(--bg-primary)" : "var(--text-muted)",
                         border: "1px solid var(--border)",
                         cursor: "pointer",
+                        fontFamily: "var(--font-mono)",
+                        transition: "all 0.15s ease",
                       }}
                     >
                       {sev}
@@ -4336,14 +4327,13 @@ export default function Home() {
                   style={{
                     padding: 36,
                     textAlign: "center",
-                    background: "rgba(0, 255, 102, 0.04)",
-                    border: "1px dashed rgba(0, 255, 102, 0.3)",
+                    background: "rgba(0, 255, 102, 0.02)",
+                    border: "1px dashed var(--border)",
                     borderRadius: 8,
                   }}
                 >
-                  <div style={{ fontSize: 24, marginBottom: 8 }}>🛡️</div>
-                  <div style={{ fontSize: 14, fontWeight: 700, color: "var(--neon-green)" }}>
-                    Zero Security Vulnerabilities Detected!
+                  <div style={{ fontSize: 14, fontWeight: 700, color: "var(--terminal-green)" }}>
+                    Zero Security Vulnerabilities Detected
                   </div>
                   <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 4 }}>
                     All codebase files, SQL schemas, and API contracts comply with OWASP Top 10 security standards.
@@ -4356,12 +4346,12 @@ export default function Home() {
                     .map((v) => {
                       const badgeBg =
                         v.severity === "CRITICAL"
-                          ? "rgba(248, 113, 113, 0.2)"
+                          ? "rgba(248, 113, 113, 0.1)"
                           : v.severity === "HIGH"
-                          ? "rgba(251, 146, 60, 0.2)"
-                          : "rgba(250, 204, 21, 0.2)";
+                          ? "rgba(251, 146, 60, 0.1)"
+                          : "rgba(255, 255, 255, 0.05)";
                       const badgeColor =
-                        v.severity === "CRITICAL" ? "#F87171" : v.severity === "HIGH" ? "#FB923C" : "#FACC15";
+                        v.severity === "CRITICAL" ? "var(--accent-red)" : v.severity === "HIGH" ? "#FB923C" : "var(--text-secondary)";
 
                       return (
                         <div
@@ -4383,7 +4373,8 @@ export default function Home() {
                                   borderRadius: 4,
                                   background: badgeBg,
                                   color: badgeColor,
-                                  border: `1px solid ${badgeColor}50`,
+                                  border: `1px solid ${badgeColor}30`,
+                                  fontFamily: "var(--font-mono)",
                                 }}
                               >
                                 {v.severity}
@@ -4396,29 +4387,30 @@ export default function Home() {
                           </div>
 
                           <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 8 }}>
-                            Target: <code style={{ color: "var(--neon-green)" }}>{v.file_target}</code>
+                            Target: <code style={{ color: "var(--terminal-green)" }}>{v.file_target}</code>
                             {v.line_number && ` (Line ${v.line_number})`}
                           </div>
 
                           {v.snippet && (
                             <pre
                               style={{
-                                background: "#0d1117",
-                                color: "#F87171",
+                                background: "var(--bg-primary)",
+                                color: "var(--accent-red)",
                                 padding: 8,
                                 borderRadius: 4,
                                 fontSize: 11,
                                 fontFamily: "var(--font-mono)",
                                 margin: "6px 0 10px",
                                 overflowX: "auto",
+                                border: "1px solid var(--border)",
                               }}
                             >
                               {v.snippet}
                             </pre>
                           )}
 
-                          <div style={{ fontSize: 12, color: "var(--text-primary)", background: "rgba(0, 255, 102, 0.05)", borderLeft: "3px solid var(--neon-green)", padding: "6px 10px", borderRadius: 4 }}>
-                            <strong>💡 Remediation:</strong> {v.remediation}
+                          <div style={{ fontSize: 12, color: "var(--text-primary)", background: "var(--bg-primary)", borderLeft: "3px solid var(--border-hover)", padding: "8px 12px", borderRadius: 4 }}>
+                            <strong style={{ color: "var(--text-secondary)" }}>Remediation:</strong> {v.remediation}
                           </div>
                         </div>
                       );
@@ -4435,7 +4427,7 @@ export default function Home() {
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 20, flexWrap: "wrap", gap: 12 }}>
               <div>
                 <h2 className="card-title" style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                  <span>🚀</span> High-Concurrency API Load Tester &amp; Benchmark Studio
+                  High-Concurrency API Load Tester &amp; Benchmark Studio
                 </h2>
                 <p style={{ color: "var(--text-muted)", fontSize: 13, margin: "4px 0 0" }}>
                   Stress test and benchmark your project's endpoints under synthetic multi-user concurrency, measuring p50/p95/p99 tail latency, RPS throughput, and database bottlenecks.
@@ -4444,7 +4436,7 @@ export default function Home() {
 
               <div style={{ display: "flex", gap: 8 }}>
                 <button
-                  className="btn btn-primary"
+                  className="btn btn-primary btn-sm"
                   disabled={loadTestingRunning}
                   onClick={async () => {
                     setLoadTestingRunning(true);
@@ -4465,7 +4457,7 @@ export default function Home() {
                   }}
                   style={{ padding: "8px 20px", fontWeight: 700 }}
                 >
-                  {loadTestingRunning ? "⏳ Running Benchmark..." : "🚀 Launch Load Test"}
+                  {loadTestingRunning ? "Running Benchmark..." : "Launch Load Test"}
                 </button>
               </div>
             </div>
@@ -4493,11 +4485,11 @@ export default function Home() {
                     onChange={(e) => setLoadTestMethod(e.target.value)}
                     style={{
                       background: "var(--bg-card)",
-                      color: loadTestMethod === "GET" ? "var(--neon-green)" : "#38BDF8",
+                      color: "var(--text-primary)",
                       border: "1px solid var(--border)",
                       borderRadius: 6,
                       padding: "6px 10px",
-                      fontWeight: 800,
+                      fontWeight: 700,
                       fontFamily: "var(--font-mono)",
                       fontSize: 12,
                     }}
@@ -4531,7 +4523,7 @@ export default function Home() {
                   <label style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase" }}>
                     Virtual Users (Concurrency)
                   </label>
-                  <span style={{ fontSize: 12, fontWeight: 800, color: "var(--neon-green)", fontFamily: "var(--font-mono)" }}>
+                  <span style={{ fontSize: 12, fontWeight: 800, color: "var(--terminal-green)", fontFamily: "var(--font-mono)" }}>
                     {loadTestUsers} VUs
                   </span>
                 </div>
@@ -4542,7 +4534,7 @@ export default function Home() {
                   step="10"
                   value={loadTestUsers}
                   onChange={(e) => setLoadTestUsers(Number(e.target.value))}
-                  style={{ width: "100%", accentColor: "var(--neon-green)" }}
+                  style={{ width: "100%", accentColor: "var(--terminal-green)" }}
                 />
               </div>
 
@@ -4551,7 +4543,7 @@ export default function Home() {
                   <label style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase" }}>
                     Test Duration
                   </label>
-                  <span style={{ fontSize: 12, fontWeight: 800, color: "#38BDF8", fontFamily: "var(--font-mono)" }}>
+                  <span style={{ fontSize: 12, fontWeight: 800, color: "var(--text-primary)", fontFamily: "var(--font-mono)" }}>
                     {loadTestDuration} Seconds
                   </span>
                 </div>
@@ -4562,7 +4554,7 @@ export default function Home() {
                   step="1"
                   value={loadTestDuration}
                   onChange={(e) => setLoadTestDuration(Number(e.target.value))}
-                  style={{ width: "100%", accentColor: "#38BDF8" }}
+                  style={{ width: "100%", accentColor: "var(--text-primary)" }}
                 />
               </div>
             </div>
@@ -4580,7 +4572,7 @@ export default function Home() {
                 >
                   <div style={{ background: "var(--bg-secondary)", border: "1px solid var(--border)", borderRadius: 8, padding: 14 }}>
                     <div style={{ fontSize: 11, color: "var(--text-muted)", textTransform: "uppercase" }}>THROUGHPUT (RPS)</div>
-                    <div style={{ fontSize: 24, fontWeight: 900, color: "var(--neon-green)", marginTop: 2, fontFamily: "var(--font-display)" }}>
+                    <div style={{ fontSize: 24, fontWeight: 900, color: "var(--terminal-green)", marginTop: 2, fontFamily: "var(--font-display)" }}>
                       {loadTestResult.requests_per_sec.toFixed(1)} req/s
                     </div>
                     <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 4 }}>
@@ -4590,7 +4582,7 @@ export default function Home() {
 
                   <div style={{ background: "var(--bg-secondary)", border: "1px solid var(--border)", borderRadius: 8, padding: 14 }}>
                     <div style={{ fontSize: 11, color: "var(--text-muted)", textTransform: "uppercase" }}>P95 LATENCY</div>
-                    <div style={{ fontSize: 24, fontWeight: 900, color: loadTestResult.latencies.p95_ms < 50 ? "var(--neon-green)" : loadTestResult.latencies.p95_ms < 150 ? "#38BDF8" : "#FBBF24", marginTop: 2, fontFamily: "var(--font-display)" }}>
+                    <div style={{ fontSize: 24, fontWeight: 900, color: loadTestResult.latencies.p95_ms < 50 ? "var(--terminal-green)" : loadTestResult.latencies.p95_ms < 150 ? "var(--text-primary)" : "var(--accent-red)", marginTop: 2, fontFamily: "var(--font-display)" }}>
                       {loadTestResult.latencies.p95_ms.toFixed(1)} ms
                     </div>
                     <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 4 }}>
@@ -4600,7 +4592,7 @@ export default function Home() {
 
                   <div style={{ background: "var(--bg-secondary)", border: "1px solid var(--border)", borderRadius: 8, padding: 14 }}>
                     <div style={{ fontSize: 11, color: "var(--text-muted)", textTransform: "uppercase" }}>ERROR RATE</div>
-                    <div style={{ fontSize: 24, fontWeight: 900, color: loadTestResult.error_rate_pct === 0 ? "var(--neon-green)" : "#F87171", marginTop: 2, fontFamily: "var(--font-display)" }}>
+                    <div style={{ fontSize: 24, fontWeight: 900, color: loadTestResult.error_rate_pct === 0 ? "var(--terminal-green)" : "var(--accent-red)", marginTop: 2, fontFamily: "var(--font-display)" }}>
                       {loadTestResult.error_rate_pct}%
                     </div>
                     <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 4 }}>
@@ -4610,7 +4602,7 @@ export default function Home() {
 
                   <div style={{ background: "var(--bg-secondary)", border: "1px solid var(--border)", borderRadius: 8, padding: 14 }}>
                     <div style={{ fontSize: 11, color: "var(--text-muted)", textTransform: "uppercase" }}>BANDWIDTH TRANSFER</div>
-                    <div style={{ fontSize: 24, fontWeight: 900, color: "#38BDF8", marginTop: 2, fontFamily: "var(--font-display)" }}>
+                    <div style={{ fontSize: 24, fontWeight: 900, color: "var(--text-primary)", marginTop: 2, fontFamily: "var(--font-display)" }}>
                       {loadTestResult.throughput_mb_per_sec.toFixed(2)} MB/s
                     </div>
                     <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 4 }}>
@@ -4629,17 +4621,17 @@ export default function Home() {
                   }}
                 >
                   <div style={{ fontSize: 13, fontWeight: 700, color: "var(--text-primary)", marginBottom: 12 }}>
-                    ⏱️ Latency Distribution &amp; Tail Percentiles
+                    Latency Distribution &amp; Tail Percentiles
                   </div>
                   <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(110px, 1fr))", gap: 10 }}>
                     {[
-                      { label: "Minimum", val: loadTestResult.latencies.min_ms, color: "var(--neon-green)" },
+                      { label: "Minimum", val: loadTestResult.latencies.min_ms, color: "var(--terminal-green)" },
                       { label: "Average", val: loadTestResult.latencies.avg_ms, color: "var(--text-primary)" },
-                      { label: "p50 (Median)", val: loadTestResult.latencies.p50_ms, color: "#38BDF8" },
-                      { label: "p90", val: loadTestResult.latencies.p90_ms, color: "#38BDF8" },
-                      { label: "p95", val: loadTestResult.latencies.p95_ms, color: "#FBBF24" },
+                      { label: "p50 (Median)", val: loadTestResult.latencies.p50_ms, color: "var(--text-primary)" },
+                      { label: "p90", val: loadTestResult.latencies.p90_ms, color: "var(--text-primary)" },
+                      { label: "p95", val: loadTestResult.latencies.p95_ms, color: "var(--text-secondary)" },
                       { label: "p99 (Tail)", val: loadTestResult.latencies.p99_ms, color: "#FB923C" },
-                      { label: "Maximum", val: loadTestResult.latencies.max_ms, color: "#F87171" },
+                      { label: "Maximum", val: loadTestResult.latencies.max_ms, color: "var(--accent-red)" },
                     ].map((p, idx) => (
                       <div key={idx} style={{ background: "var(--bg-secondary)", padding: "8px 10px", borderRadius: 6, border: "1px solid var(--border)" }}>
                         <div style={{ fontSize: 10, color: "var(--text-muted)", textTransform: "uppercase" }}>{p.label}</div>
@@ -4661,8 +4653,8 @@ export default function Home() {
                       padding: 16,
                     }}
                   >
-                    <div style={{ fontSize: 13, fontWeight: 700, color: "var(--neon-green)", marginBottom: 12, display: "flex", alignItems: "center", gap: 8 }}>
-                      <span>💡</span> AI Bottleneck Diagnosis &amp; Performance Tuning
+                    <div style={{ fontSize: 13, fontWeight: 700, color: "var(--text-primary)", marginBottom: 12, display: "flex", alignItems: "center", gap: 8 }}>
+                      <span>AI Bottleneck Diagnosis &amp; Performance Tuning</span>
                     </div>
                     <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
                       {loadTestResult.recommendations.map((rec, i) => (
@@ -4687,14 +4679,15 @@ export default function Home() {
                           {rec.code_example && (
                             <pre
                               style={{
-                                background: "#0d1117",
-                                color: "var(--neon-green)",
+                                background: "var(--bg-primary)",
+                                color: "var(--terminal-green)",
                                 padding: 8,
                                 borderRadius: 4,
                                 fontSize: 11,
                                 fontFamily: "var(--font-mono)",
                                 margin: 0,
                                 overflowX: "auto",
+                                border: "1px solid var(--border)",
                               }}
                             >
                               {rec.code_example}
@@ -4708,12 +4701,11 @@ export default function Home() {
               </div>
             ) : (
               <div style={{ padding: "40px 20px", textAlign: "center", background: "var(--bg-card)", border: "1px dashed var(--border)", borderRadius: 8 }}>
-                <div style={{ fontSize: 32, marginBottom: 8 }}>🚀</div>
                 <div style={{ fontSize: 14, fontWeight: 700, color: "var(--text-primary)" }}>
                   Ready to Benchmark API Concurrency
                 </div>
                 <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 4 }}>
-                  Configure target endpoint, concurrency virtual users, and click <strong>"🚀 Launch Load Test"</strong> to run high-throughput stress testing.
+                  Configure target endpoint, concurrency virtual users, and click <strong>"Launch Load Test"</strong> to run high-throughput stress testing.
                 </div>
               </div>
             )}
@@ -4726,7 +4718,7 @@ export default function Home() {
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 20, flexWrap: "wrap", gap: 12 }}>
               <div>
                 <h2 className="card-title" style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                  <span>📦</span> Client SDK Generator &amp; Code Snippet Studio
+                  Client SDK Generator &amp; Code Snippet Studio
                 </h2>
                 <p style={{ color: "var(--text-muted)", fontSize: 13, margin: "4px 0 0" }}>
                   Production-grade client libraries generated directly from your project's API specifications and schemas. Zero-boilerplate, strongly-typed endpoints for your frontend or backend.
@@ -4735,7 +4727,7 @@ export default function Home() {
 
               <div style={{ display: "flex", gap: 8 }}>
                 <button
-                  className="btn btn-primary"
+                  className="btn btn-primary btn-sm"
                   disabled={sdkLoading}
                   onClick={async () => {
                     setSdkLoading(true);
@@ -4754,7 +4746,7 @@ export default function Home() {
                     }
                   }}
                 >
-                  {sdkLoading ? "⏳ Generating SDKs..." : "⚡ Regenerate SDKs"}
+                  {sdkLoading ? "Generating SDKs..." : "Regenerate SDKs"}
                 </button>
               </div>
             </div>
@@ -4762,9 +4754,9 @@ export default function Home() {
             {/* Language Switcher Bar */}
             <div style={{ display: "flex", gap: 10, marginBottom: 20, borderBottom: "1px solid var(--border)", paddingBottom: 12 }}>
               {[
-                { id: "typescript", name: "TypeScript / Node.js", icon: "🔷" },
-                { id: "python", name: "Python (Pydantic v2)", icon: "🐍" },
-                { id: "curl", name: "cURL & Shell Recipes", icon: "⚡" },
+                { id: "typescript", name: "TypeScript / Node.js" },
+                { id: "python", name: "Python (Pydantic v2)" },
+                { id: "curl", name: "cURL & Shell Recipes" },
               ].map((lang) => {
                 const isSelected = selectedSdkLang === lang.id;
                 return (
@@ -4783,16 +4775,16 @@ export default function Home() {
                       gap: 8,
                       padding: "8px 16px",
                       borderRadius: 6,
-                      background: isSelected ? "rgba(0, 255, 102, 0.12)" : "var(--bg-secondary)",
-                      border: `1px solid ${isSelected ? "var(--neon-green)" : "var(--border)"}`,
-                      color: isSelected ? "var(--neon-green)" : "var(--text-secondary)",
+                      background: isSelected ? "var(--text-primary)" : "var(--bg-secondary)",
+                      border: "1px solid var(--border)",
+                      color: isSelected ? "var(--bg-primary)" : "var(--text-secondary)",
                       fontWeight: isSelected ? 700 : 500,
                       cursor: "pointer",
                       fontSize: 13,
-                      transition: "all 0.2s ease",
+                      transition: "all 0.15s ease",
+                      fontFamily: "var(--font-mono)",
                     }}
                   >
-                    <span>{lang.icon}</span>
                     <span>{lang.name}</span>
                   </button>
                 );
@@ -4821,9 +4813,9 @@ export default function Home() {
                   </span>
                   <code
                     style={{
-                      background: "#050505",
+                      background: "var(--bg-primary)",
                       border: "1px solid var(--border)",
-                      color: "var(--neon-green)",
+                      color: "var(--terminal-green)",
                       padding: "4px 10px",
                       borderRadius: 4,
                       fontSize: 12,
@@ -4850,7 +4842,7 @@ export default function Home() {
                       showToast("Installation command copied!", "success");
                     }}
                   >
-                    📋 Copy Command
+                    Copy Command
                   </button>
                 </div>
               </div>
@@ -4871,7 +4863,7 @@ export default function Home() {
                   <div
                     style={{
                       padding: "10px 14px",
-                      background: "rgba(255,255,255,0.03)",
+                      background: "rgba(255,255,255,0.02)",
                       borderBottom: "1px solid var(--border)",
                       fontSize: 11,
                       fontWeight: 700,
@@ -4899,9 +4891,9 @@ export default function Home() {
                             cursor: "pointer",
                             fontSize: 12,
                             fontFamily: "var(--font-mono)",
-                            background: isSelected ? "rgba(0, 255, 102, 0.1)" : "transparent",
-                            color: isSelected ? "var(--neon-green)" : "var(--text-primary)",
-                            borderLeft: isSelected ? "3px solid var(--neon-green)" : "3px solid transparent",
+                            background: isSelected ? "var(--bg-card)" : "transparent",
+                            color: isSelected ? "#FFFFFF" : "var(--text-secondary)",
+                            borderLeft: isSelected ? "3px solid #FFFFFF" : "3px solid transparent",
                             display: "flex",
                             justifyContent: "space-between",
                             alignItems: "center",
@@ -4909,12 +4901,6 @@ export default function Home() {
                           }}
                         >
                           <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                            {file.path.endsWith(".ts") && "🔷 "}
-                            {file.path.endsWith(".py") && "🐍 "}
-                            {file.path.endsWith(".sh") && "⚡ "}
-                            {file.path.endsWith(".json") && "⚙️ "}
-                            {file.path.endsWith(".md") && "📖 "}
-                            {file.path.endsWith(".http") && "🌐 "}
                             {file.path}
                           </span>
                           <span style={{ fontSize: 10, color: "var(--text-muted)" }}>
@@ -4929,7 +4915,7 @@ export default function Home() {
                 {/* Code Previewer & Downloader */}
                 <div
                   style={{
-                    background: "#080a0f",
+                    background: "var(--bg-primary)",
                     border: "1px solid var(--border)",
                     borderRadius: 8,
                     overflow: "hidden",
@@ -4954,7 +4940,7 @@ export default function Home() {
                           <strong style={{ fontSize: 12, fontFamily: "var(--font-mono)", color: "var(--text-primary)" }}>
                             {selectedSdkFile.path}
                           </strong>
-                          <span className="badge badge-cyan" style={{ fontSize: 10 }}>
+                          <span className="badge badge-secondary" style={{ fontSize: 10, textTransform: "uppercase" }}>
                             {selectedSdkFile.language}
                           </span>
                           <span style={{ fontSize: 11, color: "var(--text-muted)" }}>
@@ -4973,7 +4959,7 @@ export default function Home() {
                               showToast(`Copied ${selectedSdkFile.path} to clipboard!`, "success");
                             }}
                           >
-                            {sdkCopied ? "✓ Copied!" : "📋 Copy File"}
+                            {sdkCopied ? "✓ Copied" : "Copy File"}
                           </button>
                           <button
                             className="btn btn-secondary btn-sm"
@@ -4984,7 +4970,7 @@ export default function Home() {
                               showToast(`Downloaded ${filename}`, "success");
                             }}
                           >
-                            📥 Download
+                            Download
                           </button>
                         </div>
                       </div>
@@ -4997,8 +4983,8 @@ export default function Home() {
                           fontFamily: "var(--font-mono)",
                           fontSize: 12,
                           lineHeight: 1.6,
-                          color: selectedSdkFile.path.endsWith(".ts") ? "#93c5fd" : selectedSdkFile.path.endsWith(".py") ? "#a7f3d0" : "var(--neon-green)",
-                          background: "#080a0f",
+                          color: "var(--terminal-green)",
+                          background: "var(--bg-primary)",
                           maxHeight: 520,
                           overflowY: "auto",
                           overflowX: "auto",
@@ -5017,12 +5003,11 @@ export default function Home() {
               </div>
             ) : (
               <div style={{ padding: "40px 20px", textAlign: "center", background: "var(--bg-card)", border: "1px dashed var(--border)", borderRadius: 8 }}>
-                <div style={{ fontSize: 32, marginBottom: 8 }}>📦</div>
                 <div style={{ fontSize: 14, fontWeight: 700, color: "var(--text-primary)" }}>
                   {sdkLoading ? "Generating SDK Bundles..." : "No SDK Generated Yet"}
                 </div>
                 <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 4 }}>
-                  Click <strong>"⚡ Regenerate SDKs"</strong> above to produce complete TypeScript, Python, and cURL libraries for this project.
+                  Click <strong>"Regenerate SDKs"</strong> above to produce complete TypeScript, Python, and cURL libraries for this project.
                 </div>
               </div>
             )}
@@ -5035,7 +5020,7 @@ export default function Home() {
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 20, flexWrap: "wrap", gap: 12 }}>
               <div>
                 <h2 className="card-title" style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                  <span>⚡</span> Event Webhooks &amp; OpenTelemetry APM Studio
+                  Event Webhooks &amp; OpenTelemetry APM Studio
                 </h2>
                 <p style={{ color: "var(--text-muted)", fontSize: 13, margin: "4px 0 0" }}>
                   CloudEvents 1.0 outbound webhook dispatching with cryptographic HMAC-SHA256 signatures, alongside full-stack OpenTelemetry tracing, Prometheus scrape targets, and Grafana dashboards.
@@ -5052,15 +5037,17 @@ export default function Home() {
                     fontSize: 12,
                     fontWeight: 700,
                     cursor: "pointer",
-                    background: activeOpsMode === "webhooks" ? "rgba(0, 255, 102, 0.15)" : "transparent",
-                    color: activeOpsMode === "webhooks" ? "var(--neon-green)" : "var(--text-secondary)",
-                    border: activeOpsMode === "webhooks" ? "1px solid var(--neon-green)" : "1px solid transparent",
+                    background: activeOpsMode === "webhooks" ? "var(--text-primary)" : "transparent",
+                    color: activeOpsMode === "webhooks" ? "var(--bg-primary)" : "var(--text-secondary)",
+                    border: "1px solid transparent",
                     display: "flex",
                     alignItems: "center",
                     gap: 6,
+                    fontFamily: "var(--font-mono)",
+                    transition: "all 0.15s ease",
                   }}
                 >
-                  <span>📡</span> Webhooks &amp; Events
+                  <span>Webhooks &amp; Events</span>
                 </button>
                 <button
                   onClick={() => setActiveOpsMode("telemetry")}
@@ -5070,15 +5057,17 @@ export default function Home() {
                     fontSize: 12,
                     fontWeight: 700,
                     cursor: "pointer",
-                    background: activeOpsMode === "telemetry" ? "rgba(56, 189, 248, 0.15)" : "transparent",
-                    color: activeOpsMode === "telemetry" ? "#38BDF8" : "var(--text-secondary)",
-                    border: activeOpsMode === "telemetry" ? "1px solid #38BDF8" : "1px solid transparent",
+                    background: activeOpsMode === "telemetry" ? "var(--text-primary)" : "transparent",
+                    color: activeOpsMode === "telemetry" ? "var(--bg-primary)" : "var(--text-secondary)",
+                    border: "1px solid transparent",
                     display: "flex",
                     alignItems: "center",
                     gap: 6,
+                    fontFamily: "var(--font-mono)",
+                    transition: "all 0.15s ease",
                   }}
                 >
-                  <span>📊</span> APM &amp; Observability
+                  <span>APM &amp; Observability</span>
                 </button>
               </div>
             </div>
@@ -5088,8 +5077,8 @@ export default function Home() {
               <div>
                 {/* Event Selector & Live Dispatch Simulator */}
                 <div style={{ background: "var(--bg-secondary)", border: "1px solid var(--border)", borderRadius: 8, padding: 16, marginBottom: 20 }}>
-                  <div style={{ fontSize: 12, fontWeight: 700, color: "var(--neon-green)", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 12, display: "flex", alignItems: "center", gap: 8 }}>
-                    <span>🚀</span> Live HMAC-SHA256 Webhook Dispatch Simulator
+                  <div style={{ fontSize: 12, fontWeight: 700, color: "var(--text-primary)", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 12, display: "flex", alignItems: "center", gap: 8 }}>
+                    <span>HMAC-SHA256 Webhook Dispatch Simulator</span>
                   </div>
 
                   <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr 1fr auto", gap: 12, alignItems: "flex-end" }}>
@@ -5143,7 +5132,7 @@ export default function Home() {
 
                     <div>
                       <button
-                        className="btn btn-primary"
+                        className="btn btn-primary btn-sm"
                         disabled={webhookDispatching || !selectedEvent}
                         onClick={async () => {
                           setWebhookDispatching(true);
@@ -5161,32 +5150,32 @@ export default function Home() {
                             setWebhookDispatching(false);
                           }
                         }}
-                        style={{ whiteSpace: "nowrap", padding: "9px 18px" }}
+                        style={{ whiteSpace: "nowrap", padding: "8px 18px" }}
                       >
-                        {webhookDispatching ? "⏳ Dispatching..." : "⚡ Dispatch Webhook"}
+                        {webhookDispatching ? "Dispatching..." : "Dispatch Webhook"}
                       </button>
                     </div>
                   </div>
 
                   {/* Delivery Ledger Result */}
                   {webhookDeliveryResult && (
-                    <div style={{ marginTop: 16, background: "#05070a", border: "1px solid rgba(0,255,102,0.3)", borderRadius: 6, padding: 14 }}>
+                    <div style={{ marginTop: 16, background: "var(--bg-primary)", border: "1px solid var(--border)", borderRadius: 6, padding: 14 }}>
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8, flexWrap: "wrap", gap: 8 }}>
                         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                           <span className="badge badge-green" style={{ fontSize: 11 }}>
                             HTTP {webhookDeliveryResult.status_code} OK
                           </span>
                           <span style={{ fontSize: 12, color: "var(--text-primary)" }}>
-                            Delivery ID: <code style={{ color: "#38BDF8" }}>{webhookDeliveryResult.delivery_id}</code>
+                            Delivery ID: <code style={{ color: "var(--text-primary)" }}>{webhookDeliveryResult.delivery_id}</code>
                           </span>
                           <span style={{ fontSize: 11, color: "var(--text-muted)" }}>
-                            Latency: <strong style={{ color: "var(--neon-green)" }}>{webhookDeliveryResult.duration_ms}ms</strong>
+                            Latency: <strong style={{ color: "var(--terminal-green)" }}>{webhookDeliveryResult.duration_ms}ms</strong>
                           </span>
                         </div>
 
                         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                           <span style={{ fontSize: 11, color: "var(--text-muted)" }}>Signature:</span>
-                          <code style={{ fontSize: 11, color: "var(--neon-green)", background: "rgba(0,0,0,0.5)", padding: "2px 6px", borderRadius: 4 }}>
+                          <code style={{ fontSize: 11, color: "var(--terminal-green)", background: "var(--bg-secondary)", padding: "2px 6px", borderRadius: 4, border: "1px solid var(--border)" }}>
                             {webhookDeliveryResult.hmac_signature}
                           </code>
                           <button
@@ -5197,7 +5186,7 @@ export default function Home() {
                               showToast("Signature copied!", "success");
                             }}
                           >
-                            📋
+                            Copy
                           </button>
                         </div>
                       </div>
@@ -5207,7 +5196,7 @@ export default function Home() {
                           <div style={{ fontSize: 10, color: "var(--text-muted)", textTransform: "uppercase", marginBottom: 4 }}>
                             Headers Sent
                           </div>
-                          <pre style={{ margin: 0, padding: 8, background: "#000", borderRadius: 4, fontSize: 10, color: "#93C5FD", fontFamily: "var(--font-mono)", maxHeight: 110, overflowY: "auto" }}>
+                          <pre style={{ margin: 0, padding: 8, background: "var(--bg-secondary)", border: "1px solid var(--border)", borderRadius: 4, fontSize: 10, color: "var(--text-primary)", fontFamily: "var(--font-mono)", maxHeight: 110, overflowY: "auto" }}>
                             {JSON.stringify(webhookDeliveryResult.headers, null, 2)}
                           </pre>
                         </div>
@@ -5215,7 +5204,7 @@ export default function Home() {
                           <div style={{ fontSize: 10, color: "var(--text-muted)", textTransform: "uppercase", marginBottom: 4 }}>
                             CloudEvents 1.0 Payload
                           </div>
-                          <pre style={{ margin: 0, padding: 8, background: "#000", borderRadius: 4, fontSize: 10, color: "#A7F3D0", fontFamily: "var(--font-mono)", maxHeight: 110, overflowY: "auto" }}>
+                          <pre style={{ margin: 0, padding: 8, background: "var(--bg-secondary)", border: "1px solid var(--border)", borderRadius: 4, fontSize: 10, color: "var(--terminal-green)", fontFamily: "var(--font-mono)", maxHeight: 110, overflowY: "auto" }}>
                             {JSON.stringify(webhookDeliveryResult.payload, null, 2)}
                           </pre>
                         </div>
@@ -5227,10 +5216,10 @@ export default function Home() {
                 {/* Sub-tabs for Code Architecture: Events / Dispatcher / Consumer / Broker */}
                 <div style={{ display: "flex", gap: 8, borderBottom: "1px solid var(--border)", paddingBottom: 10, marginBottom: 16 }}>
                   {[
-                    { id: "events", label: "Catalog & Schema", icon: "📋" },
-                    { id: "dispatcher", label: "Outbound Dispatcher (Python)", icon: "📤" },
-                    { id: "consumer", label: "Inbound Receiver (FastAPI)", icon: "📥" },
-                    { id: "compose", label: "Message Broker (Docker Compose)", icon: "🐳" },
+                    { id: "events", label: "Catalog & Schema" },
+                    { id: "dispatcher", label: "Outbound Dispatcher (Python)" },
+                    { id: "consumer", label: "Inbound Receiver (FastAPI)" },
+                    { id: "compose", label: "Message Broker (Docker Compose)" },
                   ].map((sub) => (
                     <button
                       key={sub.id}
@@ -5240,15 +5229,13 @@ export default function Home() {
                         borderRadius: 4,
                         fontSize: 12,
                         cursor: "pointer",
-                        background: webhookSubTab === sub.id ? "rgba(0, 255, 102, 0.1)" : "transparent",
-                        color: webhookSubTab === sub.id ? "var(--neon-green)" : "var(--text-secondary)",
-                        border: `1px solid ${webhookSubTab === sub.id ? "var(--neon-green)" : "transparent"}`,
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 6,
+                        background: webhookSubTab === sub.id ? "var(--text-primary)" : "transparent",
+                        color: webhookSubTab === sub.id ? "var(--bg-primary)" : "var(--text-secondary)",
+                        border: "1px solid var(--border)",
+                        fontFamily: "var(--font-mono)",
+                        transition: "all 0.15s ease",
                       }}
                     >
-                      <span>{sub.icon}</span>
                       <span>{sub.label}</span>
                     </button>
                   ))}
@@ -5261,8 +5248,8 @@ export default function Home() {
                         key={ev.event_type}
                         onClick={() => setSelectedEvent(ev)}
                         style={{
-                          background: selectedEvent?.event_type === ev.event_type ? "rgba(0,255,102,0.06)" : "var(--bg-secondary)",
-                          border: `1px solid ${selectedEvent?.event_type === ev.event_type ? "var(--neon-green)" : "var(--border)"}`,
+                          background: selectedEvent?.event_type === ev.event_type ? "var(--bg-card)" : "var(--bg-secondary)",
+                          border: `1px solid ${selectedEvent?.event_type === ev.event_type ? "var(--border-hover)" : "var(--border)"}`,
                           borderRadius: 8,
                           padding: 14,
                           cursor: "pointer",
@@ -5270,17 +5257,17 @@ export default function Home() {
                         }}
                       >
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
-                          <strong style={{ fontSize: 13, color: "var(--neon-green)", fontFamily: "var(--font-mono)" }}>
+                          <strong style={{ fontSize: 13, color: "var(--terminal-green)", fontFamily: "var(--font-mono)" }}>
                             {ev.event_type}
                           </strong>
-                          <span className="badge badge-cyan" style={{ fontSize: 10 }}>
+                          <span className="badge badge-secondary" style={{ fontSize: 10 }}>
                             {ev.entity}
                           </span>
                         </div>
                         <div style={{ fontSize: 11, color: "var(--text-muted)", marginBottom: 8 }}>
                           {ev.description}
                         </div>
-                        <div style={{ fontSize: 10, color: "var(--text-muted)", background: "rgba(0,0,0,0.3)", padding: 6, borderRadius: 4, fontFamily: "var(--font-mono)" }}>
+                        <div style={{ fontSize: 10, color: "var(--text-muted)", background: "var(--bg-primary)", padding: 6, borderRadius: 4, fontFamily: "var(--font-mono)", border: "1px solid var(--border)" }}>
                           Type: {ev.schema_spec.type}
                         </div>
                       </div>
@@ -5302,10 +5289,10 @@ export default function Home() {
                           showToast("Copied dispatcher code!", "success");
                         }}
                       >
-                        📋 Copy Code
+                        Copy Code
                       </button>
                     </div>
-                    <pre style={{ margin: 0, padding: 16, background: "#080a0f", borderRadius: 8, color: "#93C5FD", fontFamily: "var(--font-mono)", fontSize: 11, lineHeight: 1.5, maxHeight: 420, overflowY: "auto", whiteSpace: "pre" }}>
+                    <pre style={{ margin: 0, padding: 16, background: "var(--bg-primary)", border: "1px solid var(--border)", borderRadius: 8, color: "var(--terminal-green)", fontFamily: "var(--font-mono)", fontSize: 11, lineHeight: 1.5, maxHeight: 420, overflowY: "auto", whiteSpace: "pre" }}>
                       {eventCatalog.dispatcher_code}
                     </pre>
                   </div>
@@ -5325,10 +5312,10 @@ export default function Home() {
                           showToast("Copied listener code!", "success");
                         }}
                       >
-                        📋 Copy Code
+                        Copy Code
                       </button>
                     </div>
-                    <pre style={{ margin: 0, padding: 16, background: "#080a0f", borderRadius: 8, color: "#A7F3D0", fontFamily: "var(--font-mono)", fontSize: 11, lineHeight: 1.5, maxHeight: 420, overflowY: "auto", whiteSpace: "pre" }}>
+                    <pre style={{ margin: 0, padding: 16, background: "var(--bg-primary)", border: "1px solid var(--border)", borderRadius: 8, color: "var(--terminal-green)", fontFamily: "var(--font-mono)", fontSize: 11, lineHeight: 1.5, maxHeight: 420, overflowY: "auto", whiteSpace: "pre" }}>
                       {eventCatalog.consumer_code}
                     </pre>
                   </div>
@@ -5348,10 +5335,10 @@ export default function Home() {
                           showToast("Copied docker-compose.yml!", "success");
                         }}
                       >
-                        📋 Copy YAML
+                        Copy YAML
                       </button>
                     </div>
-                    <pre style={{ margin: 0, padding: 16, background: "#080a0f", borderRadius: 8, color: "var(--neon-green)", fontFamily: "var(--font-mono)", fontSize: 11, lineHeight: 1.5, maxHeight: 420, overflowY: "auto", whiteSpace: "pre" }}>
+                    <pre style={{ margin: 0, padding: 16, background: "var(--bg-primary)", border: "1px solid var(--border)", borderRadius: 8, color: "var(--terminal-green)", fontFamily: "var(--font-mono)", fontSize: 11, lineHeight: 1.5, maxHeight: 420, overflowY: "auto", whiteSpace: "pre" }}>
                       {eventCatalog.broker_docker_compose}
                     </pre>
                   </div>
@@ -5367,7 +5354,7 @@ export default function Home() {
                   {telemetryBundle.metrics_catalog?.map((m) => (
                     <div key={m.name} style={{ background: "var(--bg-secondary)", border: "1px solid var(--border)", borderRadius: 8, padding: 12 }}>
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
-                        <span className="badge badge-cyan" style={{ fontSize: 9 }}>
+                        <span className="badge badge-secondary" style={{ fontSize: 9 }}>
                           {m.type}
                         </span>
                         <span style={{ fontSize: 10, color: "var(--text-muted)" }}>
@@ -5388,11 +5375,11 @@ export default function Home() {
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid var(--border)", paddingBottom: 10, marginBottom: 16, flexWrap: "wrap", gap: 8 }}>
                   <div style={{ display: "flex", gap: 8 }}>
                     {[
-                      { id: "collector", label: "OTel Collector Config", icon: "⚙️" },
-                      { id: "prometheus", label: "Prometheus YAML", icon: "🔥" },
-                      { id: "middleware", label: "FastAPI Tracing Middleware", icon: "🐍" },
-                      { id: "compose", label: "Full APM Docker Stack", icon: "🐳" },
-                      { id: "grafana", label: "Grafana Dashboard JSON", icon: "📊" },
+                      { id: "collector", label: "OTel Collector Config" },
+                      { id: "prometheus", label: "Prometheus YAML" },
+                      { id: "middleware", label: "FastAPI Tracing Middleware" },
+                      { id: "compose", label: "Full APM Docker Stack" },
+                      { id: "grafana", label: "Grafana Dashboard JSON" },
                     ].map((sub) => (
                       <button
                         key={sub.id}
@@ -5402,15 +5389,13 @@ export default function Home() {
                           borderRadius: 4,
                           fontSize: 12,
                           cursor: "pointer",
-                          background: telemetrySubTab === sub.id ? "rgba(56, 189, 248, 0.1)" : "transparent",
-                          color: telemetrySubTab === sub.id ? "#38BDF8" : "var(--text-secondary)",
-                          border: `1px solid ${telemetrySubTab === sub.id ? "#38BDF8" : "transparent"}`,
-                          display: "flex",
-                          alignItems: "center",
-                          gap: 6,
+                          background: telemetrySubTab === sub.id ? "var(--text-primary)" : "transparent",
+                          color: telemetrySubTab === sub.id ? "var(--bg-primary)" : "var(--text-secondary)",
+                          border: "1px solid var(--border)",
+                          fontFamily: "var(--font-mono)",
+                          transition: "all 0.15s ease",
                         }}
                       >
-                        <span>{sub.icon}</span>
                         <span>{sub.label}</span>
                       </button>
                     ))}
@@ -5421,42 +5406,42 @@ export default function Home() {
                       className="btn btn-primary btn-sm"
                       onClick={() => {
                         const jsonStr = JSON.stringify(telemetryBundle.grafana_dashboard_json, null, 2);
-                        downloadTextFile(`${currentProject.name.toLowerCase().replace(/\\s+/g, "_")}_grafana.json`, jsonStr, "application/json");
+                        downloadTextFile(`${currentProject.name.toLowerCase().replace(/\s+/g, "_")}_grafana.json`, jsonStr, "application/json");
                         showToast("Downloaded Grafana Dashboard JSON!", "success");
                       }}
                       style={{ fontSize: 11 }}
                     >
-                      📥 Download Grafana Dashboard (.json)
+                      Download Grafana Dashboard (.json)
                     </button>
                   </div>
                 </div>
 
                 {telemetrySubTab === "collector" && (
-                  <pre style={{ margin: 0, padding: 16, background: "#080a0f", borderRadius: 8, color: "#38BDF8", fontFamily: "var(--font-mono)", fontSize: 11, lineHeight: 1.5, maxHeight: 420, overflowY: "auto", whiteSpace: "pre" }}>
+                  <pre style={{ margin: 0, padding: 16, background: "var(--bg-primary)", border: "1px solid var(--border)", borderRadius: 8, color: "var(--terminal-green)", fontFamily: "var(--font-mono)", fontSize: 11, lineHeight: 1.5, maxHeight: 420, overflowY: "auto", whiteSpace: "pre" }}>
                     {telemetryBundle.collector_config_yaml}
                   </pre>
                 )}
 
                 {telemetrySubTab === "prometheus" && (
-                  <pre style={{ margin: 0, padding: 16, background: "#080a0f", borderRadius: 8, color: "#F59E0B", fontFamily: "var(--font-mono)", fontSize: 11, lineHeight: 1.5, maxHeight: 420, overflowY: "auto", whiteSpace: "pre" }}>
+                  <pre style={{ margin: 0, padding: 16, background: "var(--bg-primary)", border: "1px solid var(--border)", borderRadius: 8, color: "var(--terminal-green)", fontFamily: "var(--font-mono)", fontSize: 11, lineHeight: 1.5, maxHeight: 420, overflowY: "auto", whiteSpace: "pre" }}>
                     {telemetryBundle.prometheus_config_yaml}
                   </pre>
                 )}
 
                 {telemetrySubTab === "middleware" && (
-                  <pre style={{ margin: 0, padding: 16, background: "#080a0f", borderRadius: 8, color: "#A7F3D0", fontFamily: "var(--font-mono)", fontSize: 11, lineHeight: 1.5, maxHeight: 420, overflowY: "auto", whiteSpace: "pre" }}>
+                  <pre style={{ margin: 0, padding: 16, background: "var(--bg-primary)", border: "1px solid var(--border)", borderRadius: 8, color: "var(--terminal-green)", fontFamily: "var(--font-mono)", fontSize: 11, lineHeight: 1.5, maxHeight: 420, overflowY: "auto", whiteSpace: "pre" }}>
                     {telemetryBundle.middleware_python_code}
                   </pre>
                 )}
 
                 {telemetrySubTab === "compose" && (
-                  <pre style={{ margin: 0, padding: 16, background: "#080a0f", borderRadius: 8, color: "var(--neon-green)", fontFamily: "var(--font-mono)", fontSize: 11, lineHeight: 1.5, maxHeight: 420, overflowY: "auto", whiteSpace: "pre" }}>
+                  <pre style={{ margin: 0, padding: 16, background: "var(--bg-primary)", border: "1px solid var(--border)", borderRadius: 8, color: "var(--terminal-green)", fontFamily: "var(--font-mono)", fontSize: 11, lineHeight: 1.5, maxHeight: 420, overflowY: "auto", whiteSpace: "pre" }}>
                     {telemetryBundle.docker_compose_yaml}
                   </pre>
                 )}
 
                 {telemetrySubTab === "grafana" && (
-                  <pre style={{ margin: 0, padding: 16, background: "#080a0f", borderRadius: 8, color: "#C084FC", fontFamily: "var(--font-mono)", fontSize: 11, lineHeight: 1.5, maxHeight: 420, overflowY: "auto", whiteSpace: "pre" }}>
+                  <pre style={{ margin: 0, padding: 16, background: "var(--bg-primary)", border: "1px solid var(--border)", borderRadius: 8, color: "var(--terminal-green)", fontFamily: "var(--font-mono)", fontSize: 11, lineHeight: 1.5, maxHeight: 420, overflowY: "auto", whiteSpace: "pre" }}>
                     {JSON.stringify(telemetryBundle.grafana_dashboard_json, null, 2)}
                   </pre>
                 )}
@@ -5471,7 +5456,7 @@ export default function Home() {
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 20, flexWrap: "wrap", gap: 12 }}>
               <div>
                 <h2 className="card-title" style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                  <span>📜</span> Semantic Changelog &amp; CloudOps IaC Studio
+                  Semantic Changelog &amp; CloudOps IaC Studio
                 </h2>
                 <p style={{ color: "var(--text-muted)", fontSize: 13, margin: "4px 0 0" }}>
                   Automated contract diffing, breaking change classification, and SemVer recommendations alongside multi-cloud Terraform (AWS &amp; GCP) and production Kubernetes orchestration manifests.
@@ -5488,15 +5473,16 @@ export default function Home() {
                     fontSize: 12,
                     fontWeight: cloudOpsMode === "changelog" ? 700 : 500,
                     cursor: "pointer",
-                    background: cloudOpsMode === "changelog" ? "var(--neon-green)" : "transparent",
-                    color: cloudOpsMode === "changelog" ? "#000000" : "var(--text-secondary)",
+                    background: cloudOpsMode === "changelog" ? "var(--text-primary)" : "transparent",
+                    color: cloudOpsMode === "changelog" ? "var(--bg-primary)" : "var(--text-secondary)",
                     border: "none",
                     display: "flex",
                     alignItems: "center",
                     gap: 6,
+                    fontFamily: "var(--font-mono)",
+                    transition: "all 0.15s ease",
                   }}
                 >
-                  <span>📜</span>
                   <span>API Changelog &amp; Breaking Changes</span>
                 </button>
                 <button
@@ -5507,15 +5493,16 @@ export default function Home() {
                     fontSize: 12,
                     fontWeight: cloudOpsMode === "iac" ? 700 : 500,
                     cursor: "pointer",
-                    background: cloudOpsMode === "iac" ? "var(--neon-green)" : "transparent",
-                    color: cloudOpsMode === "iac" ? "#000000" : "var(--text-secondary)",
+                    background: cloudOpsMode === "iac" ? "var(--text-primary)" : "transparent",
+                    color: cloudOpsMode === "iac" ? "var(--bg-primary)" : "var(--text-secondary)",
                     border: "none",
                     display: "flex",
                     alignItems: "center",
                     gap: 6,
+                    fontFamily: "var(--font-mono)",
+                    transition: "all 0.15s ease",
                   }}
                 >
-                  <span>☁️</span>
                   <span>Multi-Cloud IaC (Terraform &amp; K8s)</span>
                 </button>
               </div>
@@ -5543,7 +5530,7 @@ export default function Home() {
                         }
                       }}
                     >
-                      {changelogLoading ? "⏳ Analyzing..." : "⚡ Re-analyze Contracts"}
+                      {changelogLoading ? "Analyzing..." : "Re-analyze Contracts"}
                     </button>
                     {changelogReport && (
                       <span style={{ fontSize: 12, color: "var(--text-muted)" }}>
@@ -5561,7 +5548,7 @@ export default function Home() {
                           showToast("Copied Keep-a-Changelog Markdown to clipboard!", "success");
                         }}
                       >
-                        📋 Copy Release Notes
+                        Copy Release Notes
                       </button>
                       <button
                         className="btn btn-secondary btn-sm"
@@ -5570,7 +5557,7 @@ export default function Home() {
                           showToast("Downloaded CHANGELOG.md", "success");
                         }}
                       >
-                        📥 Download CHANGELOG.md
+                        Download CHANGELOG.md
                       </button>
                     </div>
                   )}
@@ -5586,19 +5573,8 @@ export default function Home() {
                     {/* SemVer Recommendation Banner */}
                     <div
                       style={{
-                        background:
-                          changelogReport.semver?.bump_type === "MAJOR"
-                            ? "rgba(239, 68, 68, 0.12)"
-                            : changelogReport.semver?.bump_type === "MINOR"
-                            ? "rgba(16, 185, 129, 0.12)"
-                            : "rgba(56, 189, 248, 0.12)",
-                        border: `1px solid ${
-                          changelogReport.semver?.bump_type === "MAJOR"
-                            ? "#EF4444"
-                            : changelogReport.semver?.bump_type === "MINOR"
-                            ? "#10B981"
-                            : "#38BDF8"
-                        }`,
+                        background: "var(--bg-secondary)",
+                        border: "1px solid var(--border)",
                         borderRadius: 8,
                         padding: "16px 20px",
                         marginBottom: 20,
@@ -5620,17 +5596,19 @@ export default function Home() {
                               fontFamily: "var(--font-mono)",
                               background:
                                 changelogReport.semver?.bump_type === "MAJOR"
-                                  ? "#EF4444"
-                                  : changelogReport.semver?.bump_type === "MINOR"
-                                  ? "#10B981"
-                                  : "#38BDF8",
-                              color: "#000000",
+                                  ? "rgba(239, 68, 68, 0.15)"
+                                  : "var(--bg-primary)",
+                              color:
+                                changelogReport.semver?.bump_type === "MAJOR"
+                                  ? "var(--accent-red)"
+                                  : "var(--text-primary)",
+                              border: "1px solid var(--border)",
                             }}
                           >
                             {changelogReport.semver?.bump_type} BUMP
                           </span>
                           <span style={{ fontSize: 16, fontWeight: 700, color: "var(--text-primary)" }}>
-                            Recommended Version: <span style={{ color: "var(--neon-green)" }}>{changelogReport.semver?.suggested_version}</span>
+                            Recommended Version: <span style={{ color: "var(--terminal-green)" }}>{changelogReport.semver?.suggested_version}</span>
                             <span style={{ fontSize: 12, color: "var(--text-muted)", marginLeft: 6 }}>
                               (from {changelogReport.semver?.current_version})
                             </span>
@@ -5642,13 +5620,13 @@ export default function Home() {
                       </div>
 
                       <div style={{ display: "flex", gap: 12 }}>
-                        <div style={{ textAlign: "center", background: "rgba(0,0,0,0.3)", padding: "8px 14px", borderRadius: 6 }}>
-                          <div style={{ fontSize: 18, fontWeight: 800, color: changelogReport.breaking_changes_count > 0 ? "#EF4444" : "var(--text-muted)" }}>
+                        <div style={{ textAlign: "center", background: "var(--bg-primary)", border: "1px solid var(--border)", padding: "8px 14px", borderRadius: 6 }}>
+                          <div style={{ fontSize: 18, fontWeight: 800, color: changelogReport.breaking_changes_count > 0 ? "var(--accent-red)" : "var(--text-muted)" }}>
                             {changelogReport.breaking_changes_count}
                           </div>
                           <div style={{ fontSize: 10, color: "var(--text-muted)", textTransform: "uppercase" }}>Breaking</div>
                         </div>
-                        <div style={{ textAlign: "center", background: "rgba(0,0,0,0.3)", padding: "8px 14px", borderRadius: 6 }}>
+                        <div style={{ textAlign: "center", background: "var(--bg-primary)", border: "1px solid var(--border)", padding: "8px 14px", borderRadius: 6 }}>
                           <div style={{ fontSize: 18, fontWeight: 800, color: "var(--text-primary)" }}>
                             {changelogReport.total_changes_count}
                           </div>
@@ -5670,7 +5648,7 @@ export default function Home() {
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8, flexWrap: "wrap", gap: 8 }}>
                         <div>
                           <strong style={{ fontSize: 13, color: "var(--text-primary)" }}>
-                            🧪 Live Contract Candidate Spec Simulator
+                            Live Contract Candidate Spec Simulator
                           </strong>
                           <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 2 }}>
                             Simulate breaking changes against prospective routes before committing to production.
@@ -5692,7 +5670,7 @@ export default function Home() {
                             }
                           }}
                         >
-                          {testingCandidateSpec ? "Testing..." : "⚡ Test Candidate Spec"}
+                          {testingCandidateSpec ? "Testing..." : "Test Candidate Spec"}
                         </button>
                       </div>
                       <textarea
@@ -5700,7 +5678,7 @@ export default function Home() {
                         placeholder="Paste OpenAPI spec, YAML, or route definitions here to test for breaking changes..."
                         value={candidateSpec}
                         onChange={(e) => setCandidateSpec(e.target.value)}
-                        style={{ height: 90, fontSize: 11, fontFamily: "var(--font-mono)", background: "#080a0f" }}
+                        style={{ height: 90, fontSize: 11, fontFamily: "var(--font-mono)", background: "var(--bg-primary)", border: "1px solid var(--border)" }}
                       />
                     </div>
 
@@ -5718,8 +5696,6 @@ export default function Home() {
                         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                           {changelogReport.changes.map((item, idx) => {
                             const isBreaking = item.category === "BREAKING";
-                            const isAdd = item.category === "NON_BREAKING_ADD";
-                            const badgeColor = isBreaking ? "#EF4444" : isAdd ? "#10B981" : "#F59E0B";
                             return (
                               <div
                                 key={idx}
@@ -5743,8 +5719,9 @@ export default function Home() {
                                         fontWeight: 800,
                                         padding: "2px 6px",
                                         borderRadius: 3,
-                                        background: badgeColor,
-                                        color: "#000000",
+                                        background: isBreaking ? "rgba(239, 68, 68, 0.15)" : "var(--bg-primary)",
+                                        color: isBreaking ? "var(--accent-red)" : "var(--text-primary)",
+                                        border: "1px solid var(--border)",
                                         fontFamily: "var(--font-mono)",
                                       }}
                                     >
@@ -5756,8 +5733,9 @@ export default function Home() {
                                         fontWeight: 700,
                                         padding: "1px 5px",
                                         borderRadius: 3,
-                                        background: "rgba(255,255,255,0.06)",
-                                        color: "var(--text-primary)",
+                                        background: "var(--bg-primary)",
+                                        color: "var(--text-secondary)",
+                                        border: "1px solid var(--border)",
                                         fontFamily: "var(--font-mono)",
                                       }}
                                     >
@@ -5771,8 +5749,8 @@ export default function Home() {
                                         fontSize: 9,
                                         padding: "1px 4px",
                                         borderRadius: 2,
-                                        color: item.impact === "HIGH" ? "#EF4444" : "#93C5FD",
-                                        border: `1px solid ${item.impact === "HIGH" ? "rgba(239, 68, 68, 0.3)" : "rgba(147, 197, 253, 0.3)"}`,
+                                        color: item.impact === "HIGH" ? "var(--accent-red)" : "var(--text-muted)",
+                                        border: `1px solid ${item.impact === "HIGH" ? "rgba(239, 68, 68, 0.3)" : "var(--border)"}`,
                                       }}
                                     >
                                       {item.impact} IMPACT
@@ -5782,8 +5760,8 @@ export default function Home() {
                                     {item.description}
                                   </div>
                                   {item.remediation && (
-                                    <div style={{ fontSize: 11, color: "var(--neon-green)", marginTop: 4, fontFamily: "var(--font-mono)" }}>
-                                      💡 Remediation: {item.remediation}
+                                    <div style={{ fontSize: 11, color: "var(--terminal-green)", marginTop: 4, fontFamily: "var(--font-mono)" }}>
+                                      Remediation: {item.remediation}
                                     </div>
                                   )}
                                 </div>
@@ -5803,9 +5781,10 @@ export default function Home() {
                         style={{
                           margin: 0,
                           padding: 16,
-                          background: "#080a0f",
+                          background: "var(--bg-primary)",
+                          border: "1px solid var(--border)",
                           borderRadius: 8,
-                          color: "#A7F3D0",
+                          color: "var(--terminal-green)",
                           fontFamily: "var(--font-mono)",
                           fontSize: 12,
                           lineHeight: 1.6,
@@ -5820,12 +5799,11 @@ export default function Home() {
                   </div>
                 ) : (
                   <div style={{ padding: 40, textAlign: "center", background: "var(--bg-secondary)", borderRadius: 8 }}>
-                    <div style={{ fontSize: 32, marginBottom: 8 }}>📜</div>
                     <div style={{ fontSize: 14, fontWeight: 700, color: "var(--text-primary)" }}>
                       No Changelog Generated
                     </div>
                     <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 4 }}>
-                      Click <strong>"⚡ Re-analyze Contracts"</strong> above to inspect contract modifications and determine SemVer bump.
+                      Click <strong>"Re-analyze Contracts"</strong> above to inspect contract modifications and determine SemVer bump.
                     </div>
                   </div>
                 )}
@@ -5839,10 +5817,10 @@ export default function Home() {
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20, flexWrap: "wrap", gap: 10 }}>
                   <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                     {[
-                      { id: "aws", name: "AWS (ECS Fargate + RDS)", icon: "🟧" },
-                      { id: "gcp", name: "Google Cloud (Cloud Run)", icon: "🟦" },
-                      { id: "kubernetes", name: "Kubernetes Manifests", icon: "☸️" },
-                      { id: "env", name: "Environment Matrix", icon: "⚙️" },
+                      { id: "aws", name: "AWS (ECS Fargate + RDS)" },
+                      { id: "gcp", name: "Google Cloud (Cloud Run)" },
+                      { id: "kubernetes", name: "Kubernetes Manifests" },
+                      { id: "env", name: "Environment Matrix" },
                     ].map((prov) => {
                       const isSelected = selectedIacProvider === prov.id;
                       return (
@@ -5861,15 +5839,16 @@ export default function Home() {
                             gap: 6,
                             padding: "6px 14px",
                             borderRadius: 6,
-                            background: isSelected ? "rgba(0, 255, 102, 0.12)" : "var(--bg-secondary)",
-                            border: `1px solid ${isSelected ? "var(--neon-green)" : "var(--border)"}`,
-                            color: isSelected ? "var(--neon-green)" : "var(--text-secondary)",
+                            background: isSelected ? "var(--text-primary)" : "var(--bg-secondary)",
+                            border: "1px solid var(--border)",
+                            color: isSelected ? "var(--bg-primary)" : "var(--text-secondary)",
                             fontWeight: isSelected ? 700 : 500,
                             cursor: "pointer",
                             fontSize: 12,
+                            fontFamily: "var(--font-mono)",
+                            transition: "all 0.15s ease",
                           }}
                         >
-                          <span>{prov.icon}</span>
                           <span>{prov.name}</span>
                         </button>
                       );
@@ -5897,7 +5876,7 @@ export default function Home() {
                         }
                       }}
                     >
-                      {iacLoading ? "⏳ Provisioning..." : "⚡ Regenerate IaC"}
+                      {iacLoading ? "Provisioning..." : "Regenerate IaC"}
                     </button>
                   </div>
                 </div>
@@ -5913,8 +5892,8 @@ export default function Home() {
                       marginBottom: 20,
                     }}
                   >
-                    <div style={{ fontSize: 11, textTransform: "uppercase", color: "var(--neon-green)", fontWeight: 700, marginBottom: 6 }}>
-                      📋 Production Deployment Execution Plan
+                    <div style={{ fontSize: 11, textTransform: "uppercase", color: "var(--terminal-green)", fontWeight: 700, marginBottom: 6 }}>
+                      Production Deployment Execution Plan
                     </div>
                     <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
                       {iacCatalog.packages[selectedIacProvider].deployment_steps.map((step, sIdx) => (
@@ -5954,17 +5933,14 @@ export default function Home() {
                                 padding: "8px 10px",
                                 borderRadius: 6,
                                 cursor: "pointer",
-                                background: isSelected ? "rgba(0, 255, 102, 0.1)" : "transparent",
-                                border: `1px solid ${isSelected ? "rgba(0, 255, 102, 0.3)" : "transparent"}`,
+                                background: isSelected ? "var(--bg-card)" : "transparent",
+                                border: `1px solid ${isSelected ? "var(--border-hover)" : "transparent"}`,
                                 display: "flex",
                                 flexDirection: "column",
                                 gap: 2,
                               }}
                             >
-                              <div style={{ fontSize: 12, fontWeight: 600, color: isSelected ? "var(--neon-green)" : "var(--text-primary)", fontFamily: "var(--font-mono)" }}>
-                                {file.path.endsWith(".tf") && "🏗️ "}
-                                {file.path.endsWith(".yaml") && "☸️ "}
-                                {file.path.includes(".env") && "⚙️ "}
+                              <div style={{ fontSize: 12, fontWeight: 600, color: isSelected ? "#FFFFFF" : "var(--text-secondary)", fontFamily: "var(--font-mono)" }}>
                                 {file.path}
                               </div>
                               {file.description && (
@@ -5981,7 +5957,7 @@ export default function Home() {
                     {/* Right Code Viewer */}
                     <div
                       style={{
-                        background: "#080a0f",
+                        background: "var(--bg-primary)",
                         border: "1px solid var(--border)",
                         borderRadius: 8,
                         overflow: "hidden",
@@ -6019,7 +5995,7 @@ export default function Home() {
                                   showToast(`Copied ${selectedIacFile.path}!`, "success");
                                 }}
                               >
-                                {iacCopied ? "✓ Copied" : "📋 Copy File"}
+                                {iacCopied ? "✓ Copied" : "Copy File"}
                               </button>
                               <button
                                 className="btn btn-secondary btn-sm"
@@ -6030,7 +6006,7 @@ export default function Home() {
                                   showToast(`Downloaded ${fname}`, "success");
                                 }}
                               >
-                                📥 Download
+                                Download
                               </button>
                             </div>
                           </div>
@@ -6042,11 +6018,8 @@ export default function Home() {
                               fontFamily: "var(--font-mono)",
                               fontSize: 12,
                               lineHeight: 1.6,
-                              color: selectedIacFile.path.endsWith(".tf")
-                                ? "#C084FC"
-                                : selectedIacFile.path.endsWith(".yaml")
-                                ? "#38BDF8"
-                                : "var(--neon-green)",
+                              color: "var(--terminal-green)",
+                              background: "var(--bg-primary)",
                               maxHeight: 460,
                               overflowY: "auto",
                               overflowX: "auto",
@@ -6065,12 +6038,11 @@ export default function Home() {
                   </div>
                 ) : (
                   <div style={{ padding: 40, textAlign: "center", background: "var(--bg-secondary)", borderRadius: 8 }}>
-                    <div style={{ fontSize: 32, marginBottom: 8 }}>☁️</div>
                     <div style={{ fontSize: 14, fontWeight: 700, color: "var(--text-primary)" }}>
                       {iacLoading ? "Generating Cloud Infrastructure..." : "No Infrastructure Generated Yet"}
                     </div>
                     <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 4 }}>
-                      Click <strong>"⚡ Regenerate IaC"</strong> above to produce complete Terraform modules and Kubernetes manifests.
+                      Click <strong>"Regenerate IaC"</strong> above to produce complete Terraform modules and Kubernetes manifests.
                     </div>
                   </div>
                 )}
@@ -6154,14 +6126,16 @@ export default function Home() {
             position: "fixed",
             bottom: 24,
             right: 24,
-            background: "linear-gradient(135deg, #238636 0%, #1f6feb 100%)",
+            background: "#000000",
             color: "#ffffff",
-            border: "1px solid rgba(255,255,255,0.2)",
-            borderRadius: "50px",
-            padding: "10px 20px",
-            fontSize: 13,
-            fontWeight: 700,
-            boxShadow: "0 8px 24px rgba(0,0,0,0.5)",
+            border: "1px solid var(--border-bright)",
+            borderRadius: "9999px",
+            padding: "10px 18px",
+            fontSize: 12,
+            fontWeight: 600,
+            fontFamily: "var(--font-mono)",
+            letterSpacing: "0.03em",
+            boxShadow: "0 8px 32px rgba(0,0,0,0.8)",
             cursor: "pointer",
             zIndex: 999,
             display: "flex",
@@ -6169,7 +6143,7 @@ export default function Home() {
             gap: 8,
           }}
         >
-          <span>✨</span>
+          <span style={{ width: 7, height: 7, borderRadius: "50%", background: "var(--terminal-green)", display: "inline-block", boxShadow: "0 0 6px var(--terminal-green)" }} />
           <span>Ask AI Copilot</span>
         </button>
       )}
@@ -6185,8 +6159,8 @@ export default function Home() {
             height: 520,
             background: "var(--bg-card)",
             border: "1px solid var(--border)",
-            borderRadius: 12,
-            boxShadow: "0 12px 36px rgba(0,0,0,0.6)",
+            borderRadius: 8,
+            boxShadow: "0 16px 48px rgba(0,0,0,0.9)",
             zIndex: 1000,
             display: "flex",
             flexDirection: "column",
@@ -6205,8 +6179,9 @@ export default function Home() {
             }}
           >
             <div>
-              <strong style={{ fontSize: 13, display: "flex", alignItems: "center", gap: 6 }}>
-                <span>✨</span> Project Copilot
+              <strong style={{ fontSize: 13, display: "flex", alignItems: "center", gap: 8, fontFamily: "var(--font-mono)", letterSpacing: "0.02em" }}>
+                <span style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--terminal-green)", display: "inline-block" }} />
+                Project Copilot
               </strong>
               <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 2 }}>
                 Grounded in {currentProject.name} specs
@@ -6240,8 +6215,10 @@ export default function Home() {
           >
             {chatMessages.length === 0 ? (
               <div style={{ textAlign: "center", color: "var(--text-muted)", fontSize: 12, marginTop: 40 }}>
-                <p style={{ fontSize: 24, marginBottom: 8 }}>💬</p>
-                <p>Ask anything about this project's architecture, APIs, DB schema, or implementation tasks.</p>
+                <div style={{ width: 36, height: 36, borderRadius: "50%", border: "1px solid var(--border)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 12px", color: "var(--text-muted)", fontFamily: "var(--font-mono)", fontSize: 14 }}>
+                  ?
+                </div>
+                <p>Ask anything about this project&apos;s architecture, APIs, DB schema, or implementation tasks.</p>
                 
                 {/* Suggestion Chips */}
                 <div style={{ display: "flex", flexDirection: "column", gap: 6, marginTop: 16 }}>
@@ -6274,7 +6251,7 @@ export default function Home() {
                         }
                       }}
                     >
-                      💡 {s}
+                      › {s}
                     </button>
                   ))}
                 </div>
@@ -6286,10 +6263,11 @@ export default function Home() {
                   style={{
                     alignSelf: msg.role === "user" ? "flex-end" : "flex-start",
                     maxWidth: "85%",
-                    background: msg.role === "user" ? "#1f6feb" : "var(--bg-secondary)",
-                    color: msg.role === "user" ? "#ffffff" : "var(--text-primary)",
+                    background: msg.role === "user" ? "#ffffff" : "var(--bg-secondary)",
+                    color: msg.role === "user" ? "#000000" : "var(--text-primary)",
+                    border: msg.role === "user" ? "none" : "1px solid var(--border)",
                     padding: "8px 12px",
-                    borderRadius: msg.role === "user" ? "12px 12px 2px 12px" : "12px 12px 12px 2px",
+                    borderRadius: msg.role === "user" ? "8px 8px 2px 8px" : "8px 8px 8px 2px",
                     fontSize: 12,
                     lineHeight: 1.4,
                     whiteSpace: "pre-wrap",
@@ -6303,13 +6281,16 @@ export default function Home() {
                           key={r}
                           style={{
                             fontSize: 9,
-                            background: "rgba(0,0,0,0.2)",
+                            background: "var(--bg-primary)",
+                            border: "1px solid var(--border)",
+                            color: "var(--text-secondary)",
                             padding: "2px 6px",
                             borderRadius: 4,
                             fontWeight: 600,
+                            fontFamily: "var(--font-mono)",
                           }}
                         >
-                          📌 {r}
+                          # {r}
                         </span>
                       ))}
                     </div>
@@ -6318,8 +6299,8 @@ export default function Home() {
               ))
             )}
             {chatLoading && (
-              <div style={{ alignSelf: "flex-start", fontSize: 11, color: "var(--text-muted)" }}>
-                Copilot is thinking...
+              <div style={{ alignSelf: "flex-start", fontSize: 11, color: "var(--terminal-green)", fontFamily: "var(--font-mono)" }}>
+                › Copilot is thinking...
               </div>
             )}
           </div>
@@ -6392,13 +6373,13 @@ export default function Home() {
               }}
             >
               <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                <span style={{ fontSize: 20 }}>🛠️</span>
+                <span style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--terminal-green)", display: "inline-block" }} />
                 <div>
-                  <h3 style={{ fontSize: 16, fontWeight: 700, color: "var(--text-primary)", margin: 0 }}>
+                  <h3 style={{ fontSize: 15, fontWeight: 700, color: "var(--text-primary)", margin: 0, fontFamily: "var(--font-mono)" }}>
                     Relational DDL &amp; Alembic Migrations Engine
                   </h3>
                   <div style={{ fontSize: 11, color: "var(--text-secondary)", marginTop: 2 }}>
-                    Project: <strong>{currentProject?.name}</strong> • Tables: <strong style={{ color: "var(--neon-green)" }}>{migrationData.tables_count}</strong> • Revision: <code>{migrationData.alembic_revision_id}</code>
+                    Project: <strong>{currentProject?.name}</strong> • Tables: <strong style={{ color: "var(--text-primary)" }}>{migrationData.tables_count}</strong> • Revision: <code style={{ color: "var(--terminal-green)" }}>{migrationData.alembic_revision_id}</code>
                   </div>
                 </div>
               </div>
@@ -6430,21 +6411,21 @@ export default function Home() {
                   onClick={() => setMigrationSubTab("sql")}
                   style={{ padding: "5px 12px", fontSize: 12, borderRadius: 6 }}
                 >
-                  📄 Raw SQL DDL
+                  Raw SQL DDL
                 </button>
                 <button
                   className={`tab ${migrationSubTab === "alembic" ? "active" : ""}`}
                   onClick={() => setMigrationSubTab("alembic")}
                   style={{ padding: "5px 12px", fontSize: 12, borderRadius: 6 }}
                 >
-                  🐍 Alembic Python Script
+                  Alembic Python Script
                 </button>
                 <button
                   className={`tab ${migrationSubTab === "tables" ? "active" : ""}`}
                   onClick={() => setMigrationSubTab("tables")}
                   style={{ padding: "5px 12px", fontSize: 12, borderRadius: 6 }}
                 >
-                  📊 Tables Breakdown ({migrationData.tables_count})
+                  Tables Breakdown ({migrationData.tables_count})
                 </button>
               </div>
 
@@ -6459,14 +6440,14 @@ export default function Home() {
                       }}
                       style={{ fontSize: 11, padding: "4px 10px" }}
                     >
-                      📋 Copy SQL
+                      Copy SQL
                     </button>
                     <button
                       className="btn btn-primary btn-sm"
                       onClick={() => downloadTextFile("0001_initial_schema.sql", migrationData.sql_ddl, "text/sql")}
                       style={{ fontSize: 11, padding: "4px 10px" }}
                     >
-                      ⬇️ Download .sql
+                      Download .sql
                     </button>
                   </>
                 )}
@@ -6480,14 +6461,14 @@ export default function Home() {
                       }}
                       style={{ fontSize: 11, padding: "4px 10px" }}
                     >
-                      📋 Copy Python
+                      Copy Python
                     </button>
                     <button
                       className="btn btn-primary btn-sm"
                       onClick={() => downloadTextFile(`alembic_${migrationData.alembic_revision_id}.py`, migrationData.alembic_script, "text/x-python")}
                       style={{ fontSize: 11, padding: "4px 10px" }}
                     >
-                      ⬇️ Download .py
+                      Download .py
                     </button>
                   </>
                 )}
@@ -6497,13 +6478,13 @@ export default function Home() {
                   style={{ fontSize: 11, padding: "4px 10px" }}
                   title="Test execute against SQLite in-memory engine"
                 >
-                  ⚡ Test DDL
+                  Test DDL
                 </button>
               </div>
             </div>
 
             {/* Modal Body */}
-            <div style={{ padding: 20, overflowY: "auto", maxHeight: "65vh", background: "#040705" }}>
+            <div style={{ padding: 20, overflowY: "auto", maxHeight: "65vh", background: "#000000" }}>
               {migrationSubTab === "sql" && (
                 <pre
                   style={{
@@ -6511,7 +6492,7 @@ export default function Home() {
                     fontFamily: "var(--font-mono)",
                     fontSize: 12,
                     lineHeight: 1.6,
-                    color: "var(--neon-green)",
+                    color: "var(--terminal-green)",
                     whiteSpace: "pre-wrap",
                   }}
                 >
@@ -6526,7 +6507,7 @@ export default function Home() {
                     fontFamily: "var(--font-mono)",
                     fontSize: 12,
                     lineHeight: 1.6,
-                    color: "#38BDF8",
+                    color: "var(--terminal-green)",
                     whiteSpace: "pre-wrap",
                   }}
                 >
@@ -6540,17 +6521,17 @@ export default function Home() {
                     <div
                       key={tbl.name}
                       style={{
-                        background: "var(--bg-secondary)",
+                        background: "var(--bg-card)",
                         border: "1px solid var(--border)",
-                        borderRadius: 8,
+                        borderRadius: 6,
                         padding: 14,
                       }}
                     >
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-                        <strong style={{ fontSize: 13, color: "var(--neon-green)", fontFamily: "var(--font-mono)" }}>
-                          📁 {tbl.name}
+                        <strong style={{ fontSize: 13, color: "var(--text-primary)", fontFamily: "var(--font-mono)" }}>
+                          {tbl.name}
                         </strong>
-                        <span className="badge badge-cyan" style={{ fontSize: 10 }}>
+                        <span className="badge badge-muted" style={{ fontSize: 10 }}>
                           {tbl.columns?.length || 0} cols
                         </span>
                       </div>
@@ -6563,13 +6544,13 @@ export default function Home() {
                               display: "flex",
                               justifyContent: "space-between",
                               padding: "2px 0",
-                              borderBottom: "1px solid rgba(255,255,255,0.04)",
+                              borderBottom: "1px solid var(--border)",
                             }}
                           >
-                            <span style={{ color: col.is_primary ? "var(--neon-green)" : "var(--text-primary)" }}>
-                              {col.is_primary && "🔑 "}{col.name}
+                            <span style={{ color: col.is_primary ? "var(--terminal-green)" : "var(--text-primary)", fontFamily: "var(--font-mono)" }}>
+                              {col.is_primary && "[PK] "}{col.name}
                             </span>
-                            <span style={{ color: "var(--text-muted)", fontFamily: "monospace" }}>
+                            <span style={{ color: "var(--text-muted)", fontFamily: "var(--font-mono)" }}>
                               {col.type} {col.nullable ? "NULL" : "NOT NULL"}
                             </span>
                           </div>
@@ -6612,7 +6593,7 @@ export default function Home() {
               maxHeight: "90vh",
               display: "flex",
               flexDirection: "column",
-              boxShadow: "0 10px 40px rgba(0, 255, 102, 0.15)",
+              boxShadow: "0 16px 48px rgba(0, 0, 0, 0.9)",
               overflow: "hidden",
             }}
           >
@@ -6629,13 +6610,14 @@ export default function Home() {
             >
               <div>
                 <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                  <h3 style={{ margin: 0, fontSize: 16, fontFamily: "var(--font-display)", color: "var(--text-primary)" }}>
-                    📬 Postman Collection v2.1.0 Explorer
+                  <span style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--terminal-green)", display: "inline-block" }} />
+                  <h3 style={{ margin: 0, fontSize: 16, fontFamily: "var(--font-mono)", color: "var(--text-primary)" }}>
+                    Postman Collection v2.1.0 Explorer
                   </h3>
-                  <span className="badge badge-green" style={{ fontSize: 10 }}>
+                  <span className="badge badge-muted" style={{ fontSize: 10 }}>
                     {postmanData.item?.length || 0} Modules
                   </span>
-                  <span className="badge badge-cyan" style={{ fontSize: 10 }}>
+                  <span className="badge badge-muted" style={{ fontSize: 10 }}>
                     Schema v2.1.0
                   </span>
                 </div>
@@ -6671,21 +6653,21 @@ export default function Home() {
                   onClick={() => setPostmanSubTab("explorer")}
                   style={{ padding: "5px 12px", fontSize: 12, borderRadius: 6 }}
                 >
-                  📂 Folders &amp; Requests ({postmanData.item?.length || 0})
+                  Folders &amp; Requests ({postmanData.item?.length || 0})
                 </button>
                 <button
                   className={`tab ${postmanSubTab === "raw" ? "active" : ""}`}
                   onClick={() => setPostmanSubTab("raw")}
                   style={{ padding: "5px 12px", fontSize: 12, borderRadius: 6 }}
                 >
-                  📄 Raw Collection JSON
+                  Raw Collection JSON
                 </button>
                 <button
                   className={`tab ${postmanSubTab === "variables" ? "active" : ""}`}
                   onClick={() => setPostmanSubTab("variables")}
                   style={{ padding: "5px 12px", fontSize: 12, borderRadius: 6 }}
                 >
-                  🔑 Environment Variables ({postmanData.variable?.length || 0})
+                  Environment Variables ({postmanData.variable?.length || 0})
                 </button>
               </div>
 
@@ -6698,14 +6680,14 @@ export default function Home() {
                   }}
                   style={{ fontSize: 11, padding: "4px 10px" }}
                 >
-                  📋 Copy JSON
+                  Copy JSON
                 </button>
                 <button
                   className="btn btn-primary btn-sm"
                   onClick={() => downloadTextFile(`${postmanData.info?.name?.replace(/[^a-zA-Z0-9_-]/g, "_") || "collection"}.postman_collection.json`, JSON.stringify(postmanData, null, 2), "application/json")}
                   style={{ fontSize: 11, padding: "4px 10px" }}
                 >
-                  ⬇️ Download .json
+                  Download .json
                 </button>
                 <a
                   href={getPostmanCollectionDownloadUrl(currentProject?.id)}
@@ -6715,13 +6697,13 @@ export default function Home() {
                   style={{ textDecoration: "none", fontSize: 11, padding: "4px 10px" }}
                   title="Direct raw JSON URL"
                 >
-                  🔗 Direct URL
+                  Direct URL
                 </a>
               </div>
             </div>
 
             {/* Modal Body */}
-            <div style={{ padding: 20, overflowY: "auto", maxHeight: "65vh", background: "#040705" }}>
+            <div style={{ padding: 20, overflowY: "auto", maxHeight: "65vh", background: "#000000" }}>
               {postmanSubTab === "explorer" && (
                 <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
                   {postmanData.item?.map((folder, fIdx) => (
@@ -6736,14 +6718,14 @@ export default function Home() {
                     >
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
                         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                          <strong style={{ fontSize: 14, color: "var(--neon-green)", fontFamily: "var(--font-mono)" }}>
-                            📁 {folder.name}
+                          <strong style={{ fontSize: 13, color: "var(--text-primary)", fontFamily: "var(--font-mono)" }}>
+                            {folder.name}
                           </strong>
                           <span style={{ fontSize: 11, color: "var(--text-muted)" }}>
                             {folder.description}
                           </span>
                         </div>
-                        <span className="badge badge-cyan" style={{ fontSize: 10 }}>
+                        <span className="badge badge-muted" style={{ fontSize: 10 }}>
                           {folder.item?.length || 0} endpoints
                         </span>
                       </div>
@@ -6753,18 +6735,16 @@ export default function Home() {
                           const method = reqItem.request?.method || "GET";
                           const methodColor =
                             method === "POST"
-                              ? "var(--neon-green)"
-                              : method === "GET"
-                              ? "#38BDF8"
-                              : method === "PUT"
-                              ? "#FBBF24"
-                              : "#F87171";
+                              ? "var(--terminal-green)"
+                              : method === "DELETE"
+                              ? "#ff5555"
+                              : "#ffffff";
                           return (
                             <div
                               key={rIdx}
                               style={{
-                                background: "rgba(0, 0, 0, 0.4)",
-                                border: "1px solid rgba(255, 255, 255, 0.06)",
+                                background: "#050505",
+                                border: "1px solid var(--border)",
                                 borderRadius: 6,
                                 padding: 12,
                               }}
@@ -6773,10 +6753,11 @@ export default function Home() {
                                 <span
                                   style={{
                                     fontSize: 10,
-                                    fontWeight: 800,
+                                    fontWeight: 700,
                                     padding: "2px 6px",
                                     borderRadius: 4,
                                     background: "rgba(255, 255, 255, 0.06)",
+                                    border: "1px solid var(--border)",
                                     color: methodColor,
                                     fontFamily: "var(--font-mono)",
                                   }}
@@ -6786,7 +6767,7 @@ export default function Home() {
                                 <span style={{ fontSize: 12, color: "var(--text-primary)", fontFamily: "var(--font-mono)", flex: 1 }}>
                                   {reqItem.request?.url?.raw || reqItem.name}
                                 </span>
-                                <span style={{ fontSize: 10, color: "var(--text-muted)" }}>
+                                <span style={{ fontSize: 10, color: "var(--text-muted)", fontFamily: "var(--font-mono)" }}>
                                   {reqItem.event?.length || 0} assertions
                                 </span>
                               </div>
@@ -6798,11 +6779,12 @@ export default function Home() {
                                     style={{
                                       margin: 0,
                                       padding: 8,
-                                      background: "rgba(0,0,0,0.5)",
+                                      background: "#000000",
+                                      border: "1px solid var(--border)",
                                       borderRadius: 4,
                                       fontSize: 11,
                                       fontFamily: "var(--font-mono)",
-                                      color: "#A7F3D0",
+                                      color: "var(--terminal-green)",
                                       maxHeight: 100,
                                       overflowY: "auto",
                                     }}
@@ -6819,11 +6801,12 @@ export default function Home() {
                                     style={{
                                       margin: 0,
                                       padding: 8,
-                                      background: "rgba(0,0,0,0.5)",
+                                      background: "#000000",
+                                      border: "1px solid var(--border)",
                                       borderRadius: 4,
                                       fontSize: 10,
                                       fontFamily: "var(--font-mono)",
-                                      color: "#93C5FD",
+                                      color: "var(--text-primary)",
                                     }}
                                   >
                                     {reqItem.event[0].script.exec.join("\n")}
@@ -6846,7 +6829,7 @@ export default function Home() {
                     fontFamily: "var(--font-mono)",
                     fontSize: 11,
                     lineHeight: 1.6,
-                    color: "var(--neon-green)",
+                    color: "var(--terminal-green)",
                     whiteSpace: "pre-wrap",
                   }}
                 >
@@ -6870,14 +6853,14 @@ export default function Home() {
                       }}
                     >
                       <div>
-                        <strong style={{ fontSize: 13, color: "var(--neon-green)", fontFamily: "var(--font-mono)" }}>
+                        <strong style={{ fontSize: 13, color: "var(--terminal-green)", fontFamily: "var(--font-mono)" }}>
                           {`{{${v.key}}}`}
                         </strong>
                         <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 2 }}>
                           {v.description}
                         </div>
                       </div>
-                      <span style={{ fontSize: 12, color: "#38BDF8", fontFamily: "var(--font-mono)", background: "rgba(0,0,0,0.3)", padding: "4px 8px", borderRadius: 4 }}>
+                      <span style={{ fontSize: 12, color: "var(--text-primary)", fontFamily: "var(--font-mono)", background: "rgba(255,255,255,0.06)", border: "1px solid var(--border)", padding: "4px 8px", borderRadius: 4 }}>
                         {v.value}
                       </span>
                     </div>
@@ -6910,14 +6893,14 @@ export default function Home() {
           <div
             style={{
               background: "var(--bg-card)",
-              border: "1px solid rgba(229, 53, 171, 0.4)",
+              border: "1px solid var(--border)",
               borderRadius: 12,
               width: "100%",
               maxWidth: 960,
               maxHeight: "90vh",
               display: "flex",
               flexDirection: "column",
-              boxShadow: "0 10px 40px rgba(229, 53, 171, 0.18)",
+              boxShadow: "0 16px 48px rgba(0, 0, 0, 0.9)",
               overflow: "hidden",
             }}
           >
@@ -6934,10 +6917,11 @@ export default function Home() {
             >
               <div>
                 <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                  <h3 style={{ margin: 0, fontSize: 16, fontFamily: "var(--font-display)", color: "#E535AB" }}>
-                    ◈ GraphQL Schema &amp; Resolvers Studio
+                  <span style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--terminal-green)", display: "inline-block" }} />
+                  <h3 style={{ margin: 0, fontSize: 16, fontFamily: "var(--font-mono)", color: "var(--text-primary)" }}>
+                    GraphQL Schema &amp; Resolvers Studio
                   </h3>
-                  <span className="badge" style={{ fontSize: 10, background: "rgba(229, 53, 171, 0.15)", color: "#E535AB", border: "1px solid #E535AB" }}>
+                  <span className="badge badge-muted" style={{ fontSize: 10 }}>
                     {graphqlData.types?.length || 0} ENTITIES • {graphqlData.queries_count || 0} QUERIES
                   </span>
                 </div>
@@ -6951,9 +6935,9 @@ export default function Home() {
                   target="_blank"
                   rel="noreferrer"
                   className="btn btn-primary btn-sm"
-                  style={{ textDecoration: "none", background: "#E535AB", borderColor: "#E535AB", color: "#fff" }}
+                  style={{ textDecoration: "none" }}
                 >
-                  ⬇️ Download .graphql
+                  Download .graphql
                 </a>
                 <button
                   className="btn btn-secondary btn-sm"
@@ -6972,14 +6956,14 @@ export default function Home() {
                 gap: 8,
                 padding: "10px 20px",
                 borderBottom: "1px solid var(--border)",
-                background: "rgba(0,0,0,0.2)",
+                background: "var(--bg-card)",
               }}
             >
               {[
-                { id: "sdl", label: "📄 Schema SDL (.graphql)" },
-                { id: "queries", label: "⚡ Sample Queries & Mutations" },
-                { id: "python", label: "🐍 Python (Strawberry)" },
-                { id: "typescript", label: "📘 TypeScript (Apollo)" },
+                { id: "sdl", label: "Schema SDL (.graphql)" },
+                { id: "queries", label: "Sample Queries & Mutations" },
+                { id: "python", label: "Python (Strawberry)" },
+                { id: "typescript", label: "TypeScript (Apollo)" },
               ].map((tab) => (
                 <button
                   key={tab.id}
@@ -6987,9 +6971,8 @@ export default function Home() {
                   onClick={() => setGraphqlSubTab(tab.id)}
                   style={{
                     fontSize: 12,
-                    padding: "6px 14px",
-                    borderColor: graphqlSubTab === tab.id ? "#E535AB" : "transparent",
-                    color: graphqlSubTab === tab.id ? "#E535AB" : "var(--text-secondary)",
+                    padding: "5px 12px",
+                    borderRadius: 6,
                   }}
                 >
                   {tab.label}
@@ -6998,7 +6981,7 @@ export default function Home() {
             </div>
 
             {/* Modal Body */}
-            <div style={{ padding: 20, overflowY: "auto", flex: 1 }}>
+            <div style={{ padding: 20, overflowY: "auto", flex: 1, background: "#000000" }}>
               {graphqlSubTab === "sdl" && (
                 <div>
                   <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8, alignItems: "center" }}>
@@ -7010,18 +6993,18 @@ export default function Home() {
                         showToast("Copied GraphQL SDL to clipboard!", "success");
                       }}
                     >
-                      📋 Copy SDL
+                      Copy SDL
                     </button>
                   </div>
                   <pre
                     style={{
-                      background: "var(--bg-primary)",
+                      background: "#050505",
                       border: "1px solid var(--border)",
                       borderRadius: 8,
                       padding: 16,
                       fontSize: 12,
                       fontFamily: "var(--font-mono)",
-                      color: "var(--text-primary)",
+                      color: "var(--terminal-green)",
                       overflowX: "auto",
                       whiteSpace: "pre-wrap",
                       margin: 0,
@@ -7043,18 +7026,18 @@ export default function Home() {
                         showToast("Copied sample queries to clipboard!", "success");
                       }}
                     >
-                      📋 Copy Queries
+                      Copy Queries
                     </button>
                   </div>
                   <pre
                     style={{
-                      background: "var(--bg-primary)",
+                      background: "#050505",
                       border: "1px solid var(--border)",
                       borderRadius: 8,
                       padding: 16,
                       fontSize: 12,
                       fontFamily: "var(--font-mono)",
-                      color: "var(--neon-green)",
+                      color: "var(--terminal-green)",
                       overflowX: "auto",
                       whiteSpace: "pre-wrap",
                       margin: 0,
@@ -7076,18 +7059,18 @@ export default function Home() {
                         showToast("Copied Python resolver code!", "success");
                       }}
                     >
-                      📋 Copy Python
+                      Copy Python
                     </button>
                   </div>
                   <pre
                     style={{
-                      background: "var(--bg-primary)",
+                      background: "#050505",
                       border: "1px solid var(--border)",
                       borderRadius: 8,
                       padding: 16,
                       fontSize: 12,
                       fontFamily: "var(--font-mono)",
-                      color: "#38BDF8",
+                      color: "var(--text-primary)",
                       overflowX: "auto",
                       whiteSpace: "pre-wrap",
                       margin: 0,
@@ -7109,18 +7092,18 @@ export default function Home() {
                         showToast("Copied TypeScript resolver code!", "success");
                       }}
                     >
-                      📋 Copy TypeScript
+                      Copy TypeScript
                     </button>
                   </div>
                   <pre
                     style={{
-                      background: "var(--bg-primary)",
+                      background: "#050505",
                       border: "1px solid var(--border)",
                       borderRadius: 8,
                       padding: 16,
                       fontSize: 12,
                       fontFamily: "var(--font-mono)",
-                      color: "#FCD34D",
+                      color: "var(--text-primary)",
                       overflowX: "auto",
                       whiteSpace: "pre-wrap",
                       margin: 0,
@@ -7156,14 +7139,14 @@ export default function Home() {
           <div
             style={{
               background: "var(--bg-card)",
-              border: "1px solid rgba(16, 185, 129, 0.4)",
+              border: "1px solid var(--border)",
               borderRadius: 12,
               width: "100%",
               maxWidth: 960,
               maxHeight: "90vh",
               display: "flex",
               flexDirection: "column",
-              boxShadow: "0 10px 40px rgba(16, 185, 129, 0.18)",
+              boxShadow: "0 16px 48px rgba(0, 0, 0, 0.9)",
               overflow: "hidden",
             }}
           >
@@ -7180,10 +7163,11 @@ export default function Home() {
             >
               <div>
                 <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                  <h3 style={{ margin: 0, fontSize: 16, fontFamily: "var(--font-display)", color: "#10B981" }}>
-                    🌱 Synthetic Seed Data &amp; Test Factory Studio
+                  <span style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--terminal-green)", display: "inline-block" }} />
+                  <h3 style={{ margin: 0, fontSize: 16, fontFamily: "var(--font-mono)", color: "var(--text-primary)" }}>
+                    Synthetic Seed Data &amp; Test Factory Studio
                   </h3>
-                  <span className="badge" style={{ fontSize: 10, background: "rgba(16, 185, 129, 0.15)", color: "#10B981", border: "1px solid #10B981" }}>
+                  <span className="badge badge-muted" style={{ fontSize: 10 }}>
                     {seedData.total_records || 0} RECORDS • {seedData.entities?.length || 0} TABLES
                   </span>
                 </div>
@@ -7197,9 +7181,9 @@ export default function Home() {
                   target="_blank"
                   rel="noreferrer"
                   className="btn btn-primary btn-sm"
-                  style={{ textDecoration: "none", background: "#10B981", borderColor: "#10B981", color: "#fff" }}
+                  style={{ textDecoration: "none" }}
                 >
-                  ⬇️ SQL
+                  Download SQL
                 </a>
                 <a
                   href={getSeedJsonDownloadUrl(seedData.project_id)}
@@ -7208,7 +7192,7 @@ export default function Home() {
                   className="btn btn-secondary btn-sm"
                   style={{ textDecoration: "none" }}
                 >
-                  ⬇️ JSON
+                  Download JSON
                 </a>
                 <button
                   className="btn btn-secondary btn-sm"
@@ -7227,14 +7211,14 @@ export default function Home() {
                 gap: 8,
                 padding: "10px 20px",
                 borderBottom: "1px solid var(--border)",
-                background: "rgba(0,0,0,0.2)",
+                background: "var(--bg-card)",
               }}
             >
               {[
-                { id: "sql", label: "📄 SQL Inserts (seed.sql)" },
-                { id: "json", label: "📦 JSON Fixtures (seeds.json)" },
-                { id: "python", label: "🐍 Python (FactoryBoy)" },
-                { id: "typescript", label: "📘 TypeScript (Prisma)" },
+                { id: "sql", label: "SQL Inserts (seed.sql)" },
+                { id: "json", label: "JSON Fixtures (seeds.json)" },
+                { id: "python", label: "Python (FactoryBoy)" },
+                { id: "typescript", label: "TypeScript (Prisma)" },
               ].map((tab) => (
                 <button
                   key={tab.id}
@@ -7242,9 +7226,8 @@ export default function Home() {
                   onClick={() => setSeedSubTab(tab.id)}
                   style={{
                     fontSize: 12,
-                    padding: "6px 14px",
-                    borderColor: seedSubTab === tab.id ? "#10B981" : "transparent",
-                    color: seedSubTab === tab.id ? "#10B981" : "var(--text-secondary)",
+                    padding: "5px 12px",
+                    borderRadius: 6,
                   }}
                 >
                   {tab.label}
@@ -7253,7 +7236,7 @@ export default function Home() {
             </div>
 
             {/* Modal Body */}
-            <div style={{ padding: 20, overflowY: "auto", flex: 1 }}>
+            <div style={{ padding: 20, overflowY: "auto", flex: 1, background: "#000000" }}>
               {seedSubTab === "sql" && (
                 <div>
                   <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8, alignItems: "center" }}>
@@ -7265,10 +7248,10 @@ export default function Home() {
                         showToast("Copied SQL script to clipboard!", "success");
                       }}
                     >
-                      📋 Copy SQL
+                      Copy SQL
                     </button>
                   </div>
-                  <pre style={{ background: "var(--bg-primary)", border: "1px solid var(--border)", borderRadius: 8, padding: 16, fontSize: 12, fontFamily: "var(--font-mono)", color: "var(--neon-green)", overflowX: "auto", whiteSpace: "pre-wrap", margin: 0 }}>
+                  <pre style={{ background: "#050505", border: "1px solid var(--border)", borderRadius: 8, padding: 16, fontSize: 12, fontFamily: "var(--font-mono)", color: "var(--terminal-green)", overflowX: "auto", whiteSpace: "pre-wrap", margin: 0 }}>
                     {seedData.sql_script}
                   </pre>
                 </div>
@@ -7285,10 +7268,10 @@ export default function Home() {
                         showToast("Copied JSON fixture to clipboard!", "success");
                       }}
                     >
-                      📋 Copy JSON
+                      Copy JSON
                     </button>
                   </div>
-                  <pre style={{ background: "var(--bg-primary)", border: "1px solid var(--border)", borderRadius: 8, padding: 16, fontSize: 12, fontFamily: "var(--font-mono)", color: "#38BDF8", overflowX: "auto", whiteSpace: "pre-wrap", margin: 0 }}>
+                  <pre style={{ background: "#050505", border: "1px solid var(--border)", borderRadius: 8, padding: 16, fontSize: 12, fontFamily: "var(--font-mono)", color: "var(--terminal-green)", overflowX: "auto", whiteSpace: "pre-wrap", margin: 0 }}>
                     {seedData.json_fixture}
                   </pre>
                 </div>
@@ -7305,10 +7288,10 @@ export default function Home() {
                         showToast("Copied Python factory code!", "success");
                       }}
                     >
-                      📋 Copy Python
+                      Copy Python
                     </button>
                   </div>
-                  <pre style={{ background: "var(--bg-primary)", border: "1px solid var(--border)", borderRadius: 8, padding: 16, fontSize: 12, fontFamily: "var(--font-mono)", color: "#FCD34D", overflowX: "auto", whiteSpace: "pre-wrap", margin: 0 }}>
+                  <pre style={{ background: "#050505", border: "1px solid var(--border)", borderRadius: 8, padding: 16, fontSize: 12, fontFamily: "var(--font-mono)", color: "var(--text-primary)", overflowX: "auto", whiteSpace: "pre-wrap", margin: 0 }}>
                     {seedData.python_factory_code}
                   </pre>
                 </div>
@@ -7325,10 +7308,10 @@ export default function Home() {
                         showToast("Copied TypeScript seeder code!", "success");
                       }}
                     >
-                      📋 Copy TypeScript
+                      Copy TypeScript
                     </button>
                   </div>
-                  <pre style={{ background: "var(--bg-primary)", border: "1px solid var(--border)", borderRadius: 8, padding: 16, fontSize: 12, fontFamily: "var(--font-mono)", color: "var(--text-primary)", overflowX: "auto", whiteSpace: "pre-wrap", margin: 0 }}>
+                  <pre style={{ background: "#050505", border: "1px solid var(--border)", borderRadius: 8, padding: 16, fontSize: 12, fontFamily: "var(--font-mono)", color: "var(--text-primary)", overflowX: "auto", whiteSpace: "pre-wrap", margin: 0 }}>
                     {seedData.typescript_seed_code}
                   </pre>
                 </div>
