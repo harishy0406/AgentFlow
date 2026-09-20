@@ -293,78 +293,6 @@ export default function Home() {
   ]);
   const [simStats, setSimStats] = useState({ tokens: 0, costUsd: 0, latencyMs: 0 });
 
-  // HelixQL-Style Hero Mockup Window Interactive State (Tailored for AgentFlow)
-  const HERO_MOCKUP_SCENARIOS = [
-    {
-      id: "rate-limiter",
-      query: "Build a resilient distributed rate limiter with Redis and metrics",
-      badge1: "✓ AST verified · 0 errors",
-      badge2: "⚡ 7-Agent DAG: 0.8s",
-      statusMsg: "Zero drift detected across 7 topological artifacts",
-      tableCols: ["Agent Stage", "Artifact", "Status"],
-      tableRows: [
-        { c1: "System Architect", c2: "SDD Topology", c3: "VERIFIED" },
-        { c1: "DB Engineer", c2: "PostgreSQL 3NF", c3: "VERIFIED" },
-        { c1: "Dev Fleet", c2: "FastAPI + AST", c3: "COMPILED" },
-      ],
-      optTitle: "DAG ENGINE",
-      optStats: [
-        { label: "Stages", val: "7/7 Synced", isTeal: false },
-        { label: "AST Check", val: "Pass (100%)", isTeal: false },
-        { label: "Regen Latency", val: "0.8s", isTeal: true },
-      ]
-    },
-    {
-      id: "fintech-escrow",
-      query: "Scaffold multi-party escrow contract with Stripe Webhooks & Ledger",
-      badge1: "✓ OpenAPI 3.0.3 · Schema locked",
-      badge2: "⚡ Diff-aware BFS: 0.3s",
-      statusMsg: "Double-entry balance invariants mathematically proven",
-      tableCols: ["Agent Stage", "Artifact", "Status"],
-      tableRows: [
-        { c1: "Product Analyst", c2: "PRD Matrix", c3: "LOCKED" },
-        { c1: "API Designer", c2: "OpenAPI Contract", c3: "VALIDATED" },
-        { c1: "Scrum Master", c2: "Gherkin Acceptance", c3: "PASSED" },
-      ],
-      optTitle: "DAG ENGINE",
-      optStats: [
-        { label: "Auditor", val: "0 Discrepancies", isTeal: false },
-        { label: "Downstream", val: "3 Inval", isTeal: false },
-        { label: "In-Memory ZIP", val: "Ready", isTeal: true },
-      ]
-    },
-    {
-      id: "tenant-schema",
-      query: "Generate high-throughput tenant schema with B-Tree indexes",
-      badge1: "✓ SQL DDL verified · ACID safe",
-      badge2: "⚡ Migration cost: $0.00",
-      statusMsg: "Foreign key cyclic dependencies eliminated via topological sort",
-      tableCols: ["Table Name", "Storage Engine", "Index Plan"],
-      tableRows: [
-        { c1: "tenant_nodes", c2: "PostgreSQL 16", c3: "2 B-Tree" },
-        { c1: "dag_pipelines", c2: "TimescaleDB", c3: "1 Hyper" },
-        { c1: "agent_telemetry", c2: "ClickHouse", c3: "1 Sparse" },
-      ],
-      optTitle: "SCHEMA OPTIMIZER",
-      optStats: [
-        { label: "Schema NF", val: "3NF Certified", isTeal: false },
-        { label: "AST Smoke", val: "Zero Errors", isTeal: false },
-        { label: "API Reduction", val: "64.2%", isTeal: true },
-      ]
-    }
-  ];
-
-  const [heroMockupIdx, setHeroMockupIdx] = useState(0);
-  const [heroMockupRunning, setHeroMockupRunning] = useState(false);
-
-  const handleHeroMockupRun = () => {
-    setHeroMockupRunning(true);
-    setTimeout(() => {
-      setHeroMockupIdx((prev) => (prev + 1) % HERO_MOCKUP_SCENARIOS.length);
-      setHeroMockupRunning(false);
-    }, 300);
-  };
-
   useEffect(() => {
     try {
       const saved = localStorage.getItem("agentflow_theme");
@@ -903,302 +831,164 @@ export default function Home() {
         <div key={saasTab} className="tab-view-container">
           {/* Top Hero Banner & Live DAG Simulator */}
           {saasTab === "home" && (
-          <div style={{ marginBottom: 48 }}>
-            {/* HelixQL-Style Split Hero Section */}
-            <div className="split-hero-wrapper">
-              <div className="split-hero-container">
-                {/* Left Column: Firewall Badge, Punchy Headline, Paragraph, Actions */}
-                <div className="hero-left-col">
-                  <div className="hero-firewall-pill">
-                    <span className="hero-pill-dot" />
-                    Autonomous 7-Agent Fleet · Air-Gapped Engine
+          <div className="home-hero-split">
+            {/* Left Column: Hero Copy, Badges & Actions */}
+            <div className="home-hero-left">
+              <div className="badge badge-green" style={{ marginBottom: 18, padding: "5px 14px", fontSize: 12, borderRadius: 20, display: "inline-flex", width: "fit-content" }}>
+                <span className="pulse-beacon" style={{ marginRight: 6 }} />
+                AUTONOMOUS 7-AGENT ORCHESTRATION PLATFORM
+              </div>
+              <h1 className="home-hero-title">
+                Deterministic Software Engineering. <br />
+                <span style={{ color: "var(--text-secondary)" }}>
+                  Orchestrated by a 7-Agent DAG Fleet.
+                </span>
+              </h1>
+              <p className="home-hero-desc">
+                Single-shot prompts generate unmaintainable, drifted code. AgentFlow compiles structured Product Requirements, Architecture, Relational Schemas, and OpenAPI Specifications into production-ready software with AST verification and diff-aware micro-regeneration.
+              </p>
+              <div className="home-hero-actions">
+                <button className="btn btn-primary btn-lg" onClick={() => setSaasTab("studio")}>
+                  Launch Studio Workspace &rarr;
+                </button>
+                <button className="btn btn-secondary btn-lg" onClick={() => setSaasTab("docs")}>
+                  Documentation &amp; Quickstart
+                </button>
+                <button className="btn btn-secondary btn-lg" onClick={() => setSaasTab("pricing")}>
+                  Editions &amp; Pricing
+                </button>
+              </div>
+
+              {/* Trust / Capability Highlights */}
+              <div className="home-hero-badges">
+                <div className="home-hero-badge-item">
+                  <span style={{ color: "var(--terminal-green)", marginRight: 6, fontWeight: 700 }}>✓</span>
+                  <span>Formal DAG Verification</span>
+                </div>
+                <div className="home-hero-badge-item">
+                  <span style={{ color: "var(--terminal-green)", marginRight: 6, fontWeight: 700 }}>✓</span>
+                  <span>Multi-Model AST Checks</span>
+                </div>
+                <div className="home-hero-badge-item">
+                  <span style={{ color: "var(--terminal-green)", marginRight: 6, fontWeight: 700 }}>✓</span>
+                  <span>Diff-Aware Micro-Regen</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Right Column: Live Interactive DAG Simulator */}
+            <div className="home-hero-right">
+              <div className="sim-playground">
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16, flexWrap: "wrap", gap: 10 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                    <div className="terminal-dots">
+                      <span className="terminal-dot red" />
+                      <span className="terminal-dot yellow" />
+                      <span className="terminal-dot green" />
+                    </div>
+                    <span style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)", fontFamily: "var(--font-mono)" }}>
+                      dag-engine::runtime-simulator
+                    </span>
                   </div>
+                  <div style={{ display: "flex", gap: 10, fontSize: 11.5, color: "var(--text-secondary)", fontFamily: "var(--font-mono)" }}>
+                    <span>Tokens: <strong style={{ color: "var(--text-primary)" }}>{simStats.tokens.toLocaleString()}</strong></span>
+                    <span style={{ color: "var(--border-hover)" }}>•</span>
+                    <span>Cost: <strong style={{ color: "var(--text-primary)" }}>${simStats.costUsd.toFixed(4)}</strong></span>
+                    <span style={{ color: "var(--border-hover)" }}>•</span>
+                    <span>Latency: <strong style={{ color: "var(--terminal-green)" }}>{simStats.latencyMs}ms</strong></span>
+                  </div>
+                </div>
 
-                  <h1 className="hero-split-title">
-                    Turn requirements into software.<br />
-                    Get verified, production code{" "}
-                    <span className="hero-title-teal">instantly</span>.
-                  </h1>
-
-                  <p className="hero-split-desc">
-                    AgentFlow compiles plain-English specifications into synchronized PRD, Architecture, 3NF schemas, OpenAPI contracts, and verified source code — validated by a 7-agent topological DAG with automated AST syntax checks before a single commit is touched.
-                  </p>
-
-                  <div className="hero-split-actions">
+                {/* Preset Chips */}
+                <div className="sim-preset-chips">
+                  {SIM_PRESETS.map((p) => (
                     <button
-                      className="btn-hero-teal"
+                      key={p.id}
+                      className={`sim-chip ${simPreset === p.id ? "active" : ""}`}
                       onClick={() => {
-                        setSaasTab("studio");
-                        setActiveTab("create");
+                        setSimPreset(p.id);
+                        setSimCustomPrompt(p.brief);
                       }}
                     >
-                      Launch Studio Workspace &rarr;
+                      {p.title}
                     </button>
+                  ))}
+                </div>
 
+                {/* Input Prompt & Simulator Action */}
+                <div style={{ display: "flex", gap: 8, marginBottom: 16, flexWrap: "wrap" }}>
+                  <input
+                    type="text"
+                    className="form-input"
+                    style={{ flex: "1 1 200px", fontSize: 12.5 }}
+                    placeholder="Or enter architecture brief to simulate..."
+                    value={simCustomPrompt || SIM_PRESETS.find(p => p.id === simPreset)?.brief || ""}
+                    onChange={(e) => setSimCustomPrompt(e.target.value)}
+                  />
+                  <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
                     <button
-                      className="btn-hero-dark"
-                      onClick={() => setSaasTab("download")}
-                      title="Download AgentFlow native desktop app"
+                      className="btn btn-primary"
+                      disabled={simRunning}
+                      onClick={handleRunSimulation}
+                      style={{ padding: "0 16px", whiteSpace: "nowrap", fontSize: 12.5 }}
                     >
-                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                        <polyline points="7 10 12 15 17 10" />
-                        <line x1="12" y1="15" x2="12" y2="3" />
-                      </svg>
-                      Download native app
+                      {simRunning ? "Simulating..." : "Simulate Execution"}
+                    </button>
+                    <button
+                      className="btn btn-secondary"
+                      onClick={() => {
+                        const presetObj = SIM_PRESETS.find(p => p.id === simPreset);
+                        setProjectName(presetObj ? presetObj.title.replace(/[^a-zA-Z0-9 ]/g, "").trim() : "Custom AgentFlow App");
+                        setProjectBrief(simCustomPrompt || presetObj?.brief || "");
+                        setSaasTab("studio");
+                        setActiveTab("create");
+                        showToast("Loaded preset into Studio Creator!", "info");
+                      }}
+                      title="Load this architecture into Studio to build real code"
+                      style={{ padding: "0 12px", whiteSpace: "nowrap", fontSize: 12.5 }}
+                    >
+                      Load in Studio
                     </button>
                   </div>
-
-                  <div className="hero-split-guarantee">
-                    Air-gapped execution · Zero hallucination drift · 100% Deterministic
-                  </div>
                 </div>
 
-                {/* Right Column: Interactive Desktop App Window Mockup */}
-                <div className="hero-mockup-window">
-                  <div className="mockup-window-header">
-                    <div className="mockup-dots">
-                      <span className="mockup-dot red" />
-                      <span className="mockup-dot yellow" />
-                      <span className="mockup-dot green" />
-                    </div>
-                    <div className="mockup-window-title">
-                      AgentFlow Studio — connected to 7-agent dag
-                    </div>
-                  </div>
-
-                  <div className="mockup-window-body">
-                    {/* Query Search Bar */}
-                    <div className="mockup-query-bar">
-                      <div className="mockup-query-text">
-                        <span className="mockup-query-prompt">&rsaquo;</span>
-                        <span>{HERO_MOCKUP_SCENARIOS[heroMockupIdx].query}</span>
-                      </div>
-                      <button
-                        className="mockup-run-btn"
-                        onClick={handleHeroMockupRun}
-                        disabled={heroMockupRunning}
-                        title="Click to simulate DAG execution"
+                {/* Visual 7-Stage DAG Nodes */}
+                <div className="sim-dag-grid">
+                  {DAG_STAGES.map((stg, idx) => {
+                    const isActive = simStepIndex === idx;
+                    const isDone = simStepIndex > idx;
+                    return (
+                      <div
+                        key={stg.id}
+                        className={`sim-node-box ${isActive ? "active" : ""} ${isDone ? "completed" : ""}`}
                       >
-                        {heroMockupRunning ? "..." : "Run"}
-                      </button>
-                    </div>
-
-                    {/* Badges and Notice Row */}
-                    <div className="mockup-badges-row">
-                      <span className="mockup-badge-teal">
-                        {HERO_MOCKUP_SCENARIOS[heroMockupIdx].badge1}
-                      </span>
-                      <span className="mockup-badge-teal">
-                        {HERO_MOCKUP_SCENARIOS[heroMockupIdx].badge2}
-                      </span>
-                    </div>
-
-                    <div className="mockup-status-msg">
-                      {HERO_MOCKUP_SCENARIOS[heroMockupIdx].statusMsg}
-                    </div>
-
-                    {/* Code Snippet Box */}
-                    <div className="mockup-code-block">
-                      {heroMockupIdx === 0 && (
-                        <pre style={{ margin: 0 }}>
-                          <span className="mockup-code-func">@limiter</span>.<span className="mockup-code-keyword">route</span>(<span className="mockup-code-str">"/api/v1/checkout"</span>, methods=[<span className="mockup-code-str">"POST"</span>]){"\n"}
-                          <span className="mockup-code-keyword">async def </span><span className="mockup-code-func">rate_limited_checkout</span>(request: Request):{"\n"}
-                          {"    "}client_ip = request.client.host{"\n"}
-                          {"    "}key = f<span className="mockup-code-str">"rate_limit:&#123;client_ip&#125;:&#123;int(time.time() // 60)&#125;"</span>{"\n"}
-                          {"    "}current = <span className="mockup-code-keyword">await </span>redis.<span className="mockup-code-func">incr</span>(key){"\n"}
-                          {"    "}<span className="mockup-code-keyword">if </span>current == 1: <span className="mockup-code-keyword">await </span>redis.<span className="mockup-code-func">expire</span>(key, 60){"\n"}
-                          {"    "}<span className="mockup-code-keyword">if </span>current &gt; 120: <span className="mockup-code-keyword">raise </span>HTTPException(status_code=429){"\n"}
-                          {"    "}<span className="mockup-code-keyword">return await </span><span className="mockup-code-func">process_checkout</span>(request)
-                        </pre>
-                      )}
-                      {heroMockupIdx === 1 && (
-                        <pre style={{ margin: 0 }}>
-                          <span className="mockup-code-func">@router</span>.<span className="mockup-code-keyword">post</span>(<span className="mockup-code-str">"/escrow/release/&#123;contract_id&#125;"</span>){"\n"}
-                          <span className="mockup-code-keyword">async def </span><span className="mockup-code-func">release_milestone</span>(contract_id: UUID, db: AsyncSession):{"\n"}
-                          {"    "}contract = <span className="mockup-code-keyword">await </span><span className="mockup-code-func">get_verified_contract</span>(contract_id, db){"\n"}
-                          {"    "}<span className="mockup-code-keyword">if not </span>contract.ast_audit_passed <span className="mockup-code-keyword">or </span>contract.is_disputed:{"\n"}
-                          {"        "}<span className="mockup-code-keyword">raise </span>ContractGuardViolation(<span className="mockup-code-str">"Invariants violated"</span>){"\n"}
-                          {"    "}tx = <span className="mockup-code-keyword">await </span>ledger.<span className="mockup-code-func">post_transaction</span>(contract.buyer, contract.seller){"\n"}
-                          {"    "}<span className="mockup-code-keyword">return </span>&#123;<span className="mockup-code-str">"status"</span>: <span className="mockup-code-str">"RELEASED"</span>, <span className="mockup-code-str">"tx_hash"</span>: tx.hash&#125;
-                        </pre>
-                      )}
-                      {heroMockupIdx === 2 && (
-                        <pre style={{ margin: 0 }}>
-                          <span className="mockup-code-keyword">CREATE TABLE </span>tenant_nodes ({"\n"}
-                          {"    "}id <span className="mockup-code-func">UUID PRIMARY KEY DEFAULT </span>gen_random_uuid(),{"\n"}
-                          {"    "}tenant_id <span className="mockup-code-func">VARCHAR</span>(64) <span className="mockup-code-keyword">NOT NULL REFERENCES </span>accounts(id),{"\n"}
-                          {"    "}cluster_region <span className="mockup-code-func">VARCHAR</span>(32) <span className="mockup-code-keyword">NOT NULL DEFAULT </span><span className="mockup-code-str">'ap-south-1'</span>,{"\n"}
-                          {"    "}active_agents <span className="mockup-code-func">INTEGER NOT NULL DEFAULT </span>7,{"\n"}
-                          {"    "}created_at <span className="mockup-code-func">TIMESTAMPTZ NOT NULL DEFAULT </span>clock_timestamp(){"\n"}
-                          );{"\n"}
-                          <span className="mockup-code-keyword">CREATE INDEX </span>idx_tenant_active <span className="mockup-code-keyword">ON </span>tenant_nodes(tenant_id, active_agents);
-                        </pre>
-                      )}
-                    </div>
-
-                    {/* Bottom Split Row: Data Table + Optimizer */}
-                    <div className="mockup-bottom-grid">
-                      <div className="mockup-table-card">
-                        <table className="mockup-table">
-                          <thead>
-                            <tr>
-                              {HERO_MOCKUP_SCENARIOS[heroMockupIdx].tableCols.map((col, cIdx) => (
-                                <th key={cIdx}>{col}</th>
-                              ))}
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {HERO_MOCKUP_SCENARIOS[heroMockupIdx].tableRows.map((row, rIdx) => (
-                              <tr key={rIdx}>
-                                <td>{row.c1}</td>
-                                <td>{row.c2}</td>
-                                <td className="mockup-number-teal">{row.c3}</td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-
-                      <div className="mockup-opt-card">
-                        <div className="mockup-opt-header">
-                          {HERO_MOCKUP_SCENARIOS[heroMockupIdx].optTitle}
+                        <div style={{ fontSize: 10.5, fontWeight: 700, fontFamily: "var(--font-mono)", color: "var(--text-muted)", marginBottom: 2 }}>
+                          0{idx + 1}
                         </div>
-                        {HERO_MOCKUP_SCENARIOS[heroMockupIdx].optStats.map((st, sIdx) => (
-                          <div key={sIdx} className="mockup-opt-row">
-                            <span>{st.label}</span>
-                            <span className={`mockup-opt-val ${st.isTeal ? "teal" : ""}`}>{st.val}</span>
-                          </div>
-                        ))}
+                        <div style={{ fontSize: 11.5, fontWeight: 600, color: "var(--text-primary)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{stg.label}</div>
+                        <div style={{ fontSize: 9.5, color: "var(--text-muted)", marginTop: 2, fontFamily: "var(--font-mono)" }}>{stg.model}</div>
+                        <div style={{ marginTop: 6 }}>
+                          <span
+                            className={`badge ${isActive ? "badge-green" : isDone ? "badge-cyan" : ""}`}
+                            style={{ fontSize: 8.5, padding: "2px 5px" }}
+                          >
+                            {isActive ? "ACTIVE" : isDone ? "SYNCED" : "IDLE"}
+                          </span>
+                        </div>
                       </div>
+                    );
+                  })}
+                </div>
+
+                {/* Streaming Terminal Log */}
+                <div className="sim-terminal-box">
+                  {simLogs.map((log, i) => (
+                    <div key={i} style={{ color: log.includes("[SUCCESS]") ? "#00FF66" : log.includes("[STAGE") ? "#FFFFFF" : "var(--terminal-green)" }}>
+                      <span style={{ opacity: 0.5, marginRight: 6 }}>&gt;</span>
+                      {log}
                     </div>
-                  </div>
+                  ))}
                 </div>
-              </div>
-            </div>
-
-            {/* Architecture Section Header & Live DAG Playground */}
-            <div style={{ textAlign: "center", marginBottom: 28, marginTop: 28 }}>
-              <div className="badge badge-green" style={{ marginBottom: 12, padding: "5px 14px", fontSize: 11.5, borderRadius: 20 }}>
-                <span className="pulse-beacon" style={{ marginRight: 6 }} />
-                7-AGENT TOPOLOGICAL DAG FLEET
-              </div>
-              <h2 style={{ fontFamily: "var(--font-display)", fontSize: 26, fontWeight: 700, letterSpacing: "-0.5px", color: "var(--text-primary)", marginBottom: 8 }}>
-                Deterministic Architecture Runtime Simulator
-              </h2>
-              <p style={{ maxWidth: 640, margin: "0 auto", fontSize: 14, color: "var(--text-secondary)", lineHeight: 1.6 }}>
-                Simulate how AgentFlow coordinates 7 specialized AI agents with topological dependency tracking, AST static verification, and isolated context windows.
-              </p>
-            </div>
-
-            {/* Interactive Hero Live Playground */}
-            <div className="sim-playground">
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 18, flexWrap: "wrap", gap: 12 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                  <div className="terminal-dots">
-                    <span className="terminal-dot red" />
-                    <span className="terminal-dot yellow" />
-                    <span className="terminal-dot green" />
-                  </div>
-                  <span style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)", fontFamily: "var(--font-mono)" }}>
-                    dag-engine::runtime-simulator
-                  </span>
-                </div>
-                <div style={{ display: "flex", gap: 12, fontSize: 12, color: "var(--text-secondary)", fontFamily: "var(--font-mono)" }}>
-                  <span>Tokens: <strong style={{ color: "var(--text-primary)" }}>{simStats.tokens.toLocaleString()}</strong></span>
-                  <span style={{ color: "var(--border-hover)" }}>•</span>
-                  <span>Cost: <strong style={{ color: "var(--text-primary)" }}>${simStats.costUsd.toFixed(4)}</strong></span>
-                  <span style={{ color: "var(--border-hover)" }}>•</span>
-                  <span>Latency: <strong style={{ color: "var(--terminal-green)" }}>{simStats.latencyMs}ms</strong></span>
-                </div>
-              </div>
-
-              {/* Preset Chips */}
-              <div className="sim-preset-chips">
-                {SIM_PRESETS.map((p) => (
-                  <button
-                    key={p.id}
-                    className={`sim-chip ${simPreset === p.id ? "active" : ""}`}
-                    onClick={() => {
-                      setSimPreset(p.id);
-                      setSimCustomPrompt(p.brief);
-                    }}
-                  >
-                    {p.title}
-                  </button>
-                ))}
-              </div>
-
-              {/* Input Prompt & Simulator Action */}
-              <div style={{ display: "flex", gap: 10, marginBottom: 18 }}>
-                <input
-                  type="text"
-                  className="form-input"
-                  style={{ flex: 1, fontSize: 13 }}
-                  placeholder="Or enter a custom architecture specification to simulate..."
-                  value={simCustomPrompt || SIM_PRESETS.find(p => p.id === simPreset)?.brief || ""}
-                  onChange={(e) => setSimCustomPrompt(e.target.value)}
-                />
-                <button
-                  className="btn btn-primary"
-                  disabled={simRunning}
-                  onClick={handleRunSimulation}
-                  style={{ padding: "0 20px", whiteSpace: "nowrap" }}
-                >
-                  {simRunning ? "Simulating DAG..." : "Simulate Execution"}
-                </button>
-                <button
-                  className="btn btn-secondary"
-                  onClick={() => {
-                    const presetObj = SIM_PRESETS.find(p => p.id === simPreset);
-                    setProjectName(presetObj ? presetObj.title.replace(/[^a-zA-Z0-9 ]/g, "").trim() : "Custom AgentFlow App");
-                    setProjectBrief(simCustomPrompt || presetObj?.brief || "");
-                    setSaasTab("studio");
-                    setActiveTab("create");
-                    showToast("Loaded preset into Studio Creator!", "info");
-                  }}
-                  title="Load this architecture into Studio to build real code"
-                >
-                  Load in Studio
-                </button>
-              </div>
-
-              {/* Visual 7-Stage DAG Nodes */}
-              <div className="sim-dag-grid">
-                {DAG_STAGES.map((stg, idx) => {
-                  const isActive = simStepIndex === idx;
-                  const isDone = simStepIndex > idx;
-                  return (
-                    <div
-                      key={stg.id}
-                      className={`sim-node-box ${isActive ? "active" : ""} ${isDone ? "completed" : ""}`}
-                    >
-                      <div style={{ fontSize: 11, fontWeight: 700, fontFamily: "var(--font-mono)", color: "var(--text-muted)", marginBottom: 4 }}>
-                        0{idx + 1}
-                      </div>
-                      <div style={{ fontSize: 12, fontWeight: 600, color: "var(--text-primary)" }}>{stg.label}</div>
-                      <div style={{ fontSize: 10, color: "var(--text-muted)", marginTop: 2, fontFamily: "var(--font-mono)" }}>{stg.model}</div>
-                      <div style={{ marginTop: 8 }}>
-                        <span
-                          className={`badge ${isActive ? "badge-green" : isDone ? "badge-cyan" : ""}`}
-                          style={{ fontSize: 9, padding: "2px 6px" }}
-                        >
-                          {isActive ? "ACTIVE" : isDone ? "SYNCED" : "IDLE"}
-                        </span>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-
-              {/* Streaming Terminal Log */}
-              <div className="sim-terminal-box">
-                {simLogs.map((log, i) => (
-                  <div key={i} style={{ color: log.includes("[SUCCESS]") ? "#00FF66" : log.includes("[STAGE") ? "#FFFFFF" : "var(--terminal-green)" }}>
-                    <span style={{ opacity: 0.5, marginRight: 8 }}>&gt;</span>
-                    {log}
-                  </div>
-                ))}
               </div>
             </div>
           </div>
