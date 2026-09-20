@@ -323,6 +323,28 @@ export default function Home() {
     setTimeout(() => setToast(null), 3000);
   }, []);
 
+  // Floating AI Agent Pet ("Flowy") state
+  const [petMessageIdx, setPetMessageIdx] = useState(0);
+  const [petCheer, setPetCheer] = useState(false);
+  const [showPetBubble, setShowPetBubble] = useState(true);
+
+  const petMessages = [
+    "Hi! I'm Flowy, your AI fleet pet! 🐾",
+    "7 Agents active & synchronized! ⚡",
+    "Engineered by M Harish Gautham 🎓",
+    "Reg No: 22MIS0421 • VIT Vellore 🚀",
+    "Deterministic DAG with AST checks active ✨",
+    "Click me to cheer me up! 🤖",
+    "Ready to compile your next architecture!",
+  ];
+
+  const handlePetClick = () => {
+    setPetCheer(true);
+    setPetMessageIdx((prev) => (prev + 1) % petMessages.length);
+    setShowPetBubble(true);
+    setTimeout(() => setPetCheer(false), 600);
+  };
+
   // Real-time WebSocket connection for live graph status transitions
   useEffect(() => {
     if (!currentProject?.id) return;
@@ -552,6 +574,12 @@ export default function Home() {
 
   return (
     <div className="dashboard">
+      {/* Animated Cyber Grid Lines Background */}
+      <div className="cyber-grid-container" aria-hidden="true">
+        <div className="cyber-grid-lines" />
+        <div className="cyber-grid-beam" />
+      </div>
+
       {/* Minimalist Top Navbar */}
       <nav className="navbar">
         <div className="navbar-brand" onClick={() => setSaasTab("home")}>
@@ -800,8 +828,9 @@ export default function Home() {
 
       {/* Main Content */}
       <div className="main-content">
-        {/* Top Hero Banner & Live DAG Simulator */}
-        {saasTab === "home" && (
+        <div key={saasTab} className="tab-view-container">
+          {/* Top Hero Banner & Live DAG Simulator */}
+          {saasTab === "home" && (
           <div style={{ marginBottom: 48, textAlign: "center", padding: "48px 20px 24px" }}>
             <div className="badge badge-green" style={{ marginBottom: 20, padding: "5px 14px", fontSize: 12, borderRadius: 20 }}>
               <span className="pulse-beacon" style={{ marginRight: 6 }} />
@@ -1670,6 +1699,8 @@ export default function Home() {
               </div>
             </div>
 
+        {/* Studio Sub-Tab Active View */}
+        <div key={activeTab} className="studio-tab-view">
         {/* Tab: Create Project (with HITL Clarification) */}
         {activeTab === "create" && (
           <div className="card">
@@ -6091,52 +6122,166 @@ export default function Home() {
             )}
           </div>
         )}
+        </div>
           </div>
         )}
+        </div>
       </div>
 
-      {/* Sleek Minimalist Developer Footer */}
+      {/* Redesigned Multi-Column Engineering & Developer Footer */}
       <footer className="footer">
         <div className="footer-container">
-          <div className="footer-main">
-            <div className="footer-brand-compact">
-              <div className="brand-icon" style={{ width: 22, height: 22, fontSize: 11 }}>AF</div>
-              <span className="footer-brand-title">AgentFlow</span>
-              <span className="footer-version">v0.8.0</span>
-              <span className="footer-status-indicator">
-                <span className="pulse-beacon" /> 7 Agents Active
-              </span>
+          <div className="footer-grid">
+            {/* Column 1: Student & Lead Architect Profile */}
+            <div>
+              <div className="footer-col-title">
+                <span className="pulse-beacon" /> Lead Architect &amp; Engineering
+              </div>
+              <div className="footer-creator-card">
+                <div className="footer-creator-header">
+                  <div className="footer-creator-avatar">HG</div>
+                  <div>
+                    <div className="footer-creator-name">M Harish Gautham</div>
+                    <div className="footer-creator-id">22MIS0421</div>
+                  </div>
+                </div>
+                <div className="footer-creator-inst">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M22 10v6M2 10l10-5 10 5-10 5z" />
+                    <path d="M6 12v5c3 3 9 3 12 0v-5" />
+                  </svg>
+                  <span><strong>VIT Vellore</strong> (Vellore Institute of Technology)</span>
+                </div>
+                <div style={{ fontSize: 11.5, color: "var(--text-secondary)", lineHeight: 1.5 }}>
+                  Autonomous 7-Agent DAG orchestration platform engineered with deterministic AST syntax verification, cross-service contract alignment, and automated scaffolding.
+                </div>
+                <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 4 }}>
+                  <span className="badge badge-green" style={{ fontSize: 9.5 }}>VIT VELLORE</span>
+                  <span className="badge badge-muted" style={{ fontSize: 9.5 }}>22MIS0421</span>
+                  <span className="badge badge-muted" style={{ fontSize: 9.5 }}>SITE DEPT</span>
+                </div>
+              </div>
             </div>
 
-            <nav className="footer-nav">
-              <button onClick={() => setSaasTab("home")}>Home</button>
-              <button onClick={() => { setSaasTab("studio"); setActiveTab("create"); }}>Studio</button>
-              <button onClick={() => setSaasTab("features")}>Features</button>
-              <button onClick={() => setSaasTab("workflow")}>Workflow</button>
-              <button onClick={() => setSaasTab("pricing")}>Pricing</button>
-              <button onClick={() => setSaasTab("docs")}>Docs</button>
-              <button onClick={() => setSaasTab("download")}>Download</button>
-              <button onClick={() => setSaasTab("about")}>About</button>
-              <a href="https://github.com" target="_blank" rel="noreferrer">GitHub</a>
-            </nav>
+            {/* Column 2: Autonomous 7-Agent Fleet */}
+            <div>
+              <div className="footer-col-title">Autonomous 7-Agent Fleet</div>
+              <ul className="footer-links-list">
+                <li><button onClick={() => { setSaasTab("studio"); setActiveTab("graph"); }}>1. Requirements Engineer</button></li>
+                <li><button onClick={() => { setSaasTab("studio"); setActiveTab("graph"); }}>2. System Architect (DAG)</button></li>
+                <li><button onClick={() => { setSaasTab("studio"); setActiveTab("db"); }}>3. Database &amp; SQL Specialist</button></li>
+                <li><button onClick={() => { setSaasTab("studio"); setActiveTab("api"); }}>4. API &amp; Contract Engineer</button></li>
+                <li><button onClick={() => { setSaasTab("studio"); setActiveTab("code"); }}>5. Code Synthesizer (AST Guard)</button></li>
+                <li><button onClick={() => { setSaasTab("studio"); setActiveTab("security"); }}>6. Security Shield (OWASP)</button></li>
+                <li><button onClick={() => { setSaasTab("studio"); setActiveTab("evaluations"); }}>7. QA &amp; Integration Validator</button></li>
+              </ul>
+            </div>
+
+            {/* Column 3: Workspaces & Platform Navigation */}
+            <div>
+              <div className="footer-col-title">Platform Navigation</div>
+              <ul className="footer-links-list">
+                <li><button onClick={() => setSaasTab("home")}>Home Page &amp; Simulator</button></li>
+                <li><button onClick={() => { setSaasTab("studio"); setActiveTab("create"); }}>Studio Workspace</button></li>
+                <li><button onClick={() => setSaasTab("features")}>Features &amp; Benchmarks</button></li>
+                <li><button onClick={() => setSaasTab("workflow")}>Autonomous Workflow</button></li>
+                <li><button onClick={() => setSaasTab("pricing")}>Editions &amp; Pricing</button></li>
+                <li><button onClick={() => setSaasTab("docs")}>Docs &amp; Local Setup</button></li>
+                <li><button onClick={() => setSaasTab("download")}>Releases &amp; Exports</button></li>
+                <li><button onClick={() => setSaasTab("about")}>Architecture Rationale</button></li>
+              </ul>
+            </div>
+
+            {/* Column 4: System Specs & Core Stack */}
+            <div>
+              <div className="footer-col-title">System &amp; Architecture Specs</div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 10, fontSize: 12, color: "var(--text-secondary)" }}>
+                <div>
+                  <div style={{ fontWeight: 600, color: "var(--text-primary)", marginBottom: 2 }}>Core Framework</div>
+                  <div style={{ fontFamily: "var(--font-mono)", fontSize: 11 }}>LangGraph 0.2 + FastAPI Python 3.12</div>
+                </div>
+                <div>
+                  <div style={{ fontWeight: 600, color: "var(--text-primary)", marginBottom: 2 }}>Frontend Engine</div>
+                  <div style={{ fontFamily: "var(--font-mono)", fontSize: 11 }}>Next.js 16 (Turbopack Powered)</div>
+                </div>
+                <div>
+                  <div style={{ fontWeight: 600, color: "var(--text-primary)", marginBottom: 2 }}>Verification Engine</div>
+                  <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--terminal-green)" }}>AST Python/TS Syntax Compiler</div>
+                </div>
+                <div style={{ marginTop: 6 }}>
+                  <div className="footer-badge" style={{ display: "inline-flex", alignItems: "center", gap: 6, color: "var(--terminal-green)" }}>
+                    <span className="pulse-beacon" /> SYSTEM OPERATIONAL
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
 
-          <div className="footer-sub">
-            <div className="footer-copy">
-              &copy; {new Date().getFullYear()} AgentFlow. Autonomous 7-agent DAG orchestration.
+          {/* Footer Bottom Bar */}
+          <div className="footer-bottom-bar">
+            <div>
+              &copy; {new Date().getFullYear()} <strong>AgentFlow</strong>. Developed by <strong>M Harish Gautham</strong> (Reg No: <strong>22MIS0421</strong>), <strong>VIT Vellore</strong>.
             </div>
-            <div className="footer-meta">
-              <span>LangGraph Core</span>
-              <span className="footer-sep">•</span>
-              <span>FastAPI</span>
-              <span className="footer-sep">•</span>
-              <span>Next.js 16</span>
-              <span className="footer-sep">•</span>
-              <span style={{ color: "var(--terminal-green)" }}>AST-Verified</span>
+            <div className="footer-bottom-badges">
+              <span className="footer-badge">VIT VELLORE</span>
+              <span className="footer-badge">22MIS0421</span>
+              <span className="footer-badge">LANGGRAPH</span>
+              <span className="footer-badge">FASTAPI</span>
+              <span className="footer-badge">NEXT.JS 16</span>
+              <a
+                href="https://github.com"
+                target="_blank"
+                rel="noreferrer"
+                className="footer-badge"
+                style={{ textDecoration: "none", color: "var(--text-primary)" }}
+              >
+                GitHub ↗
+              </a>
             </div>
           </div>
         </div>
       </footer>
+
+      {/* Interactive Floating AI Agent Pet ("Flowy") */}
+      <div className="agent-pet-wrapper">
+        <div
+          className={`agent-pet-container ${petCheer ? "cheer" : ""}`}
+          onClick={handlePetClick}
+          title="Click to interact with Flowy, your AgentFlow AI Pet!"
+        >
+          {showPetBubble && (
+            <div className="pet-speech-bubble" onClick={(e) => e.stopPropagation()}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
+                <span style={{ fontSize: 10, fontFamily: "var(--font-mono)", color: "var(--terminal-green)", fontWeight: 700 }}>
+                  FLOWY :: AI PET
+                </span>
+                <button
+                  onClick={() => setShowPetBubble(false)}
+                  style={{ background: "transparent", border: "none", color: "var(--text-muted)", cursor: "pointer", fontSize: 10, padding: 0 }}
+                  title="Dismiss bubble"
+                >
+                  ✕
+                </button>
+              </div>
+              <div style={{ lineHeight: 1.4 }}>{petMessages[petMessageIdx]}</div>
+            </div>
+          )}
+
+          {/* Pet Robot Chassis */}
+          <div className="pet-chassis">
+            <div className="pet-antenna">
+              <div className="pet-antenna-light" />
+            </div>
+            <div className="pet-visor">
+              <div className="pet-eye" />
+              <div className="pet-eye" />
+            </div>
+          </div>
+
+          <div className="pet-thruster" />
+          <div className="pet-shadow" />
+        </div>
+      </div>
       {toast && (
         <div className={`toast toast-${toast.type}`}>{toast.message}</div>
       )}
