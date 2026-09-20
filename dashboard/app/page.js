@@ -528,7 +528,7 @@ export default function Home() {
     { id: "DB_SCHEMA", label: "DB Schema", agent: "DB Engineer", model: "Claude Haiku", icon: "🗄️", logMsg: "Synthesizing third-normal-form relational tables & indexing strategies..." },
     { id: "API_SPEC", label: "OpenAPI 3.0", agent: "API Designer", model: "Claude Haiku", icon: "⚡", logMsg: "Generating OpenAPI 3.0.3 endpoints, schemas, and error contracts..." },
     { id: "USER_STORIES", label: "User Stories", agent: "Scrum Master", model: "Claude Haiku", icon: "📖", logMsg: "Drafting Gherkin-format acceptance criteria & developer story points..." },
-    { id: "TASKS", label: "Work Breakdown", agent: "Tech Lead", model: "GPT-4o", icon: "🔨", logMsg: "Decomposing epics into dependency-ordered engineering task DAGs..." },
+    { id: "TASKS", label: "Task DAG", agent: "Tech Lead", model: "GPT-4o", icon: "🔨", logMsg: "Decomposing epics into dependency-ordered engineering task DAGs..." },
     { id: "CODE", label: "Source Code", agent: "Dev Fleet", model: "Claude 3.5 Sonnet", icon: "🚀", logMsg: "Scaffolding multi-file repository with AST syntax verification..." }
   ];
 
@@ -834,43 +834,43 @@ export default function Home() {
           <div className="home-hero-split">
             {/* Left Column: Hero Copy, Badges & Actions */}
             <div className="home-hero-left">
-              <div className="badge badge-green" style={{ marginBottom: 18, padding: "5px 14px", fontSize: 12, borderRadius: 20, display: "inline-flex", width: "fit-content" }}>
+              <div className="badge badge-green" style={{ marginBottom: 16, padding: "5px 14px", fontSize: 12, borderRadius: 20, display: "inline-flex", width: "fit-content" }}>
                 <span className="pulse-beacon" style={{ marginRight: 6 }} />
                 AUTONOMOUS 7-AGENT ORCHESTRATION PLATFORM
               </div>
               <h1 className="home-hero-title">
-                Deterministic Software Engineering. <br />
-                <span style={{ color: "var(--text-secondary)" }}>
+                Deterministic Software Engineering,
+                <span className="home-hero-subtitle">
                   Orchestrated by a 7-Agent DAG Fleet.
                 </span>
               </h1>
               <p className="home-hero-desc">
-                Single-shot prompts generate unmaintainable, drifted code. AgentFlow compiles structured Product Requirements, Architecture, Relational Schemas, and OpenAPI Specifications into production-ready software with AST verification and diff-aware micro-regeneration.
+                Single-shot prompts generate unmaintainable, drifted code. AgentFlow compiles structured PRDs, architecture, database schemas, and OpenAPI specs into production-ready software with AST verification and diff-aware micro-regeneration.
               </p>
               <div className="home-hero-actions">
-                <button className="btn btn-primary btn-lg" onClick={() => setSaasTab("studio")}>
+                <button className="btn btn-primary" onClick={() => setSaasTab("studio")}>
                   Launch Studio Workspace &rarr;
                 </button>
-                <button className="btn btn-secondary btn-lg" onClick={() => setSaasTab("docs")}>
-                  Documentation &amp; Quickstart
+                <button className="btn btn-secondary" onClick={() => setSaasTab("docs")}>
+                  Documentation
                 </button>
-                <button className="btn btn-secondary btn-lg" onClick={() => setSaasTab("pricing")}>
+                <button className="btn btn-secondary" onClick={() => setSaasTab("pricing")}>
                   Editions &amp; Pricing
                 </button>
               </div>
 
-              {/* Trust / Capability Highlights */}
-              <div className="home-hero-badges">
-                <div className="home-hero-badge-item">
-                  <span style={{ color: "var(--terminal-green)", marginRight: 6, fontWeight: 700 }}>✓</span>
+              {/* Trust / Capability Highlights (Single-Row Balanced Grid) */}
+              <div className="home-hero-trust-grid">
+                <div className="home-hero-trust-item">
+                  <span style={{ color: "var(--terminal-green)", fontWeight: 700 }}>✓</span>
                   <span>Formal DAG Verification</span>
                 </div>
-                <div className="home-hero-badge-item">
-                  <span style={{ color: "var(--terminal-green)", marginRight: 6, fontWeight: 700 }}>✓</span>
+                <div className="home-hero-trust-item">
+                  <span style={{ color: "var(--terminal-green)", fontWeight: 700 }}>✓</span>
                   <span>Multi-Model AST Checks</span>
                 </div>
-                <div className="home-hero-badge-item">
-                  <span style={{ color: "var(--terminal-green)", marginRight: 6, fontWeight: 700 }}>✓</span>
+                <div className="home-hero-trust-item">
+                  <span style={{ color: "var(--terminal-green)", fontWeight: 700 }}>✓</span>
                   <span>Diff-Aware Micro-Regen</span>
                 </div>
               </div>
@@ -879,7 +879,7 @@ export default function Home() {
             {/* Right Column: Live Interactive DAG Simulator */}
             <div className="home-hero-right">
               <div className="sim-playground">
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16, flexWrap: "wrap", gap: 10 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14, flexWrap: "wrap", gap: 10 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                     <div className="terminal-dots">
                       <span className="terminal-dot red" />
@@ -916,21 +916,21 @@ export default function Home() {
                 </div>
 
                 {/* Input Prompt & Simulator Action */}
-                <div style={{ display: "flex", gap: 8, marginBottom: 16, flexWrap: "wrap" }}>
+                <div style={{ display: "flex", gap: 8, marginBottom: 14, flexWrap: "wrap" }}>
                   <input
                     type="text"
                     className="form-input"
-                    style={{ flex: "1 1 200px", fontSize: 12.5 }}
-                    placeholder="Or enter architecture brief to simulate..."
+                    style={{ flex: "1 1 180px", fontSize: 12.5 }}
+                    placeholder="Enter architecture brief to simulate..."
                     value={simCustomPrompt || SIM_PRESETS.find(p => p.id === simPreset)?.brief || ""}
                     onChange={(e) => setSimCustomPrompt(e.target.value)}
                   />
-                  <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
+                  <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
                     <button
                       className="btn btn-primary"
                       disabled={simRunning}
                       onClick={handleRunSimulation}
-                      style={{ padding: "0 16px", whiteSpace: "nowrap", fontSize: 12.5 }}
+                      style={{ padding: "0 14px", whiteSpace: "nowrap", fontSize: 12 }}
                     >
                       {simRunning ? "Simulating..." : "Simulate Execution"}
                     </button>
@@ -945,7 +945,7 @@ export default function Home() {
                         showToast("Loaded preset into Studio Creator!", "info");
                       }}
                       title="Load this architecture into Studio to build real code"
-                      style={{ padding: "0 12px", whiteSpace: "nowrap", fontSize: 12.5 }}
+                      style={{ padding: "0 12px", whiteSpace: "nowrap", fontSize: 12 }}
                     >
                       Load in Studio
                     </button>
@@ -962,10 +962,10 @@ export default function Home() {
                         key={stg.id}
                         className={`sim-node-box ${isActive ? "active" : ""} ${isDone ? "completed" : ""}`}
                       >
-                        <div style={{ fontSize: 10.5, fontWeight: 700, fontFamily: "var(--font-mono)", color: "var(--text-muted)", marginBottom: 2 }}>
+                        <div style={{ fontSize: 10, fontWeight: 700, fontFamily: "var(--font-mono)", color: "var(--text-muted)", marginBottom: 2 }}>
                           0{idx + 1}
                         </div>
-                        <div style={{ fontSize: 11.5, fontWeight: 600, color: "var(--text-primary)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{stg.label}</div>
+                        <div style={{ fontSize: 11, fontWeight: 600, color: "var(--text-primary)", whiteSpace: "nowrap" }}>{stg.label}</div>
                         <div style={{ fontSize: 9.5, color: "var(--text-muted)", marginTop: 2, fontFamily: "var(--font-mono)" }}>{stg.model}</div>
                         <div style={{ marginTop: 6 }}>
                           <span
