@@ -761,46 +761,51 @@ export default function Home() {
       <div className="main-content">
         {/* Top Hero Banner & Live DAG Simulator */}
         {saasTab !== "studio" && (
-          <div style={{ marginBottom: 40, textAlign: "center", padding: "40px 20px" }}>
-            <div className="badge badge-green" style={{ marginBottom: 16, padding: "4px 12px", fontSize: 12 }}>
-              🚀 AUTONOMOUS 7-AGENT MULTI-MODEL ORCHESTRATION PLATFORM
+          <div style={{ marginBottom: 48, textAlign: "center", padding: "48px 20px 24px" }}>
+            <div className="badge badge-green" style={{ marginBottom: 20, padding: "5px 14px", fontSize: 12, borderRadius: 20 }}>
+              <span className="pulse-beacon" style={{ marginRight: 6 }} />
+              AUTONOMOUS 7-AGENT ORCHESTRATION PLATFORM
             </div>
-            <h1 style={{ fontFamily: "var(--font-display)", fontSize: 44, fontWeight: 900, letterSpacing: -1.5, marginBottom: 16, lineHeight: 1.15 }}>
-              Deterministic Software Engineering <br />
-              <span style={{ background: "var(--gradient-cyber)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
-                Powered by a 7-Agent DAG Fleet
+            <h1 style={{ fontFamily: "var(--font-display)", fontSize: 44, fontWeight: 800, letterSpacing: "-1.2px", marginBottom: 18, lineHeight: 1.15, color: "#EDEDED" }}>
+              Deterministic Software Engineering. <br />
+              <span style={{ color: "#777777" }}>
+                Orchestrated by a 7-Agent DAG Fleet.
               </span>
             </h1>
-            <p style={{ maxWidth: 780, margin: "0 auto 28px", fontSize: 16, color: "var(--text-secondary)", lineHeight: 1.6 }}>
-              Stop generating fragile code from single-shot prompts. AgentFlow synchronizes Product Requirements, Architecture, Relational Schemas, OpenAPI Specs, User Stories, and Scaffolded Source Code with zero-blast-radius micro-regeneration.
+            <p style={{ maxWidth: 740, margin: "0 auto 32px", fontSize: 15.5, color: "var(--text-secondary)", lineHeight: 1.65 }}>
+              Single-shot prompts generate unmaintainable, drifted code. AgentFlow compiles structured Product Requirements, Architecture, Relational Schemas, and OpenAPI Specifications into production-ready software with AST verification and diff-aware micro-regeneration.
             </p>
-            <div style={{ display: "flex", gap: 14, justifyContent: "center", flexWrap: "wrap", marginBottom: 32 }}>
-              <button className="btn btn-primary" onClick={() => setSaasTab("studio")} style={{ fontSize: 15, padding: "12px 24px" }}>
-                ⚡ Launch Studio
+            <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap", marginBottom: 40 }}>
+              <button className="btn btn-primary btn-lg" onClick={() => setSaasTab("studio")}>
+                Launch Studio Workspace &rarr;
               </button>
-              <button className="btn btn-secondary" onClick={() => setSaasTab("docs")} style={{ fontSize: 15, padding: "12px 24px" }}>
-                📖 Read Docs &amp; Setup
+              <button className="btn btn-secondary btn-lg" onClick={() => setSaasTab("docs")}>
+                Documentation &amp; Quickstart
               </button>
-              <button className="btn btn-secondary" onClick={() => setSaasTab("pricing")} style={{ fontSize: 15, padding: "12px 24px" }}>
-                💎 View Pricing
+              <button className="btn btn-secondary btn-lg" onClick={() => setSaasTab("pricing")}>
+                Editions &amp; Pricing
               </button>
             </div>
 
             {/* Interactive Hero Live Playground */}
             <div className="sim-playground">
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16, flexWrap: "wrap", gap: 8 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <span className="brand-terminal-tag">&gt;_ DAG_RUNNER</span>
-                  <span style={{ fontSize: 13, fontWeight: 700, color: "var(--text-primary)" }}>
-                    Interactive 7-Agent Topological Playground
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 18, flexWrap: "wrap", gap: 12 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <div className="terminal-dots">
+                    <span className="terminal-dot red" />
+                    <span className="terminal-dot yellow" />
+                    <span className="terminal-dot green" />
+                  </div>
+                  <span style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)", fontFamily: "var(--font-mono)" }}>
+                    dag-engine::runtime-simulator
                   </span>
                 </div>
-                <div style={{ display: "flex", gap: 8, fontSize: 11, color: "var(--text-secondary)" }}>
-                  <span>⚡ Tokens: <strong style={{ color: "var(--neon-green)" }}>{simStats.tokens.toLocaleString()}</strong></span>
-                  <span>•</span>
-                  <span>💸 Cost: <strong style={{ color: "var(--accent-cyan)" }}>${simStats.costUsd.toFixed(4)}</strong></span>
-                  <span>•</span>
-                  <span>⏱️ Latency: <strong style={{ color: "var(--text-primary)" }}>{simStats.latencyMs}ms</strong></span>
+                <div style={{ display: "flex", gap: 12, fontSize: 12, color: "var(--text-secondary)", fontFamily: "var(--font-mono)" }}>
+                  <span>Tokens: <strong style={{ color: "#EDEDED" }}>{simStats.tokens.toLocaleString()}</strong></span>
+                  <span style={{ color: "#333" }}>•</span>
+                  <span>Cost: <strong style={{ color: "#EDEDED" }}>${simStats.costUsd.toFixed(4)}</strong></span>
+                  <span style={{ color: "#333" }}>•</span>
+                  <span>Latency: <strong style={{ color: "var(--terminal-green)" }}>{simStats.latencyMs}ms</strong></span>
                 </div>
               </div>
 
@@ -821,11 +826,11 @@ export default function Home() {
               </div>
 
               {/* Input Prompt & Simulator Action */}
-              <div style={{ display: "flex", gap: 10, marginBottom: 16 }}>
+              <div style={{ display: "flex", gap: 10, marginBottom: 18 }}>
                 <input
                   type="text"
                   className="form-input"
-                  style={{ flex: 1, fontSize: 13, background: "rgba(0,0,0,0.3)" }}
+                  style={{ flex: 1, fontSize: 13, background: "#0D0D0D" }}
                   placeholder="Or enter a custom architecture specification to simulate..."
                   value={simCustomPrompt || SIM_PRESETS.find(p => p.id === simPreset)?.brief || ""}
                   onChange={(e) => setSimCustomPrompt(e.target.value)}
@@ -836,7 +841,7 @@ export default function Home() {
                   onClick={handleRunSimulation}
                   style={{ padding: "0 20px", whiteSpace: "nowrap" }}
                 >
-                  {simRunning ? "⚡ Simulating..." : "▶️ Simulate DAG"}
+                  {simRunning ? "Simulating DAG..." : "Simulate Execution"}
                 </button>
                 <button
                   className="btn btn-secondary"
@@ -850,7 +855,7 @@ export default function Home() {
                   }}
                   title="Load this architecture into Studio to build real code"
                 >
-                  📥 Load in Studio
+                  Load in Studio
                 </button>
               </div>
 
@@ -864,13 +869,15 @@ export default function Home() {
                       key={stg.id}
                       className={`sim-node-box ${isActive ? "active" : ""} ${isDone ? "completed" : ""}`}
                     >
-                      <div style={{ fontSize: 18, marginBottom: 4 }}>{stg.icon}</div>
-                      <div style={{ fontSize: 12, fontWeight: 700, color: "var(--text-primary)" }}>{stg.label}</div>
-                      <div style={{ fontSize: 10, color: "var(--text-muted)", marginTop: 2 }}>{stg.model}</div>
-                      <div style={{ marginTop: 6 }}>
+                      <div style={{ fontSize: 11, fontWeight: 700, fontFamily: "var(--font-mono)", color: "var(--text-muted)", marginBottom: 4 }}>
+                        0{idx + 1}
+                      </div>
+                      <div style={{ fontSize: 12, fontWeight: 600, color: "var(--text-primary)" }}>{stg.label}</div>
+                      <div style={{ fontSize: 10, color: "var(--text-muted)", marginTop: 2, fontFamily: "var(--font-mono)" }}>{stg.model}</div>
+                      <div style={{ marginTop: 8 }}>
                         <span
-                          className={`badge ${isActive ? "badge-amber" : isDone ? "badge-green" : "badge-cyan"}`}
-                          style={{ fontSize: 9, padding: "1px 5px" }}
+                          className={`badge ${isActive ? "badge-green" : isDone ? "badge-cyan" : ""}`}
+                          style={{ fontSize: 9, padding: "2px 6px" }}
                         >
                           {isActive ? "ACTIVE" : isDone ? "SYNCED" : "IDLE"}
                         </span>
@@ -883,8 +890,8 @@ export default function Home() {
               {/* Streaming Terminal Log */}
               <div className="sim-terminal-box">
                 {simLogs.map((log, i) => (
-                  <div key={i} style={{ color: log.includes("[SUCCESS]") ? "#33FF85" : log.includes("[STAGE") ? "#00F0FF" : "var(--neon-green)" }}>
-                    <span style={{ opacity: 0.6, marginRight: 6 }}>&gt;</span>
+                  <div key={i} style={{ color: log.includes("[SUCCESS]") ? "#00FF66" : log.includes("[STAGE") ? "#FFFFFF" : "var(--terminal-green)" }}>
+                    <span style={{ opacity: 0.5, marginRight: 8 }}>&gt;</span>
                     {log}
                   </div>
                 ))}
