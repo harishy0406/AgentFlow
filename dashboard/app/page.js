@@ -272,7 +272,7 @@ export default function Home() {
   const [apiTestResults, setApiTestResults] = useState({});
 
   // SaaS Navigation & Theme state
-  const [saasTab, setSaasTab] = useState("studio"); // 'studio' | 'features' | 'workflow' | 'pricing' | 'docs' | 'download' | 'about'
+  const [saasTab, setSaasTab] = useState("home"); // 'home' | 'studio' | 'features' | 'workflow' | 'pricing' | 'docs' | 'download' | 'about'
   const [theme, setTheme] = useState("dark");
   const [scanlines, setScanlines] = useState(false);
   const [terminalInput, setTerminalInput] = useState("");
@@ -542,7 +542,7 @@ export default function Home() {
     <div className="dashboard">
       {/* Minimalist Top Navbar */}
       <nav className="navbar">
-        <div className="navbar-brand" onClick={() => setSaasTab("studio")}>
+        <div className="navbar-brand" onClick={() => setSaasTab("home")}>
           <div className="brand-icon">AF</div>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <h1>AgentFlow</h1>
@@ -555,6 +555,9 @@ export default function Home() {
 
         {/* Global SaaS Navigation Links */}
         <div className="navbar-links">
+          <button className={`nav-link ${saasTab === "home" ? "active" : ""}`} onClick={() => setSaasTab("home")}>
+            Home
+          </button>
           <button className={`nav-link ${saasTab === "studio" ? "active" : ""}`} onClick={() => setSaasTab("studio")}>
             Studio
           </button>
@@ -760,7 +763,7 @@ export default function Home() {
       {/* Main Content */}
       <div className="main-content">
         {/* Top Hero Banner & Live DAG Simulator */}
-        {saasTab !== "studio" && (
+        {saasTab === "home" && (
           <div style={{ marginBottom: 48, textAlign: "center", padding: "48px 20px 24px" }}>
             <div className="badge badge-green" style={{ marginBottom: 20, padding: "5px 14px", fontSize: 12, borderRadius: 20 }}>
               <span className="pulse-beacon" style={{ marginRight: 6 }} />
