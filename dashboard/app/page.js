@@ -293,63 +293,63 @@ export default function Home() {
   ]);
   const [simStats, setSimStats] = useState({ tokens: 0, costUsd: 0, latencyMs: 0 });
 
-  // HelixQL-Style Hero Mockup Window Interactive State
+  // HelixQL-Style Hero Mockup Window Interactive State (Tailored for AgentFlow)
   const HERO_MOCKUP_SCENARIOS = [
     {
-      id: "gujarat-orders",
-      query: "Who made the most orders from Gujarat this month?",
-      badge1: "✓ AST validated · SELECT only",
-      badge2: "⚡ EXPLAIN cost: 0.4ms",
-      statusMsg: "Zero rows left the firewall until execution",
-      tableCols: ["Name", "City", "Orders"],
-      tableRows: [
-        { c1: "Priya Shah", c2: "Ahmedabad", c3: "42" },
-        { c1: "Rohan Mehta", c2: "Surat", c3: "37" },
-        { c1: "Ananya Patel", c2: "Vadodara", c3: "31" },
-      ],
-      optTitle: "OPTIMIZER",
-      optStats: [
-        { label: "Plan", val: "Index Scan", isTeal: false },
-        { label: "Rows (est.)", val: "128", isTeal: false },
-        { label: "Cost", val: "0.4ms", isTeal: true },
-      ]
-    },
-    {
       id: "rate-limiter",
-      query: "Generate high-throughput Redis distributed rate limiter",
-      badge1: "✓ AST validated · SYNTAX safe",
-      badge2: "⚡ P99 latency: 0.8ms",
-      statusMsg: "Zero unhandled exceptions · 100% type-checked",
-      tableCols: ["Worker Node", "Region", "Throughput"],
+      query: "Build a resilient distributed rate limiter with Redis and metrics",
+      badge1: "✓ AST verified · 0 errors",
+      badge2: "⚡ 7-Agent DAG: 0.8s",
+      statusMsg: "Zero drift detected across 7 topological artifacts",
+      tableCols: ["Agent Stage", "Artifact", "Status"],
       tableRows: [
-        { c1: "edge-worker-01", c2: "ap-south-1", c3: "14,280 req/s" },
-        { c1: "edge-worker-02", c2: "us-east-1", c3: "18,940 req/s" },
-        { c1: "edge-worker-03", c2: "eu-west-1", c3: "12,410 req/s" },
+        { c1: "System Architect", c2: "SDD Topology", c3: "VERIFIED" },
+        { c1: "DB Engineer", c2: "PostgreSQL 3NF", c3: "VERIFIED" },
+        { c1: "Dev Fleet", c2: "FastAPI + AST", c3: "COMPILED" },
       ],
       optTitle: "DAG ENGINE",
       optStats: [
-        { label: "Pipeline", val: "In-Memory", isTeal: false },
-        { label: "Concurrency", val: "10k req/s", isTeal: false },
-        { label: "Cost", val: "0.02ms", isTeal: true },
+        { label: "Stages", val: "7/7 Synced", isTeal: false },
+        { label: "AST Check", val: "Pass (100%)", isTeal: false },
+        { label: "Regen Latency", val: "0.8s", isTeal: true },
       ]
     },
     {
-      id: "enterprise-churn",
-      query: "Find high-churn enterprise subscriptions expiring in 7 days",
-      badge1: "✓ AST validated · READ-ONLY",
-      badge2: "⚡ Pipeline runtime: 1.1ms",
-      statusMsg: "Encrypted TLS 1.3 · Air-gapped VPC gateway",
-      tableCols: ["Tenant", "ARR", "Risk Score"],
+      id: "fintech-escrow",
+      query: "Scaffold multi-party escrow contract with Stripe Webhooks & Ledger",
+      badge1: "✓ OpenAPI 3.0.3 · Schema locked",
+      badge2: "⚡ Diff-aware BFS: 0.3s",
+      statusMsg: "Double-entry balance invariants mathematically proven",
+      tableCols: ["Agent Stage", "Artifact", "Status"],
       tableRows: [
-        { c1: "Acme Logistics", c2: "$120,000", c3: "94%" },
-        { c1: "Fintech Nexus", c2: "$85,000", c3: "88%" },
-        { c1: "CloudScale AI", c2: "$64,000", c3: "81%" },
+        { c1: "Product Analyst", c2: "PRD Matrix", c3: "LOCKED" },
+        { c1: "API Designer", c2: "OpenAPI Contract", c3: "VALIDATED" },
+        { c1: "Scrum Master", c2: "Gherkin Acceptance", c3: "PASSED" },
       ],
-      optTitle: "RISK MODEL",
+      optTitle: "DAG ENGINE",
       optStats: [
-        { label: "Plan", val: "Hash Aggregate", isTeal: false },
-        { label: "High Risk", val: "3 Accounts", isTeal: false },
-        { label: "Latency", val: "1.1ms", isTeal: true },
+        { label: "Auditor", val: "0 Discrepancies", isTeal: false },
+        { label: "Downstream", val: "3 Inval", isTeal: false },
+        { label: "In-Memory ZIP", val: "Ready", isTeal: true },
+      ]
+    },
+    {
+      id: "tenant-schema",
+      query: "Generate high-throughput tenant schema with B-Tree indexes",
+      badge1: "✓ SQL DDL verified · ACID safe",
+      badge2: "⚡ Migration cost: $0.00",
+      statusMsg: "Foreign key cyclic dependencies eliminated via topological sort",
+      tableCols: ["Table Name", "Storage Engine", "Index Plan"],
+      tableRows: [
+        { c1: "tenant_nodes", c2: "PostgreSQL 16", c3: "2 B-Tree" },
+        { c1: "dag_pipelines", c2: "TimescaleDB", c3: "1 Hyper" },
+        { c1: "agent_telemetry", c2: "ClickHouse", c3: "1 Sparse" },
+      ],
+      optTitle: "SCHEMA OPTIMIZER",
+      optStats: [
+        { label: "Schema NF", val: "3NF Certified", isTeal: false },
+        { label: "AST Smoke", val: "Zero Errors", isTeal: false },
+        { label: "API Reduction", val: "64.2%", isTeal: true },
       ]
     }
   ];
@@ -911,17 +911,17 @@ export default function Home() {
                 <div className="hero-left-col">
                   <div className="hero-firewall-pill">
                     <span className="hero-pill-dot" />
-                    Your data never leaves your firewall
+                    Autonomous 7-Agent Fleet · Air-Gapped Engine
                   </div>
 
                   <h1 className="hero-split-title">
-                    Ask your database a question.<br />
-                    Get safe, validated SQL{" "}
+                    Turn requirements into software.<br />
+                    Get verified, production code{" "}
                     <span className="hero-title-teal">instantly</span>.
                   </h1>
 
                   <p className="hero-split-desc">
-                    AgentFlow turns plain-English questions and requirements into SQL and software your team can run — validated by a strict read-only guardrail and cost-checked before a single row or commit is ever touched. Runs as a desktop app inside your network; only schema metadata ever reaches the cloud.
+                    AgentFlow compiles plain-English specifications into synchronized PRD, Architecture, 3NF schemas, OpenAPI contracts, and verified source code — validated by a 7-agent topological DAG with automated AST syntax checks before a single commit is touched.
                   </p>
 
                   <div className="hero-split-actions">
@@ -932,7 +932,7 @@ export default function Home() {
                         setActiveTab("create");
                       }}
                     >
-                      Get started free
+                      Launch Studio Workspace &rarr;
                     </button>
 
                     <button
@@ -945,12 +945,12 @@ export default function Home() {
                         <polyline points="7 10 12 15 17 10" />
                         <line x1="12" y1="15" x2="12" y2="3" />
                       </svg>
-                      Download desktop app
+                      Download native app
                     </button>
                   </div>
 
                   <div className="hero-split-guarantee">
-                    Free tier included · No credit card required
+                    Air-gapped execution · Zero hallucination drift · 100% Deterministic
                   </div>
                 </div>
 
@@ -963,7 +963,7 @@ export default function Home() {
                       <span className="mockup-dot green" />
                     </div>
                     <div className="mockup-window-title">
-                      HelixQL Desktop — connected to prod-analytics
+                      AgentFlow Studio — connected to 7-agent dag
                     </div>
                   </div>
 
@@ -978,7 +978,7 @@ export default function Home() {
                         className="mockup-run-btn"
                         onClick={handleHeroMockupRun}
                         disabled={heroMockupRunning}
-                        title="Click to execute AST validation run"
+                        title="Click to simulate DAG execution"
                       >
                         {heroMockupRunning ? "..." : "Run"}
                       </button>
@@ -1002,17 +1002,6 @@ export default function Home() {
                     <div className="mockup-code-block">
                       {heroMockupIdx === 0 && (
                         <pre style={{ margin: 0 }}>
-                          <span className="mockup-code-keyword">SELECT </span>u.name, u.city, <span className="mockup-code-func">COUNT</span>(o.id) <span className="mockup-code-keyword">AS </span>order_count{"\n"}
-                          <span className="mockup-code-keyword">FROM </span>users u{"\n"}
-                          <span className="mockup-code-keyword">JOIN </span>orders o <span className="mockup-code-keyword">ON </span>o.user_id = u.id{"\n"}
-                          <span className="mockup-code-keyword">WHERE </span>u.state = <span className="mockup-code-str">'Gujarat'</span>{"\n"}
-                          {"  "}<span className="mockup-code-keyword">AND </span>o.created_at &gt;= <span className="mockup-code-func">date_trunc</span>(<span className="mockup-code-str">'month'</span>, <span className="mockup-code-func">now</span>()){"\n"}
-                          <span className="mockup-code-keyword">GROUP BY </span>u.name, u.city{"\n"}
-                          <span className="mockup-code-keyword">ORDER BY </span>order_count <span className="mockup-code-keyword">DESC LIMIT </span>3;
-                        </pre>
-                      )}
-                      {heroMockupIdx === 1 && (
-                        <pre style={{ margin: 0 }}>
                           <span className="mockup-code-func">@limiter</span>.<span className="mockup-code-keyword">route</span>(<span className="mockup-code-str">"/api/v1/checkout"</span>, methods=[<span className="mockup-code-str">"POST"</span>]){"\n"}
                           <span className="mockup-code-keyword">async def </span><span className="mockup-code-func">rate_limited_checkout</span>(request: Request):{"\n"}
                           {"    "}client_ip = request.client.host{"\n"}
@@ -1023,14 +1012,27 @@ export default function Home() {
                           {"    "}<span className="mockup-code-keyword">return await </span><span className="mockup-code-func">process_checkout</span>(request)
                         </pre>
                       )}
+                      {heroMockupIdx === 1 && (
+                        <pre style={{ margin: 0 }}>
+                          <span className="mockup-code-func">@router</span>.<span className="mockup-code-keyword">post</span>(<span className="mockup-code-str">"/escrow/release/&#123;contract_id&#125;"</span>){"\n"}
+                          <span className="mockup-code-keyword">async def </span><span className="mockup-code-func">release_milestone</span>(contract_id: UUID, db: AsyncSession):{"\n"}
+                          {"    "}contract = <span className="mockup-code-keyword">await </span><span className="mockup-code-func">get_verified_contract</span>(contract_id, db){"\n"}
+                          {"    "}<span className="mockup-code-keyword">if not </span>contract.ast_audit_passed <span className="mockup-code-keyword">or </span>contract.is_disputed:{"\n"}
+                          {"        "}<span className="mockup-code-keyword">raise </span>ContractGuardViolation(<span className="mockup-code-str">"Invariants violated"</span>){"\n"}
+                          {"    "}tx = <span className="mockup-code-keyword">await </span>ledger.<span className="mockup-code-func">post_transaction</span>(contract.buyer, contract.seller){"\n"}
+                          {"    "}<span className="mockup-code-keyword">return </span>&#123;<span className="mockup-code-str">"status"</span>: <span className="mockup-code-str">"RELEASED"</span>, <span className="mockup-code-str">"tx_hash"</span>: tx.hash&#125;
+                        </pre>
+                      )}
                       {heroMockupIdx === 2 && (
                         <pre style={{ margin: 0 }}>
-                          <span className="mockup-code-keyword">SELECT </span>s.tenant_name, s.tier, s.arr_usd, s.risk_score{"\n"}
-                          <span className="mockup-code-keyword">FROM </span>subscriptions s{"\n"}
-                          <span className="mockup-code-keyword">WHERE </span>s.expires_at &lt;= <span className="mockup-code-func">now</span>() + <span className="mockup-code-func">INTERVAL </span><span className="mockup-code-str">'7 days'</span>{"\n"}
-                          {"  "}<span className="mockup-code-keyword">AND </span>s.health_index &lt; 0.45{"\n"}
-                          {"  "}<span className="mockup-code-keyword">AND </span>s.auto_renew = false{"\n"}
-                          <span className="mockup-code-keyword">ORDER BY </span>s.arr_usd <span className="mockup-code-keyword">DESC LIMIT </span>3;
+                          <span className="mockup-code-keyword">CREATE TABLE </span>tenant_nodes ({"\n"}
+                          {"    "}id <span className="mockup-code-func">UUID PRIMARY KEY DEFAULT </span>gen_random_uuid(),{"\n"}
+                          {"    "}tenant_id <span className="mockup-code-func">VARCHAR</span>(64) <span className="mockup-code-keyword">NOT NULL REFERENCES </span>accounts(id),{"\n"}
+                          {"    "}cluster_region <span className="mockup-code-func">VARCHAR</span>(32) <span className="mockup-code-keyword">NOT NULL DEFAULT </span><span className="mockup-code-str">'ap-south-1'</span>,{"\n"}
+                          {"    "}active_agents <span className="mockup-code-func">INTEGER NOT NULL DEFAULT </span>7,{"\n"}
+                          {"    "}created_at <span className="mockup-code-func">TIMESTAMPTZ NOT NULL DEFAULT </span>clock_timestamp(){"\n"}
+                          );{"\n"}
+                          <span className="mockup-code-keyword">CREATE INDEX </span>idx_tenant_active <span className="mockup-code-keyword">ON </span>tenant_nodes(tenant_id, active_agents);
                         </pre>
                       )}
                     </div>
