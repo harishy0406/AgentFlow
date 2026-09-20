@@ -294,7 +294,19 @@ export default function Home() {
   const [simStats, setSimStats] = useState({ tokens: 0, costUsd: 0, latencyMs: 0 });
 
   useEffect(() => {
+    try {
+      const saved = localStorage.getItem("agentflow_theme");
+      if (saved === "light" || saved === "dark") {
+        setTheme(saved);
+      }
+    } catch (e) {}
+  }, []);
+
+  useEffect(() => {
     document.documentElement.setAttribute("data-theme", theme);
+    try {
+      localStorage.setItem("agentflow_theme", theme);
+    } catch (e) {}
   }, [theme]);
 
   // Section editing & version history state
@@ -582,6 +594,38 @@ export default function Home() {
         </div>
 
         <div className="navbar-actions">
+          {/* Theme Toggle Button */}
+          <button
+            className="theme-toggle-btn"
+            onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+            title={theme === "dark" ? "Switch to Light theme" : "Switch to Dark theme"}
+            aria-label="Toggle theme"
+          >
+            {theme === "dark" ? (
+              <>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="12" r="5" />
+                  <line x1="12" y1="1" x2="12" y2="3" />
+                  <line x1="12" y1="21" x2="12" y2="23" />
+                  <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" />
+                  <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
+                  <line x1="1" y1="12" x2="3" y2="12" />
+                  <line x1="21" y1="12" x2="23" y2="12" />
+                  <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
+                  <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
+                </svg>
+                <span>Light</span>
+              </>
+            ) : (
+              <>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+                </svg>
+                <span>Dark</span>
+              </>
+            )}
+          </button>
+
           {currentProject ? (
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
               {projectHealth && (
@@ -769,9 +813,9 @@ export default function Home() {
               <span className="pulse-beacon" style={{ marginRight: 6 }} />
               AUTONOMOUS 7-AGENT ORCHESTRATION PLATFORM
             </div>
-            <h1 style={{ fontFamily: "var(--font-display)", fontSize: 44, fontWeight: 800, letterSpacing: "-1.2px", marginBottom: 18, lineHeight: 1.15, color: "#EDEDED" }}>
+            <h1 style={{ fontFamily: "var(--font-display)", fontSize: 44, fontWeight: 800, letterSpacing: "-1.2px", marginBottom: 18, lineHeight: 1.15, color: "var(--text-primary)" }}>
               Deterministic Software Engineering. <br />
-              <span style={{ color: "#777777" }}>
+              <span style={{ color: "var(--text-secondary)" }}>
                 Orchestrated by a 7-Agent DAG Fleet.
               </span>
             </h1>
@@ -804,10 +848,10 @@ export default function Home() {
                   </span>
                 </div>
                 <div style={{ display: "flex", gap: 12, fontSize: 12, color: "var(--text-secondary)", fontFamily: "var(--font-mono)" }}>
-                  <span>Tokens: <strong style={{ color: "#EDEDED" }}>{simStats.tokens.toLocaleString()}</strong></span>
-                  <span style={{ color: "#333" }}>•</span>
-                  <span>Cost: <strong style={{ color: "#EDEDED" }}>${simStats.costUsd.toFixed(4)}</strong></span>
-                  <span style={{ color: "#333" }}>•</span>
+                  <span>Tokens: <strong style={{ color: "var(--text-primary)" }}>{simStats.tokens.toLocaleString()}</strong></span>
+                  <span style={{ color: "var(--border-hover)" }}>•</span>
+                  <span>Cost: <strong style={{ color: "var(--text-primary)" }}>${simStats.costUsd.toFixed(4)}</strong></span>
+                  <span style={{ color: "var(--border-hover)" }}>•</span>
                   <span>Latency: <strong style={{ color: "var(--terminal-green)" }}>{simStats.latencyMs}ms</strong></span>
                 </div>
               </div>
@@ -833,7 +877,7 @@ export default function Home() {
                 <input
                   type="text"
                   className="form-input"
-                  style={{ flex: 1, fontSize: 13, background: "#0D0D0D" }}
+                  style={{ flex: 1, fontSize: 13 }}
                   placeholder="Or enter a custom architecture specification to simulate..."
                   value={simCustomPrompt || SIM_PRESETS.find(p => p.id === simPreset)?.brief || ""}
                   onChange={(e) => setSimCustomPrompt(e.target.value)}
@@ -6111,16 +6155,16 @@ export default function Home() {
             position: "fixed",
             bottom: 24,
             right: 24,
-            background: "#000000",
-            color: "#ffffff",
-            border: "1px solid var(--border-bright)",
+            background: "var(--btn-primary-bg)",
+            color: "var(--btn-primary-color)",
+            border: "1px solid var(--border)",
             borderRadius: "9999px",
             padding: "10px 18px",
             fontSize: 12,
             fontWeight: 600,
             fontFamily: "var(--font-mono)",
             letterSpacing: "0.03em",
-            boxShadow: "0 8px 32px rgba(0,0,0,0.8)",
+            boxShadow: "var(--shadow-glow)",
             cursor: "pointer",
             zIndex: 999,
             display: "flex",
