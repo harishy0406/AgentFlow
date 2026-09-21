@@ -245,7 +245,95 @@ html, body {
   }
 }
 
-/* Floating AI Agent Pet ("Flowy") */
+/* Ambient Moving Background Glow Orbs */
+.cyber-ambient-orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(85px);
+  pointer-events: none;
+  opacity: 0.16;
+  mix-blend-mode: screen;
+}
+
+[data-theme="light"] .cyber-ambient-orb {
+  opacity: 0.08;
+  filter: blur(95px);
+  mix-blend-mode: multiply;
+}
+
+.cyber-ambient-orb.orb-1 {
+  width: 520px;
+  height: 520px;
+  background: radial-gradient(circle, var(--terminal-green) 0%, rgba(0, 255, 102, 0) 70%);
+  top: 8%;
+  left: 4%;
+  animation: orbDrift1 24s ease-in-out infinite alternate;
+}
+
+.cyber-ambient-orb.orb-2 {
+  width: 580px;
+  height: 580px;
+  background: radial-gradient(circle, #00d2ff 0%, rgba(0, 210, 255, 0) 70%);
+  bottom: 12%;
+  right: 6%;
+  animation: orbDrift2 28s ease-in-out infinite alternate;
+}
+
+.cyber-ambient-orb.orb-3 {
+  width: 400px;
+  height: 400px;
+  background: radial-gradient(circle, #8a2be2 0%, rgba(138, 43, 226, 0) 70%);
+  top: 40%;
+  left: 45%;
+  animation: orbDrift3 22s ease-in-out infinite alternate;
+}
+
+@keyframes orbDrift1 {
+  0% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(70px, 90px) scale(1.1); }
+  100% { transform: translate(-50px, 40px) scale(0.94); }
+}
+
+@keyframes orbDrift2 {
+  0% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(-90px, -70px) scale(1.08); }
+  100% { transform: translate(60px, -40px) scale(0.96); }
+}
+
+@keyframes orbDrift3 {
+  0% { transform: translate(-50%, -50%) scale(0.92); }
+  50% { transform: translate(calc(-50% + 60px), calc(-50% - 70px)) scale(1.12); }
+  100% { transform: translate(calc(-50% - 40px), calc(-50% + 50px)) scale(1); }
+}
+
+/* Floating Cyber Particles Moving Across the Background */
+.cyber-float-particle {
+  position: absolute;
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: var(--terminal-green);
+  box-shadow: 0 0 8px var(--terminal-green);
+  opacity: 0.35;
+  pointer-events: none;
+}
+
+.cyber-float-particle.p1 { left: 14%; top: 22%; animation: particleFloat 16s ease-in-out infinite; }
+.cyber-float-particle.p2 { left: 32%; top: 68%; animation: particleFloat 22s ease-in-out infinite 3s; }
+.cyber-float-particle.p3 { left: 80%; top: 18%; animation: particleFloat 18s ease-in-out infinite 6s; }
+.cyber-float-particle.p4 { left: 60%; top: 82%; animation: particleFloat 25s ease-in-out infinite 2s; }
+.cyber-float-particle.p5 { left: 88%; top: 52%; animation: particleFloat 19s ease-in-out infinite 8s; }
+.cyber-float-particle.p6 { left: 46%; top: 12%; animation: particleFloat 21s ease-in-out infinite 5s; }
+
+@keyframes particleFloat {
+  0% { transform: translateY(0) translateX(0); opacity: 0.1; }
+  25% { transform: translateY(-50px) translateX(25px); opacity: 0.55; }
+  50% { transform: translateY(-100px) translateX(-20px); opacity: 0.3; }
+  75% { transform: translateY(-150px) translateX(30px); opacity: 0.6; }
+  100% { transform: translateY(-200px) translateX(0); opacity: 0; }
+}
+
+/* Floating AI Agent Pet ("Flowy") - Draggable Anywhere */
 .agent-pet-wrapper {
   position: fixed;
   bottom: 84px;
@@ -255,16 +343,30 @@ html, body {
   flex-direction: column;
   align-items: center;
   user-select: none;
+  touch-action: none;
+}
+
+.agent-pet-wrapper.dragging {
+  cursor: grabbing !important;
+  transition: none !important;
 }
 
 .agent-pet-container {
   display: flex;
   flex-direction: column;
   align-items: center;
-  cursor: pointer;
+  cursor: grab;
   animation: petFloat 4s ease-in-out infinite alternate;
   position: relative;
   transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  touch-action: none;
+}
+
+.agent-pet-container:active,
+.agent-pet-container.dragging {
+  cursor: grabbing;
+  animation: none !important;
+  transform: scale(1.1);
 }
 
 .agent-pet-container:hover {
