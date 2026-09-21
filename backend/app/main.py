@@ -33,7 +33,17 @@ from .agents.cicd_generator import generate_cicd_pipeline
 # Create database tables (in a real app, use alembic)
 models.Base.metadata.create_all(bind=engine)
 
+from fastapi.middleware.cors import CORSMiddleware
+
 app = FastAPI(title="AgentFlow API", version="0.6.0")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 # ---------------------------------------------------------------------------

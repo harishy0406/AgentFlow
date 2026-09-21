@@ -92,6 +92,12 @@ docker compose --profile offline-ai up -d
 
 ## 🚀 Quickstart (Local Development)
 
+### ⚡ One-Click Auto Launch (Recommended)
+You can start both the backend API and Next.js dashboard automatically with health checks and browser auto-opening:
+
+- **Windows**: Double-click or run [`start.bat`](file:///H:/PROJECTS/Agents/AgentFlow/start.bat) (or `.\start.ps1`)
+- **Cross-Platform / CLI**: Run `python start.py`
+
 ### 1. Backend Setup
 ```bash
 cd backend

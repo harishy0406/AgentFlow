@@ -61,7 +61,7 @@ def print_banner():
 /_/   \\_\\____|_____|_| \\_| |_| |_|   |_____\\___/  \\_/\\_/   
 ========================================================================{RESET}
   {BOLD}AgentFlow{RESET} - {DIM}Autonomous Multi-Agent Workflow Orchestration Platform{RESET}
-  {DIM}[v0.8.0] LangGraph DAG Engine | AST Verification | Multi-Model Fleet{RESET}
+  {DIM} Harish Gautham{RESET}
 """
     log(banner)
 

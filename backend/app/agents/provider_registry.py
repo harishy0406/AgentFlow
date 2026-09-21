@@ -122,18 +122,22 @@ class ProviderRegistry:
 # ---------------------------------------------------------------------------
 
 def _openai_factory(model_name: str) -> BaseChatModel:
+    if not os.getenv("OPENAI_API_KEY"):
+        return MockChatModel(model_name=model_name)
     try:
         from langchain_openai import ChatOpenAI
         return ChatOpenAI(model=model_name, temperature=0)
-    except ImportError:
+    except Exception:
         return MockChatModel(model_name=model_name)
 
 
 def _anthropic_factory(model_name: str) -> BaseChatModel:
+    if not os.getenv("ANTHROPIC_API_KEY"):
+        return MockChatModel(model_name=model_name)
     try:
         from langchain_anthropic import ChatAnthropic
         return ChatAnthropic(model=model_name, temperature=0)
-    except ImportError:
+    except Exception:
         return MockChatModel(model_name=model_name)
 
 
