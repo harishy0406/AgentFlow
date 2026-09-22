@@ -323,10 +323,20 @@ export default function Home() {
     setTimeout(() => setToast(null), 3000);
   }, []);
 
-  // Floating AI Agent Pet ("Flowy") draggable & speech state
-  const [petMessageIdx, setPetMessageIdx] = useState(0);
+  // Floating AI Agent Pet ("Flowy") Chatbot, Draggable & Regex Navigation
   const [petCheer, setPetCheer] = useState(false);
-  const [showPetBubble, setShowPetBubble] = useState(true);
+  const [showPetBubble, setShowPetBubble] = useState(false);
+  const [petChatMode, setPetChatMode] = useState("ask"); // 'ask' | 'faq'
+  const [petChatInput, setPetChatInput] = useState("");
+  const [petChatMessages, setPetChatMessages] = useState([
+    {
+      id: 1,
+      sender: "flowy",
+      text: "Hi! I'm Flowy, your AI fleet pet companion. Ask me anything or click an FAQ to navigate anywhere in AgentFlow!",
+      time: "Online"
+    }
+  ]);
+  const petChatEndRef = useRef(null);
   const [petPos, setPetPos] = useState(null);
   const [isDraggingPet, setIsDraggingPet] = useState(false);
   const petDragRef = useRef({
@@ -338,15 +348,177 @@ export default function Home() {
     hasMoved: false,
   });
 
-  const petMessages = [
-    "Hi! I'm Flowy, your AI fleet pet. Drag me anywhere.",
-    "7 Agents active & synchronized.",
-    "Engineered by M Harish Gautham",
-    "Reg No: 22MIS0421 • VIT Vellore",
-    "Deterministic DAG with AST checks active.",
-    "Click me to cheer me up.",
-    "Ready to compile your next architecture.",
+  const PET_REGEX_ROUTES = [
+    {
+      pattern: /(create|new project|generate|start|build|scaffold|make (a )?project|init)/i,
+      target: { saas: "studio", tab: "create", label: "Studio Creator" },
+      answer: "Navigating to Studio Creator. Configure your project specifications and launch the 7-agent fleet!"
+    },
+    {
+      pattern: /(graph|dag|architecture|dependency|nodes|topology|visualize)/i,
+      target: { saas: "studio", tab: "graph", label: "Architecture Graph" },
+      answer: "Opening the Architecture Graph. Inspect the deterministic 7-stage DAG and artifact links."
+    },
+    {
+      pattern: /(code|files|codebase|source|ast|syntax|editor|repo)/i,
+      target: { saas: "studio", tab: "code", label: "Codebase Explorer" },
+      answer: "Navigating to Codebase Explorer. Inspect verified source files, AST syntax trees, and diffs."
+    },
+    {
+      pattern: /(drift|sync|repair|revert|rollback|desync|heal|fix drift)/i,
+      target: { saas: "studio", tab: "drifts", label: "Drifts & Reversals" },
+      answer: "Opening Drifts & Healing. Detect spec-to-code deviations and automatically heal out-of-sync components."
+    },
+    {
+      pattern: /(security|shield|vulnerabilit|owasp|audit|leak|cve)/i,
+      target: { saas: "studio", tab: "security", label: "Security Shield" },
+      answer: "Opening Security Shield. Audit codebase dependencies against OWASP standards and patch risks."
+    },
+    {
+      pattern: /(eval|benchmark|metric|health|readiness|score|analytics)/i,
+      target: { saas: "studio", tab: "evaluations", label: "Evaluations & Metrics" },
+      answer: "Navigating to Evaluations & Metrics. Track system health readiness, test pass rates, and model stats."
+    },
+    {
+      pattern: /(workspace|mesh|microservice|cross-service|contract)/i,
+      target: { saas: "studio", tab: "workspaces", label: "Workspaces" },
+      answer: "Switching to Workspaces. Orchestrate multi-service micro-architectures with cross-contract checks."
+    },
+    {
+      pattern: /(feature|agent|capabilities|autonomous|fleet|models|what can you do)/i,
+      target: { saas: "features", label: "Platform Features" },
+      answer: "Taking you to Features. Explore the 7 specialized LLM agents, AST engines, and export toolkits."
+    },
+    {
+      pattern: /(workflow|lifecycle|pipeline|process|stage|how it works)/i,
+      target: { saas: "workflow", label: "DAG Workflow" },
+      answer: "Navigating to Workflow. View the strict PRD -> SDD -> Schema -> OpenAPI -> Code pipeline."
+    },
+    {
+      pattern: /(price|pricing|cost|token|plan|tier|subscription|free|pro|enterprise)/i,
+      target: { saas: "pricing", label: "Pricing & Editions" },
+      answer: "Opening Pricing & Editions. Review Developer, Team, and Enterprise fleet quotas."
+    },
+    {
+      pattern: /(doc|docs|setup|guide|install|quickstart|api spec|openapi|swagger|manual)/i,
+      target: { saas: "docs", label: "Documentation & Setup" },
+      answer: "Navigating to Docs & Setup. Find Python backend instructions, environment keys, and API specs."
+    },
+    {
+      pattern: /(download|zip|export|cli|package|binary|desktop)/i,
+      target: { saas: "download", label: "Downloads & CLI" },
+      answer: "Navigating to Downloads. Grab the AgentFlow CLI runner, desktop release, and portable bundles."
+    },
+    {
+      pattern: /(who|author|creator|harish|gautham|vit|vellore|contact|about|developer|team)/i,
+      target: { saas: "about", label: "About Author & VIT" },
+      answer: "Navigating to About! AgentFlow was engineered by M Harish Gautham (Reg No: 22MIS0421, VIT Vellore)."
+    },
+    {
+      pattern: /(home|hero|simulator|sim|playground|landing|start page)/i,
+      target: { saas: "home", label: "Home Simulator" },
+      answer: "Returning to Home. Test out live topological runs with the interactive DAG Runtime Simulator!"
+    }
   ];
+
+  const PET_FAQS = [
+    {
+      q: "How do I create a new project?",
+      query: "create new project"
+    },
+    {
+      q: "Show me the 7-Agent DAG Architecture",
+      query: "architecture graph dag"
+    },
+    {
+      q: "Where are the API & Setup Docs?",
+      query: "documentation setup guide"
+    },
+    {
+      q: "Check Pricing & Token Costs",
+      query: "pricing plans and cost"
+    },
+    {
+      q: "How does the DAG pipeline work?",
+      query: "workflow pipeline stages"
+    },
+    {
+      q: "Inspect Codebase & AST verification",
+      query: "codebase source files"
+    },
+    {
+      q: "Run Security Shield & OWASP audit",
+      query: "security shield audit"
+    },
+    {
+      q: "Who built AgentFlow?",
+      query: "author creator harish gautham"
+    },
+    {
+      q: "Test the Live DAG Simulator",
+      query: "home dag simulator"
+    }
+  ];
+
+  const handlePetAsk = (customQuery) => {
+    const q = (customQuery || petChatInput).trim();
+    if (!q) return;
+
+    const timeStr = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+    const userMsg = {
+      id: Date.now(),
+      sender: "user",
+      text: q,
+      time: timeStr
+    };
+
+    let matched = null;
+    for (const route of PET_REGEX_ROUTES) {
+      if (route.pattern.test(q)) {
+        matched = route;
+        break;
+      }
+    }
+
+    let botMsg;
+    if (matched) {
+      if (matched.target.saas) {
+        setSaasTab(matched.target.saas);
+      }
+      if (matched.target.tab) {
+        setActiveTab(matched.target.tab);
+      }
+      setPetCheer(true);
+      setTimeout(() => setPetCheer(false), 650);
+      showToast(`Flowy navigated to ${matched.target.label}`, "info");
+
+      botMsg = {
+        id: Date.now() + 1,
+        sender: "flowy",
+        text: matched.answer,
+        target: matched.target,
+        time: timeStr
+      };
+    } else {
+      botMsg = {
+        id: Date.now() + 1,
+        sender: "flowy",
+        text: `I couldn't match a destination page for "${q}". Try asking about 'pricing', 'create project', 'graph', 'security', 'workflow', 'docs', or 'about'!`,
+        target: null,
+        time: timeStr
+      };
+    }
+
+    setPetChatMessages((prev) => [...prev, userMsg, botMsg]);
+    setPetChatInput("");
+    if (petChatMode !== "ask") setPetChatMode("ask");
+  };
+
+  useEffect(() => {
+    if (showPetBubble && petChatMode === "ask") {
+      petChatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [petChatMessages, showPetBubble, petChatMode]);
 
   useEffect(() => {
     try {
@@ -417,8 +589,7 @@ export default function Home() {
       return;
     }
     setPetCheer(true);
-    setPetMessageIdx((prev) => (prev + 1) % petMessages.length);
-    setShowPetBubble(true);
+    setShowPetBubble((prev) => !prev);
     setTimeout(() => setPetCheer(false), 600);
   };
 
@@ -912,163 +1083,357 @@ export default function Home() {
         <div key={saasTab} className="tab-view-container">
           {/* Top Hero Banner & Live DAG Simulator */}
           {saasTab === "home" && (
-            <div className="home-hero-split">
-              {/* Left Column: Hero Copy, Badges & Actions */}
-              <div className="home-hero-left">
-                <div className="badge badge-green" style={{ marginBottom: 16, padding: "5px 14px", fontSize: 12, borderRadius: 20, display: "inline-flex", width: "fit-content" }}>
-                  <span className="pulse-beacon" style={{ marginRight: 6 }} />
-                  AUTONOMOUS 7-AGENT ORCHESTRATION PLATFORM
-                </div>
-                <h1 className="home-hero-title">
-                  Deterministic Software Engineering,
-                  <span className="home-hero-subtitle">
-                    Orchestrated by a 7-Agent DAG Fleet.
-                  </span>
-                </h1>
-                <p className="home-hero-desc">
-                  Single-shot prompts generate unmaintainable, drifted code. AgentFlow compiles structured PRDs, architecture, database schemas, and OpenAPI specs into production-ready software with AST verification and diff-aware micro-regeneration.
-                </p>
-                <div className="home-hero-actions">
-                  <button className="btn btn-primary" onClick={() => setSaasTab("studio")}>
-                    Launch Studio Workspace &rarr;
-                  </button>
-                  <button className="btn btn-secondary" onClick={() => setSaasTab("docs")}>
-                    Documentation
-                  </button>
-                  <button className="btn btn-secondary" onClick={() => setSaasTab("pricing")}>
-                    Editions &amp; Pricing
-                  </button>
+            <div className="home-content-container">
+              <div className="home-hero-split">
+                {/* Left Column: Hero Copy, Badges & Actions */}
+                <div className="home-hero-left">
+                  <div className="badge badge-cyber" style={{ marginBottom: 18, padding: "6px 14px", fontSize: 11.5, borderRadius: 20, display: "inline-flex", width: "fit-content", letterSpacing: "0.5px" }}>
+                    <span className="pulse-beacon" style={{ marginRight: 8 }} />
+                    AUTONOMOUS 7-AGENT ORCHESTRATION PLATFORM
+                  </div>
+                  <h1 className="home-hero-title">
+                    Deterministic Software Engineering,
+                    <span className="home-hero-subtitle">
+                      Orchestrated by a 7-Agent DAG Fleet.
+                    </span>
+                  </h1>
+                  <p className="home-hero-desc">
+                    Single-shot prompts generate unmaintainable, drifted code. AgentFlow compiles structured PRDs, architecture, database schemas, and OpenAPI specs into production-ready software with AST verification and diff-aware micro-regeneration.
+                  </p>
+                  <div className="home-hero-actions">
+                    <button className="btn btn-primary btn-glow" onClick={() => setSaasTab("studio")}>
+                      Launch Studio Workspace &rarr;
+                    </button>
+                    <button className="btn btn-secondary btn-glass" onClick={() => setSaasTab("docs")}>
+                      Documentation
+                    </button>
+                    <button className="btn btn-secondary btn-glass" onClick={() => setSaasTab("pricing")}>
+                      Editions &amp; Pricing
+                    </button>
+                  </div>
+
+                  {/* Trust / Capability Highlights (Single-Row Balanced Grid) */}
+                  <div className="home-hero-trust-grid">
+                    <div className="home-hero-trust-item">
+                      <span className="trust-check-icon">✓</span>
+                      <span>Formal DAG Verification</span>
+                    </div>
+                    <div className="home-hero-trust-item">
+                      <span className="trust-check-icon">✓</span>
+                      <span>Multi-Model AST Checks</span>
+                    </div>
+                    <div className="home-hero-trust-item">
+                      <span className="trust-check-icon">✓</span>
+                      <span>Diff-Aware Micro-Regen</span>
+                    </div>
+                  </div>
                 </div>
 
-                {/* Trust / Capability Highlights (Single-Row Balanced Grid) */}
-                <div className="home-hero-trust-grid">
-                  <div className="home-hero-trust-item">
-                    <span style={{ color: "var(--terminal-green)", fontWeight: 700 }}>✓</span>
-                    <span>Formal DAG Verification</span>
-                  </div>
-                  <div className="home-hero-trust-item">
-                    <span style={{ color: "var(--terminal-green)", fontWeight: 700 }}>✓</span>
-                    <span>Multi-Model AST Checks</span>
-                  </div>
-                  <div className="home-hero-trust-item">
-                    <span style={{ color: "var(--terminal-green)", fontWeight: 700 }}>✓</span>
-                    <span>Diff-Aware Micro-Regen</span>
+                {/* Right Column: Live Interactive DAG Simulator */}
+                <div className="home-hero-right">
+                  <div className="sim-playground">
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14, flexWrap: "wrap", gap: 10 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                        <div className="terminal-dots">
+                          <span className="terminal-dot red" />
+                          <span className="terminal-dot yellow" />
+                          <span className="terminal-dot green" />
+                        </div>
+                        <span style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)", fontFamily: "var(--font-mono)" }}>
+                          dag-engine::runtime-simulator
+                        </span>
+                      </div>
+                      <div className="sim-stats-strip">
+                        <span>Tokens: <strong style={{ color: "var(--text-primary)" }}>{simStats.tokens.toLocaleString()}</strong></span>
+                        <span className="sim-stat-divider">•</span>
+                        <span>Cost: <strong style={{ color: "var(--accent-yellow)" }}>${simStats.costUsd.toFixed(4)}</strong></span>
+                        <span className="sim-stat-divider">•</span>
+                        <span>Latency: <strong style={{ color: "var(--terminal-green)" }}>{simStats.latencyMs}ms</strong></span>
+                      </div>
+                    </div>
+
+                    {/* Preset Chips */}
+                    <div className="sim-preset-chips">
+                      {SIM_PRESETS.map((p) => (
+                        <button
+                          key={p.id}
+                          className={`sim-chip ${simPreset === p.id ? "active" : ""}`}
+                          onClick={() => {
+                            setSimPreset(p.id);
+                            setSimCustomPrompt(p.brief);
+                          }}
+                        >
+                          {p.title}
+                        </button>
+                      ))}
+                    </div>
+
+                    {/* Input Prompt & Simulator Action */}
+                    <div style={{ display: "flex", gap: 8, marginBottom: 14, flexWrap: "wrap" }}>
+                      <input
+                        type="text"
+                        className="form-input"
+                        style={{ flex: "1 1 180px", fontSize: 12.5 }}
+                        placeholder="Enter architecture brief to simulate..."
+                        value={simCustomPrompt || SIM_PRESETS.find(p => p.id === simPreset)?.brief || ""}
+                        onChange={(e) => setSimCustomPrompt(e.target.value)}
+                      />
+                      <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
+                        <button
+                          className="btn btn-primary"
+                          disabled={simRunning}
+                          onClick={handleRunSimulation}
+                          style={{ padding: "0 14px", whiteSpace: "nowrap", fontSize: 12 }}
+                        >
+                          {simRunning ? "Simulating..." : "Simulate Execution"}
+                        </button>
+                        <button
+                          className="btn btn-secondary"
+                          onClick={() => {
+                            const presetObj = SIM_PRESETS.find(p => p.id === simPreset);
+                            setProjectName(presetObj ? presetObj.title.replace(/[^a-zA-Z0-9 ]/g, "").trim() : "Custom AgentFlow App");
+                            setProjectBrief(simCustomPrompt || presetObj?.brief || "");
+                            setSaasTab("studio");
+                            setActiveTab("create");
+                            showToast("Loaded preset into Studio Creator!", "info");
+                          }}
+                          title="Load this architecture into Studio to build real code"
+                          style={{ padding: "0 12px", whiteSpace: "nowrap", fontSize: 12 }}
+                        >
+                          Load in Studio
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Visual 7-Stage DAG Nodes */}
+                    <div className="sim-dag-grid">
+                      {DAG_STAGES.map((stg, idx) => {
+                        const isActive = simStepIndex === idx;
+                        const isDone = simStepIndex > idx;
+                        return (
+                          <div
+                            key={stg.id}
+                            className={`sim-node-box ${isActive ? "active" : ""} ${isDone ? "completed" : ""}`}
+                          >
+                            <div style={{ fontSize: 10, fontWeight: 700, fontFamily: "var(--font-mono)", color: "var(--text-muted)", marginBottom: 2 }}>
+                              0{idx + 1}
+                            </div>
+                            <div style={{ fontSize: 11, fontWeight: 600, color: "var(--text-primary)", whiteSpace: "nowrap" }}>{stg.label}</div>
+                            <div style={{ fontSize: 9.5, color: "var(--text-muted)", marginTop: 2, fontFamily: "var(--font-mono)" }}>{stg.model}</div>
+                            <div style={{ marginTop: 6 }}>
+                              <span
+                                className={`badge ${isActive ? "badge-green" : isDone ? "badge-cyan" : ""}`}
+                                style={{ fontSize: 8.5, padding: "2px 5px" }}
+                              >
+                                {isActive ? "ACTIVE" : isDone ? "SYNCED" : "IDLE"}
+                              </span>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    {/* Streaming Terminal Log */}
+                    <div className="sim-terminal-box">
+                      {simLogs.map((log, i) => (
+                        <div key={i} style={{ color: log.includes("[SUCCESS]") ? "#00FF66" : log.includes("[STAGE") ? "#FFFFFF" : "var(--terminal-green)" }}>
+                          <span style={{ opacity: 0.5, marginRight: 6 }}>&gt;</span>
+                          {log}
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 </div>
               </div>
 
-              {/* Right Column: Live Interactive DAG Simulator */}
-              <div className="home-hero-right">
-                <div className="sim-playground">
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14, flexWrap: "wrap", gap: 10 }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                      <div className="terminal-dots">
-                        <span className="terminal-dot red" />
-                        <span className="terminal-dot yellow" />
-                        <span className="terminal-dot green" />
-                      </div>
-                      <span style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)", fontFamily: "var(--font-mono)" }}>
-                        dag-engine::runtime-simulator
-                      </span>
-                    </div>
-                    <div style={{ display: "flex", gap: 10, fontSize: 11.5, color: "var(--text-secondary)", fontFamily: "var(--font-mono)" }}>
-                      <span>Tokens: <strong style={{ color: "var(--text-primary)" }}>{simStats.tokens.toLocaleString()}</strong></span>
-                      <span style={{ color: "var(--border-hover)" }}>•</span>
-                      <span>Cost: <strong style={{ color: "var(--text-primary)" }}>${simStats.costUsd.toFixed(4)}</strong></span>
-                      <span style={{ color: "var(--border-hover)" }}>•</span>
-                      <span>Latency: <strong style={{ color: "var(--terminal-green)" }}>{simStats.latencyMs}ms</strong></span>
-                    </div>
-                  </div>
+              {/* Live Platform Telemetry & Metrics Ribbon */}
+              <div className="home-metrics-ribbon">
+                <div className="home-metric-card">
+                  <div className="home-metric-val">7 Agents</div>
+                  <div className="home-metric-lbl">Topological DAG Fleet</div>
+                  <div className="home-metric-sub">Strict memory isolation per stage</div>
+                </div>
+                <div className="home-metric-card">
+                  <div className="home-metric-val">10+ Providers</div>
+                  <div className="home-metric-lbl">Multi-Model Free Router</div>
+                  <div className="home-metric-sub">Groq, Cerebras, Gemini, Mistral</div>
+                </div>
+                <div className="home-metric-card">
+                  <div className="home-metric-val">100% AST</div>
+                  <div className="home-metric-lbl">Static Syntax Verified</div>
+                  <div className="home-metric-sub">Automated compile &amp; smoke tests</div>
+                </div>
+                <div className="home-metric-card">
+                  <div className="home-metric-val">&lt;0.01% Drift</div>
+                  <div className="home-metric-lbl">Diff-Aware BFS Healing</div>
+                  <div className="home-metric-sub">Myers LCS micro-regeneration</div>
+                </div>
+              </div>
 
-                  {/* Preset Chips */}
-                  <div className="sim-preset-chips">
-                    {SIM_PRESETS.map((p) => (
-                      <button
-                        key={p.id}
-                        className={`sim-chip ${simPreset === p.id ? "active" : ""}`}
-                        onClick={() => {
-                          setSimPreset(p.id);
-                          setSimCustomPrompt(p.brief);
-                        }}
-                      >
-                        {p.title}
-                      </button>
-                    ))}
-                  </div>
+              {/* Three Core Pillars of AgentFlow */}
+              <div className="home-section-container">
+                <div className="home-section-header">
+                  <div className="badge badge-cyber" style={{ marginBottom: 10 }}>DETERMINISTIC COMPILATION</div>
+                  <h2 className="home-section-title">Engineered For Flawless Production Software</h2>
+                  <p className="home-section-desc">
+                    Traditional single-shot prompts compound hallucinations across files. AgentFlow enforces mathematical determinism at every layer of the development lifecycle.
+                  </p>
+                </div>
 
-                  {/* Input Prompt & Simulator Action */}
-                  <div style={{ display: "flex", gap: 8, marginBottom: 14, flexWrap: "wrap" }}>
-                    <input
-                      type="text"
-                      className="form-input"
-                      style={{ flex: "1 1 180px", fontSize: 12.5 }}
-                      placeholder="Enter architecture brief to simulate..."
-                      value={simCustomPrompt || SIM_PRESETS.find(p => p.id === simPreset)?.brief || ""}
-                      onChange={(e) => setSimCustomPrompt(e.target.value)}
-                    />
-                    <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
-                      <button
-                        className="btn btn-primary"
-                        disabled={simRunning}
-                        onClick={handleRunSimulation}
-                        style={{ padding: "0 14px", whiteSpace: "nowrap", fontSize: 12 }}
-                      >
-                        {simRunning ? "Simulating..." : "Simulate Execution"}
-                      </button>
-                      <button
-                        className="btn btn-secondary"
-                        onClick={() => {
-                          const presetObj = SIM_PRESETS.find(p => p.id === simPreset);
-                          setProjectName(presetObj ? presetObj.title.replace(/[^a-zA-Z0-9 ]/g, "").trim() : "Custom AgentFlow App");
-                          setProjectBrief(simCustomPrompt || presetObj?.brief || "");
-                          setSaasTab("studio");
-                          setActiveTab("create");
-                          showToast("Loaded preset into Studio Creator!", "info");
-                        }}
-                        title="Load this architecture into Studio to build real code"
-                        style={{ padding: "0 12px", whiteSpace: "nowrap", fontSize: 12 }}
-                      >
-                        Load in Studio
-                      </button>
+                <div className="home-pillars-grid">
+                  <div className="home-pillar-card">
+                    <div className="home-pillar-icon-box">
+                      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <polygon points="12 2 2 7 12 12 22 7 12 2" />
+                        <polyline points="2 17 12 22 22 17" />
+                        <polyline points="2 12 12 17 22 12" />
+                      </svg>
+                    </div>
+                    <div className="home-pillar-tag">TOPOLOGY ENGINE</div>
+                    <h3 className="home-pillar-title">7-Stage Isolated Pipeline</h3>
+                    <p className="home-pillar-text">
+                      Compiles PRDs, system architecture, third-normal-form relational database schemas, OpenAPI contracts, and code files in topological sequence without context pollution.
+                    </p>
+                    <div className="home-pillar-bullets">
+                      <div><span className="bullet-dot" />PRD &rarr; SDD &rarr; Schema &rarr; OpenAPI &rarr; Code</div>
+                      <div><span className="bullet-dot" />Zero compounding errors or forgotten models</div>
                     </div>
                   </div>
 
-                  {/* Visual 7-Stage DAG Nodes */}
-                  <div className="sim-dag-grid">
-                    {DAG_STAGES.map((stg, idx) => {
-                      const isActive = simStepIndex === idx;
-                      const isDone = simStepIndex > idx;
-                      return (
-                        <div
-                          key={stg.id}
-                          className={`sim-node-box ${isActive ? "active" : ""} ${isDone ? "completed" : ""}`}
-                        >
-                          <div style={{ fontSize: 10, fontWeight: 700, fontFamily: "var(--font-mono)", color: "var(--text-muted)", marginBottom: 2 }}>
-                            0{idx + 1}
-                          </div>
-                          <div style={{ fontSize: 11, fontWeight: 600, color: "var(--text-primary)", whiteSpace: "nowrap" }}>{stg.label}</div>
-                          <div style={{ fontSize: 9.5, color: "var(--text-muted)", marginTop: 2, fontFamily: "var(--font-mono)" }}>{stg.model}</div>
-                          <div style={{ marginTop: 6 }}>
-                            <span
-                              className={`badge ${isActive ? "badge-green" : isDone ? "badge-cyan" : ""}`}
-                              style={{ fontSize: 8.5, padding: "2px 5px" }}
-                            >
-                              {isActive ? "ACTIVE" : isDone ? "SYNCED" : "IDLE"}
-                            </span>
-                          </div>
+                  <div className="home-pillar-card">
+                    <div className="home-pillar-icon-box" style={{ color: "var(--accent-cyan)", borderColor: "rgba(0, 229, 255, 0.25)" }}>
+                      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <rect x="2" y="3" width="20" height="14" rx="2" ry="2" />
+                        <line x1="8" y1="21" x2="16" y2="21" />
+                        <line x1="12" y1="17" x2="12" y2="21" />
+                      </svg>
+                    </div>
+                    <div className="home-pillar-tag" style={{ color: "var(--accent-cyan)", borderColor: "rgba(0, 229, 255, 0.2)" }}>COST ROUTER</div>
+                    <h3 className="home-pillar-title">Zero-Cost Free Provider Routing</h3>
+                    <p className="home-pillar-text">
+                      Dynamically prioritizes lightning-fast, high-allowance free endpoints (Groq Llama 3.3 70B, Cerebras, Google Gemini Flash, Mistral, Ollama) before dipping into paid developer quotas.
+                    </p>
+                    <div className="home-pillar-bullets">
+                      <div><span className="bullet-dot" style={{ background: "var(--accent-cyan)" }} />10+ API providers with automatic failover</div>
+                      <div><span className="bullet-dot" style={{ background: "var(--accent-cyan)" }} />$0.00 / token tier priority routing</div>
+                    </div>
+                  </div>
+
+                  <div className="home-pillar-card">
+                    <div className="home-pillar-icon-box" style={{ color: "var(--accent-purple)", borderColor: "rgba(168, 85, 247, 0.25)" }}>
+                      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                      </svg>
+                    </div>
+                    <div className="home-pillar-tag" style={{ color: "var(--accent-purple)", borderColor: "rgba(168, 85, 247, 0.2)" }}>AST VERIFIER</div>
+                    <h3 className="home-pillar-title">AST Syntax &amp; Micro-Regen</h3>
+                    <p className="home-pillar-text">
+                      Syntax trees verify every Python file automatically. When you modify any section, Myers LCS diffing detects downstream dependencies and recalculates only changed files.
+                    </p>
+                    <div className="home-pillar-bullets">
+                      <div><span className="bullet-dot" style={{ background: "var(--accent-purple)" }} />Static syntax trees prevent broken scripts</div>
+                      <div><span className="bullet-dot" style={{ background: "var(--accent-purple)" }} />1-Click consistency auditor auto-repair</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Production Architecture Starter Blueprints */}
+              <div className="home-section-container">
+                <div className="home-section-header">
+                  <div className="badge badge-cyber" style={{ marginBottom: 10 }}>STARTER BLUEPRINTS</div>
+                  <h2 className="home-section-title">Production-Grade Starter Architectures</h2>
+                  <p className="home-section-desc">
+                    Select an enterprise architecture blueprint to simulate in the DAG engine or load directly into Studio to generate live code.
+                  </p>
+                </div>
+
+                <div className="home-templates-grid">
+                  {SIM_PRESETS.map((preset) => (
+                    <div key={preset.id} className="home-template-card">
+                      <div className="home-template-header">
+                        <div className="home-template-badge">
+                          {preset.id === "ai-reviewer" ? "SECURITY & AST" : preset.id === "fintech-escrow" ? "FINTECH MESH" : "HEALTHCARE"}
                         </div>
-                      );
-                    })}
-                  </div>
-
-                  {/* Streaming Terminal Log */}
-                  <div className="sim-terminal-box">
-                    {simLogs.map((log, i) => (
-                      <div key={i} style={{ color: log.includes("[SUCCESS]") ? "#00FF66" : log.includes("[STAGE") ? "#FFFFFF" : "var(--terminal-green)" }}>
-                        <span style={{ opacity: 0.5, marginRight: 6 }}>&gt;</span>
-                        {log}
+                        <span className="home-template-status">READY TO RUN</span>
                       </div>
-                    ))}
+                      <h3 className="home-template-title">{preset.title}</h3>
+                      <p className="home-template-brief">{preset.brief}</p>
+                      <div className="home-template-tags">
+                        {preset.id === "ai-reviewer" && (
+                          <>
+                            <span className="tag">FastAPI</span>
+                            <span className="tag">AST Tree</span>
+                            <span className="tag">OWASP Audit</span>
+                            <span className="tag">GitHub API</span>
+                          </>
+                        )}
+                        {preset.id === "fintech-escrow" && (
+                          <>
+                            <span className="tag">PostgreSQL</span>
+                            <span className="tag">Stripe Connect</span>
+                            <span className="tag">Dual Ledger</span>
+                            <span className="tag">Webhooks</span>
+                          </>
+                        )}
+                        {preset.id === "hipaa-health" && (
+                          <>
+                            <span className="tag">WebRTC</span>
+                            <span className="tag">FHIR EHR</span>
+                            <span className="tag">AES-256</span>
+                            <span className="tag">Telehealth</span>
+                          </>
+                        )}
+                      </div>
+                      <div className="home-template-actions">
+                        <button
+                          className="btn btn-secondary btn-sm"
+                          onClick={() => {
+                            setSimPreset(preset.id);
+                            setSimCustomPrompt(preset.brief);
+                            window.scrollTo({ top: 0, behavior: "smooth" });
+                            handleRunSimulation();
+                          }}
+                        >
+                          Simulate in DAG
+                        </button>
+                        <button
+                          className="btn btn-primary btn-sm"
+                          onClick={() => {
+                            setProjectName(preset.title.replace(/[^a-zA-Z0-9 ]/g, "").trim());
+                            setProjectBrief(preset.brief);
+                            setSaasTab("studio");
+                            setActiveTab("create");
+                            showToast(`Loaded ${preset.title} into Studio Creator!`, "info");
+                          }}
+                        >
+                          Load in Studio &rarr;
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Bottom High-Impact CTA Banner */}
+              <div className="home-cta-banner">
+                <div className="home-cta-glow" />
+                <div className="home-cta-content">
+                  <div className="badge badge-cyber" style={{ marginBottom: 14 }}>AUTONOMOUS COMPILATION</div>
+                  <h2 className="home-cta-title">Ready to Compile Deterministic Software?</h2>
+                  <p className="home-cta-desc">
+                    Start building production microservices, database schemas, and verified source code without prompt degradation or hallucination compounding.
+                  </p>
+                  <div className="home-cta-actions">
+                    <button className="btn btn-primary btn-glow" onClick={() => setSaasTab("studio")}>
+                      Launch Studio Workspace &rarr;
+                    </button>
+                    <button className="btn btn-secondary btn-glass" onClick={() => setSaasTab("docs")}>
+                      View Documentation
+                    </button>
+                    <button className="btn btn-secondary btn-glass" onClick={() => setSaasTab("pricing")}>
+                      Inspect Model Quotas
+                    </button>
                   </div>
                 </div>
               </div>
@@ -6322,14 +6687,42 @@ export default function Home() {
           title="Drag me anywhere! Click to talk with Flowy."
         >
           {showPetBubble && (
-            <div className="pet-speech-bubble" onClick={(e) => e.stopPropagation()}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
-                <span style={{ fontSize: 10, fontFamily: "var(--font-mono)", color: "var(--terminal-green)", fontWeight: 700 }}>
-                  FLOWY :: AI PET (DRAGGABLE)
-                </span>
-                <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+            <div
+              className={`pet-speech-bubble ${petPos && petPos.x < 350 ? "align-left" : ""}`}
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Chatbot Header */}
+              <div className="pet-chat-header">
+                <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
+                  <span style={{ display: "inline-block", width: 6, height: 6, borderRadius: "50%", background: "var(--terminal-green)", boxShadow: "0 0 6px var(--terminal-green)" }} />
+                  <span style={{ fontSize: 10.5, fontFamily: "var(--font-mono)", color: "var(--terminal-green)", fontWeight: 700, letterSpacing: "0.5px" }}>
+                    FLOWY : AI CHATBOT
+                  </span>
+                </div>
+
+                <div style={{ display: "flex", gap: 5, alignItems: "center" }}>
+                  <div style={{ display: "flex", gap: 3, background: "rgba(0,0,0,0.25)", padding: "1px 2px", borderRadius: 14 }}>
+                    <button
+                      type="button"
+                      className={`pet-tab-btn ${petChatMode === "ask" ? "active" : ""}`}
+                      onClick={() => setPetChatMode("ask")}
+                      title="Ask a query"
+                    >
+                      Ask
+                    </button>
+                    <button
+                      type="button"
+                      className={`pet-tab-btn ${petChatMode === "faq" ? "active" : ""}`}
+                      onClick={() => setPetChatMode("faq")}
+                      title="Browse FAQs"
+                    >
+                      FAQs
+                    </button>
+                  </div>
+
                   {petPos && (
                     <button
+                      type="button"
                       onClick={(e) => {
                         e.stopPropagation();
                         setPetPos(null);
@@ -6337,22 +6730,128 @@ export default function Home() {
                           localStorage.removeItem("agentflow_pet_pos");
                         } catch (err) {}
                       }}
-                      style={{ background: "transparent", border: "none", color: "var(--text-secondary)", cursor: "pointer", fontSize: 10, padding: 0 }}
+                      style={{ background: "transparent", border: "none", color: "var(--text-muted)", cursor: "pointer", fontSize: 10, padding: "0 2px" }}
                       title="Reset Flowy to bottom corner"
                     >
-                      ↺ Reset
+                      ↺
                     </button>
                   )}
                   <button
+                    type="button"
                     onClick={() => setShowPetBubble(false)}
-                    style={{ background: "transparent", border: "none", color: "var(--text-muted)", cursor: "pointer", fontSize: 10, padding: 0 }}
-                    title="Dismiss bubble"
+                    style={{ background: "transparent", border: "none", color: "var(--text-muted)", cursor: "pointer", fontSize: 11, padding: "0 2px" }}
+                    title="Dismiss chatbot"
                   >
                     ✕
                   </button>
                 </div>
               </div>
-              <div style={{ lineHeight: 1.4 }}>{petMessages[petMessageIdx]}</div>
+
+              {/* View 1: Ask Mode & Chat Stream */}
+              {petChatMode === "ask" ? (
+                <>
+                  <div className="pet-quick-chips">
+                    <button type="button" className="pet-quick-chip" onClick={() => handlePetAsk("Show architecture graph")}>
+                      Graph
+                    </button>
+                    <button type="button" className="pet-quick-chip" onClick={() => handlePetAsk("How to create a project?")}>
+                      Create
+                    </button>
+                    <button type="button" className="pet-quick-chip" onClick={() => handlePetAsk("Check pricing")}>
+                      Pricing
+                    </button>
+                    <button type="button" className="pet-quick-chip" onClick={() => handlePetAsk("Where are the docs?")}>
+                      Docs
+                    </button>
+                  </div>
+
+                  <div className="pet-chat-body">
+                    {petChatMessages.map((msg) => (
+                      <div key={msg.id} className={`pet-msg-row ${msg.sender}`}>
+                        <div className="pet-msg-meta">
+                          <span>{msg.sender === "flowy" ? "FLOWY" : "YOU"}</span>
+                          <span>•</span>
+                          <span>{msg.time}</span>
+                        </div>
+                        <div className="pet-msg-bubble">
+                          <div>{msg.text}</div>
+                          {msg.target && (
+                            <button
+                              type="button"
+                              className="pet-nav-badge"
+                              onClick={() => {
+                                if (msg.target.saas) setSaasTab(msg.target.saas);
+                                if (msg.target.tab) setActiveTab(msg.target.tab);
+                                showToast(`Navigated to ${msg.target.label}`, "info");
+                              }}
+                              title={`Navigate to ${msg.target.label}`}
+                            >
+                              <span>📍 Open {msg.target.label}</span>
+                              <span style={{ fontSize: 9 }}>&rarr;</span>
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                    <div ref={petChatEndRef} />
+                  </div>
+
+                  <form
+                    className="pet-chat-input-row"
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      handlePetAsk();
+                    }}
+                  >
+                    <input
+                      type="text"
+                      className="pet-chat-input"
+                      placeholder="Ask Flowy (e.g. 'open graph', 'pricing')..."
+                      value={petChatInput}
+                      onChange={(e) => setPetChatInput(e.target.value)}
+                    />
+                    <button type="submit" className="pet-chat-send-btn" disabled={!petChatInput.trim()}>
+                      Send
+                    </button>
+                  </form>
+                </>
+              ) : (
+                /* View 2: FAQs List View */
+                <div className="pet-faq-container">
+                  <div style={{ fontSize: 9.5, color: "var(--text-muted)", marginBottom: 4, fontFamily: "var(--font-mono)" }}>
+                    CLICK AN FAQ TO ANSWER &amp; NAVIGATE:
+                  </div>
+                  {PET_FAQS.map((faq, idx) => {
+                    let previewTarget = null;
+                    for (const r of PET_REGEX_ROUTES) {
+                      if (r.pattern.test(faq.query)) {
+                        previewTarget = r.target.label;
+                        break;
+                      }
+                    }
+                    return (
+                      <div
+                        key={idx}
+                        className="pet-faq-card"
+                        onClick={() => handlePetAsk(faq.query)}
+                      >
+                        <div className="pet-faq-q">{faq.q}</div>
+                        {previewTarget && (
+                          <div className="pet-faq-target-badge">{previewTarget}</div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Mini Hint Pill When Collapsed */}
+          {!showPetBubble && (
+            <div className="pet-mini-pill">
+              <span className="pet-mini-dot" />
+              <span>Ask Flowy</span>
             </div>
           )}
 
