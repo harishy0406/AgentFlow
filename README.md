@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="assets/logo.png" width="140" alt="AgentFlow Logo" />
+</p>
+
 # AgentFlow: Dependency-Aware Multi-Agent Framework for Deterministic Software Engineering
 
 > **Autonomous 7-Agent DAG Fleet with Artifact-Specific Model Routing, Incremental Dependency Invalidation, and Pure-Code Executive Landscape Presentation Generation.**
