@@ -167,6 +167,8 @@ def cleanup(signum=None, frame=None):
     log(f"\n\n{YELLOW}{BOLD}[AgentFlow] Shutting down all services...{RESET}")
     for proc in processes:
         kill_process_tree(proc)
+    free_port(8000)
+    free_port(3000)
     log(f"{GREEN}[AgentFlow] All services stopped cleanly. Goodbye!{RESET}")
     sys.exit(0)
 

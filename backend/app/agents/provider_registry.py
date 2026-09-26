@@ -44,25 +44,25 @@ class ProviderEntry:
     factory: Callable[[str], BaseChatModel]  # model_name → ChatModel instance
 
     def is_available(self) -> bool:
-        """Check if the provider's API key is configured."""
+        """Check if the provider's API key is configured and non-empty."""
+        if self.name == "ollama":
+            return os.getenv("OLLAMA_ENABLED", "false").lower() in ("true", "1", "yes")
+
         key_map = {
-            "openai": "OPENAI_API_KEY",
-            "anthropic": "ANTHROPIC_API_KEY",
-            "groq": "GROQ_API_KEY",
-            "openrouter": "OPENROUTER_API_KEY",
+            "openai": ["OPENAI_API_KEY"],
+            "anthropic": ["ANTHROPIC_API_KEY"],
+            "groq": ["GROQ_API_KEY"],
+            "openrouter": ["OPENROUTER_API_KEY"],
             "gemini": ["GEMINI_API_KEY", "GOOGLE_API_KEY"],
-            "mistral": "MISTRAL_API_KEY",
-            "deepseek": "DEEPSEEK_API_KEY",
-            "cerebras": "CEREBRAS_API_KEY",
-            "together": "TOGETHER_API_KEY",
-            "ollama": ["OLLAMA_ENABLED", "OLLAMA_BASE_URL"],
+            "mistral": ["MISTRAL_API_KEY"],
+            "deepseek": ["DEEPSEEK_API_KEY"],
+            "cerebras": ["CEREBRAS_API_KEY"],
+            "together": ["TOGETHER_API_KEY"],
         }
         val = key_map.get(self.name)
         if val is None:
             return True  # Unknown provider — assume available
-        if isinstance(val, list):
-            return any(bool(os.getenv(k)) for k in val)
-        return bool(os.getenv(val))
+        return any(bool((os.getenv(k) or "").strip()) for k in val)
 
 
 class MockChatModel(BaseChatModel):
@@ -523,7 +523,7 @@ def build_default_registry() -> ProviderRegistry:
             "ollama",
             os.getenv("OLLAMA_BASE_URL", "http://localhost:11434/v1"),
             ["OLLAMA_API_KEY"],
-            default_key="ollama"
+            default_key="ollama" if os.getenv("OLLAMA_ENABLED", "false").lower() in ("true", "1", "yes") else ""
         ),
     ))
 
