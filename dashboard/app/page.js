@@ -3,6 +3,7 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import DependencyGraph from "./components/DependencyGraph";
 import DiffViewer from "./components/DiffViewer";
+import { BentoGrid, BentoCard, BentoHeader, FeatureCard, PricingCard, addBentoHoverEffects } from "./components/BentoGrid";
 import {
   createProject,
   clarifyProject,
@@ -648,6 +649,26 @@ export default function Home() {
     }
   }, [currentProject, artifacts, drifts]);
 
+  // Initialize Bento Grid hover effects and animations
+  useEffect(() => {
+    addBentoHoverEffects();
+
+    // Add animation classes to bento cards
+    const addAnimations = () => {
+      const cards = document.querySelectorAll('.bento-card');
+      cards.forEach((card, index) => {
+        card.classList.add('fade-in');
+        if (index === 1) card.classList.add('fade-in-delay-1');
+        if (index === 2) card.classList.add('fade-in-delay-2');
+        if (index === 3) card.classList.add('fade-in-delay-3');
+        if (index === 4) card.classList.add('fade-in-delay-4');
+      });
+    };
+
+    // Add animations when tab changes
+    addAnimations();
+  }, [saasTab]);
+
   // ---- HITL: Step 1 — Get clarification questions ----
   const handleClarify = async (e) => {
     e.preventDefault();
@@ -835,7 +856,7 @@ export default function Home() {
       {/* Minimalist Top Navbar */}
       <nav className="navbar">
         <div className="navbar-brand" onClick={() => setSaasTab("home")}>
-          <div className="brand-icon">AF</div>
+          <img src="/logo.png" alt="AgentFlow Logo" className="brand-logo-img" />
           <h1>AgentFlow</h1>
         </div>
 
@@ -1087,9 +1108,25 @@ export default function Home() {
               <div className="home-hero-split">
                 {/* Left Column: Hero Copy, Badges & Actions */}
                 <div className="home-hero-left">
-                  <div className="badge badge-cyber" style={{ marginBottom: 18, padding: "6px 14px", fontSize: 11.5, borderRadius: 20, display: "inline-flex", width: "fit-content", letterSpacing: "0.5px" }}>
-                    <span className="pulse-beacon" style={{ marginRight: 8 }} />
-                    AUTONOMOUS 7-AGENT ORCHESTRATION PLATFORM
+                  <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 18, flexWrap: "wrap" }}>
+                    <img
+                      src="/logo.png"
+                      alt="AgentFlow Emblem"
+                      style={{
+                        width: 40,
+                        height: 40,
+                        objectFit: "contain",
+                        filter: "drop-shadow(0 0 14px rgba(0, 255, 102, 0.55))",
+                        borderRadius: "10px",
+                        background: "rgba(10, 15, 29, 0.6)",
+                        padding: "4px",
+                        border: "1px solid rgba(0, 255, 102, 0.3)",
+                      }}
+                    />
+                    <div className="badge badge-cyber" style={{ padding: "6px 14px", fontSize: 11.5, borderRadius: 20, display: "inline-flex", width: "fit-content", letterSpacing: "0.5px" }}>
+                      <span className="pulse-beacon" style={{ marginRight: 8 }} />
+                      AUTONOMOUS 7-AGENT ORCHESTRATION PLATFORM
+                    </div>
                   </div>
                   <h1 className="home-hero-title">
                     Deterministic Software Engineering,
@@ -1504,179 +1541,285 @@ export default function Home() {
           {/* VIEW: WORKFLOW */}
           {saasTab === "workflow" && (
             <div className="card">
-              <h2 className="card-title" style={{ fontSize: 24, marginBottom: 8 }}>
-                Autonomous Engineering Workflow
+              <h2 className="card-title" style={{ fontSize: 26, marginBottom: 12, fontWeight: 800 }}>
+                Autonomous Engineering <span style={{ color: "var(--neon-green)" }}>Workflow</span>
               </h2>
-              <p style={{ color: "var(--text-secondary)", marginBottom: 28 }}>
+              <p style={{ color: "var(--text-secondary)", marginBottom: 24, fontSize: 14, lineHeight: 1.6 }}>
                 How AgentFlow transforms a high-level product brief into synchronized production code.
               </p>
 
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 16 }}>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 16 }}>
                 {[
-                  { step: "01", title: "HITL Clarification", desc: "Agent probes edge cases and architectural choices before writing specifications." },
-                  { step: "02", title: "DAG Graph Execution", desc: "Multi-agent pipeline executes in parallel across topological dependencies." },
-                  { step: "03", title: "Section Editing & Diffing", desc: "Developers edit specific sections; downstream artifacts auto-regenerate." },
-                  { step: "04", title: "Static AST Verification", desc: "AST smoke testing engine verifies syntax correctness across generated files." },
-                  { step: "05", title: "Production Packaging", desc: "Download in-memory .zip archives, SQL DDL migrations, or OpenAPI specs." },
-                ].map((item) => (
-                  <div key={item.step} className="bento-card" style={{ padding: 20 }}>
-                    <div style={{ fontFamily: "var(--font-mono)", color: "var(--text-primary)", fontSize: 24, fontWeight: 800, marginBottom: 8 }}>
+                  { step: "01", title: "HITL Clarification", desc: "Agent probes edge cases and architectural choices before writing specifications.", color: "var(--neon-green)" },
+                  { step: "02", title: "DAG Graph Execution", desc: "Multi-agent pipeline executes in parallel across topological dependencies.", color: "var(--accent-cyan)" },
+                  { step: "03", title: "Section Editing & Diffing", desc: "Developers edit specific sections; downstream artifacts auto-regenerate.", color: "var(--accent-yellow)" },
+                  { step: "04", title: "Static AST Verification", desc: "AST smoke testing engine verifies syntax correctness across generated files.", color: "var(--accent-purple)" },
+                  { step: "05", title: "Production Packaging", desc: "Download in-memory .zip archives, SQL DDL migrations, or OpenAPI specs.", color: "var(--accent-blue)" },
+                ].map((item, index) => (
+                  <div key={item.step} className={`workflow-step-card fade-in fade-in-delay-${index}`} style={{ padding: 24, border: `1px solid ${item.color}30` }}>
+                    <div style={{ fontFamily: "var(--font-mono)", color: item.color, fontSize: 28, fontWeight: 800, marginBottom: 12 }}>
                       {item.step}
                     </div>
-                    <h4 style={{ fontSize: 16, fontWeight: 700, marginBottom: 6 }}>{item.title}</h4>
-                    <p style={{ color: "var(--text-secondary)", fontSize: 13, lineHeight: 1.5 }}>{item.desc}</p>
+                    <h4 style={{ fontSize: 16, fontWeight: 700, marginBottom: 8, lineHeight: 1.3, color: "var(--text-primary)" }}>
+                      {item.title}
+                    </h4>
+                    <p style={{ color: "var(--text-secondary)", fontSize: 13, lineHeight: 1.5, opacity: 0.9 }}>
+                      {item.desc}
+                    </p>
                   </div>
                 ))}
+              </div>
+
+              {/* Workflow visualization row */}
+              <div className="bento-grid" style={{ marginTop: 24 }}>
+                <div className="bento-card bento-col-8">
+                  <h3 style={{ fontSize: 18, fontWeight: 700, marginBottom: 12, color: "var(--text-primary)" }}>
+                    Deterministic DAG Execution Flow
+                  </h3>
+                  <p style={{ color: "var(--text-secondary)", fontSize: 13, marginBottom: 16, lineHeight: 1.5 }}>
+                    Each step maintains strict contextual isolation, preventing hallucination compounding while enabling parallel execution where possible.
+                  </p>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-around", marginTop: 16, flexWrap: "wrap", gap: 8 }}>
+                    <div className="workflow-node">Brief → PRD</div>
+                    <div className="workflow-arrow">→</div>
+                    <div className="workflow-node">SDD + DB Schema</div>
+                    <div className="workflow-arrow">→</div>
+                    <div className="workflow-node">API Spec + Stories</div>
+                    <div className="workflow-arrow">→</div>
+                    <div className="workflow-node">Task Breakdown</div>
+                    <div className="workflow-arrow">→</div>
+                    <div className="workflow-node">Code Gen</div>
+                  </div>
+                </div>
+
+                <div className="bento-card bento-col-4">
+                  <h3 style={{ fontSize: 18, fontWeight: 700, marginBottom: 12, color: "var(--text-primary)" }}>
+                    Human-In-The-Loop Architecture
+                  </h3>
+                  <p style={{ color: "var(--text-secondary)", fontSize: 13, marginBottom: 12, lineHeight: 1.5 }}>
+                    Agents ask clarifying questions before execution, ensuring alignment with business requirements and edge case awareness.
+                  </p>
+                  <div style={{ background: "var(--bg-secondary)", borderRadius: "8px", padding: "12px", fontSize: "12px", fontFamily: "var(--font-mono)", color: "var(--text-muted)", overflow: "hidden" }}>
+                    <div style={{ lineHeight: "1.6" }}>
+                      <span style={{ color: "var(--neon-green)"}}>&gt;</span> Agent: "Should user roles follow RBAC or ABAC?"
+                      <br/>
+                      <span style={{ color: "var(--neon-green)"}}>&gt;</span> User: "RBAC with custom role permissions"
+                      <br/>
+                      <span style={{ color: "var(--neon-green)"}}>&gt;</span> Agent: "Will autoscaling target CPU or custom metrics?"
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           )}
 
-          {/* VIEW: PRICING */}
+          {/* VIEW: PRICING - Enhanced Bento Grid */}
           {saasTab === "pricing" && (
             <div>
               <div style={{ textAlign: "center", marginBottom: 32 }}>
-                <h2 style={{ fontFamily: "var(--font-display)", fontSize: 32, fontWeight: 800, marginBottom: 8 }}>
-                  Simple, Predictable SaaS Pricing
+                <h2 style={{ fontFamily: "var(--font-display)", fontSize: 36, fontWeight: 800, marginBottom: 8 }}>
+                  Simple, <span style={{ color: "var(--neon-green)" }}>Predictable</span> SaaS Pricing
                 </h2>
-                <p style={{ color: "var(--text-secondary)" }}>
+                <p style={{ color: "var(--text-secondary)", fontSize: 16 }}>
                   Start free on open source, or scale with enterprise autonomous engineering fleets.
                 </p>
               </div>
 
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 20, marginBottom: 40 }}>
+              <BentoGrid columns={12} gap={20}>
                 {/* Hacker Tier */}
-                <div className="bento-card">
-                  <span className="badge badge-green" style={{ marginBottom: 12 }}>OPEN SOURCE FOREVER</span>
-                  <h3 style={{ fontSize: 22, fontWeight: 800 }}>Hacker OSS</h3>
-                  <div style={{ fontSize: 36, fontWeight: 900, fontFamily: "var(--font-display)", margin: "14px 0", color: "var(--text-primary)" }}>
-                    $0 <span style={{ fontSize: 14, color: "var(--text-secondary)", fontWeight: 500 }}>/ month</span>
-                  </div>
-                  <p style={{ color: "var(--text-secondary)", fontSize: 13, marginBottom: 20 }}>
-                    Perfect for individual developers running AgentFlow locally on their workstations.
-                  </p>
-                  <ul style={{ listStyle: "none", fontSize: 13, color: "var(--text-primary)", display: "flex", flexDirection: "column", gap: 10, marginBottom: 24 }}>
-                    <li>✓ 7-Agent Topological DAG Pipeline</li>
-                    <li>✓ Unlimited Local Regenerations &amp; Diffing</li>
-                    <li>✓ Local SQLite / Postgres Support</li>
-                    <li>✓ In-Memory ZIP Code Downloads</li>
-                    <li>✓ AST Syntax &amp; Smoke Verification</li>
-                    <li>✓ Community GitHub &amp; Discord Support</li>
-                  </ul>
-                  <button className="btn btn-secondary" onClick={() => setSaasTab("docs")} style={{ width: "100%", justifyContent: "center" }}>
-                    Get Started Free
-                  </button>
-                </div>
+                <PricingCard
+                  title="Hacker OSS"
+                  price="$0"
+                  period="/ month"
+                  description="Perfect for individual developers running AgentFlow locally on their workstations."
+                  features={[
+                    "7-Agent Topological DAG Pipeline",
+                    "Unlimited Local Regenerations & Diffing",
+                    "Local SQLite / Postgres Support",
+                    "In-Memory ZIP Code Downloads",
+                    "AST Syntax & Smoke Verification",
+                    "Community GitHub & Discord Support"
+                  ]}
+                  accentColor="var(--neon-green)"
+                  buttonText="Get Started Free"
+                  onButtonClick={() => setSaasTab("docs")}
+                  className="bento-animate"
+                />
 
-                {/* Pro Tier */}
-                <div className="bento-card" style={{ border: "1px solid var(--border-hover)", background: "var(--bg-secondary)" }}>
-                  <span className="badge badge-cyan" style={{ marginBottom: 12 }}>MOST POPULAR</span>
-                  <h3 style={{ fontSize: 22, fontWeight: 800 }}>Pro Orchestrator</h3>
-                  <div style={{ fontSize: 36, fontWeight: 900, fontFamily: "var(--font-display)", margin: "14px 0", color: "var(--text-primary)" }}>
-                    $29 <span style={{ fontSize: 14, color: "var(--text-secondary)", fontWeight: 500 }}>/ month</span>
-                  </div>
-                  <p style={{ color: "var(--text-secondary)", fontSize: 13, marginBottom: 20 }}>
-                    For professional engineers and startup teams building production microservices.
-                  </p>
-                  <ul style={{ listStyle: "none", fontSize: 13, color: "var(--text-primary)", display: "flex", flexDirection: "column", gap: 10, marginBottom: 24 }}>
-                    <li>✓ Everything in Hacker OSS</li>
-                    <li>✓ Managed Multi-Model Cloud Routing</li>
-                    <li>✓ Cross-Service Contract Alignment Engine</li>
-                    <li>✓ Automated SQL DDL &amp; Alembic Migrations</li>
-                    <li>✓ Machine-Readable OpenAPI 3.0.3 Exporter</li>
-                    <li>✓ Priority Cloud LLM Sandboxes</li>
-                  </ul>
-                  <button className="btn btn-primary" onClick={() => setSaasTab("studio")} style={{ width: "100%", justifyContent: "center" }}>
-                    Start Pro Studio
-                  </button>
-                </div>
+                {/* Pro Tier - Most Popular */}
+                <PricingCard
+                  title="Pro Orchestrator"
+                  price="$29"
+                  period="/ month"
+                  description="For professional engineers and startup teams building production microservices."
+                  features={[
+                    "Everything in Hacker OSS",
+                    "Managed Multi-Model Cloud Routing",
+                    "Cross-Service Contract Alignment Engine",
+                    "Automated SQL DDL & Alembic Migrations",
+                    "Machine-Readable OpenAPI 3.0.3 Exporter",
+                    "Priority Cloud LLM Sandboxes"
+                  ]}
+                  accentColor="var(--neon-green)"
+                  buttonText="Start Pro Studio"
+                  onButtonClick={() => setSaasTab("studio")}
+                  popular={true}
+                  className="bento-animate bento-animate-delay-1"
+                />
 
                 {/* Enterprise Tier */}
-                <div className="bento-card">
-                  <span className="badge badge-amber" style={{ marginBottom: 12 }}>ENTERPRISE FLEET</span>
-                  <h3 style={{ fontSize: 22, fontWeight: 800 }}>Enterprise Fleet</h3>
-                  <div style={{ fontSize: 36, fontWeight: 900, fontFamily: "var(--font-display)", margin: "14px 0", color: "var(--text-primary)" }}>
-                    $199 <span style={{ fontSize: 14, color: "var(--text-secondary)", fontWeight: 500 }}>/ month</span>
-                  </div>
-                  <p style={{ color: "var(--text-secondary)", fontSize: 13, marginBottom: 20 }}>
-                    For engineering organizations needing air-gapped security and custom model registries.
-                  </p>
-                  <ul style={{ listStyle: "none", fontSize: 13, color: "var(--text-primary)", display: "flex", flexDirection: "column", gap: 10, marginBottom: 24 }}>
-                    <li>✓ Multi-Tenant Team Workspaces</li>
-                    <li>✓ Air-Gapped Local LLM Registry (Ollama/vLLM)</li>
-                    <li>✓ Enterprise SSO &amp; Role-Based Access Control</li>
-                    <li>✓ Dedicated Architecture Consistency SLA</li>
-                    <li>✓ Audit Trail &amp; Compliance Logs Export</li>
-                    <li>✓ 24/7 Dedicated Solutions Engineer</li>
-                  </ul>
-                  <button className="btn btn-secondary" onClick={() => showToast("Contacting enterprise fleet sales...", "info")} style={{ width: "100%", justifyContent: "center" }}>
-                    Contact Fleet Sales
-                  </button>
-                </div>
+                <PricingCard
+                  title="Enterprise Fleet"
+                  price="$199"
+                  period="/ month"
+                  description="For engineering organizations needing air-gapped security and custom model registries."
+                  features={[
+                    "Multi-Tenant Team Workspaces",
+                    "Air-Gapped Local LLM Registry (Ollama/vLLM)",
+                    "Enterprise SSO & Role-Based Access Control",
+                    "Dedicated Architecture Consistency SLA",
+                    "Audit Trail & Compliance Logs Export",
+                    "24/7 Dedicated Solutions Engineer"
+                  ]}
+                  accentColor="var(--accent-yellow)"
+                  buttonText="Contact Fleet Sales"
+                  onButtonClick={() => showToast("Contacting enterprise fleet sales...", "info")}
+                  className="bento-animate bento-animate-delay-2"
+                />
+              </BentoGrid>
+
+              {/* Value Proposition */}
+              <div className="card" style={{ marginTop: "16px", textAlign: "center", padding: "24px" }}>
+                <h3 style={{ fontSize: 18, fontWeight: 700, marginBottom: "12px" }}>
+                  💡 Decay-resilient fleets built on deterministic DAG pipelines
+                </h3>
+                <p style={{ color: "var(--text-secondary)", fontSize: 14, lineHeight: 1.6 }}>
+                  Every AgentFlow plan includes the full 7-agent pipeline with strict topological enforcement in CAP theorem order. No feature gates, no upsell walls — linear value scaling from Hacker OSS to Enterprise Fleet.
+                </p>
               </div>
             </div>
           )}
 
-          {/* VIEW: DOCS & SETUP */}
+          {/* VIEW: DOCS & SETUP - Enhanced */}
           {saasTab === "docs" && (
-            <div className="card">
-              <h2 className="card-title" style={{ fontSize: 24, marginBottom: 8 }}>
-                Documentation &amp; Local Setup Guide
+            <div>
+              <h2 className="card-title" style={{ fontSize: 28, marginBottom: 12, fontWeight: 800 }}>
+                <span style={{ color: "var(--neon-green)" }}>Documentation</span> &amp; Local Setup Guide
               </h2>
-              <p style={{ color: "var(--text-secondary)", marginBottom: 24 }}>
+              <p style={{ color: "var(--text-secondary)", marginBottom: 32, fontSize: 16, lineHeight: 1.6 }}>
                 Setup and run the entire AgentFlow autonomous stack locally on your workstation in under 2 minutes.
               </p>
 
-              <div className="terminal-window" style={{ marginBottom: 24 }}>
-                <div className="terminal-header">
-                  <div className="terminal-dots">
-                    <span className="terminal-dot red" />
-                    <span className="terminal-dot yellow" />
-                    <span className="terminal-dot green" />
+              <BentoGrid columns={12} gap={20}>
+                <BentoCard span={6} accentColor="var(--neon-green)" className="fade-in">
+                  <BentoHeader
+                    badge="QUICK START"
+                    title="Terminal Setup"
+                    description="Get started with these simple commands:"
+                  />
+                  <div className="terminal-window" style={{ marginBottom: 16, marginTop: 16 }}>
+                    <div className="terminal-header">
+                      <div className="terminal-dots">
+                        <span className="terminal-dot red" />
+                        <span className="terminal-dot yellow" />
+                        <span className="terminal-dot green" />
+                      </div>
+                      <span style={{ fontSize: 12, color: "var(--text-muted)" }}>bash — setup.sh</span>
+                    </div>
+                    <div className="terminal-body">
+                      <p><span className="terminal-prompt">&gt;</span> git clone https://github.com/AgentFlow/AgentFlow.git</p>
+                      <p><span className="terminal-prompt">&gt;</span> cd AgentFlow</p>
+                      <p style={{ color: "var(--text-muted)", margin: "8px 0" }}># 1. Start Python Backend (FastAPI + LangGraph)</p>
+                      <p><span className="terminal-prompt">&gt;</span> cd backend &amp;&amp; python -m venv venv &amp;&amp; source venv/bin/activate</p>
+                      <p><span className="terminal-prompt">&gt;</span> pip install -r requirements.txt</p>
+                      <p><span className="terminal-prompt">&gt;</span> uvicorn app.main:app --reload --port 8000</p>
+                      <p style={{ color: "var(--text-muted)", margin: "8px 0" }}># 2. Start Next.js Minimalist Dashboard</p>
+                      <p><span className="terminal-prompt">&gt;</span> cd ../dashboard &amp;&amp; npm install &amp;&amp; npm run dev</p>
+                    </div>
                   </div>
-                  <span style={{ fontSize: 12, color: "var(--text-muted)" }}>bash — setup.sh</span>
-                </div>
-                <div className="terminal-body">
-                  <p><span className="terminal-prompt">&gt;</span> git clone https://github.com/AgentFlow/AgentFlow.git</p>
-                  <p><span className="terminal-prompt">&gt;</span> cd AgentFlow</p>
-                  <p style={{ color: "var(--text-muted)", margin: "8px 0" }}># 1. Start Python Backend (FastAPI + LangGraph)</p>
-                  <p><span className="terminal-prompt">&gt;</span> cd backend &amp;&amp; python -m venv venv &amp;&amp; source venv/bin/activate</p>
-                  <p><span className="terminal-prompt">&gt;</span> pip install -r requirements.txt</p>
-                  <p><span className="terminal-prompt">&gt;</span> uvicorn app.main:app --reload --port 8000</p>
-                  <p style={{ color: "var(--text-muted)", margin: "8px 0" }}># 2. Start Next.js Minimalist Dashboard</p>
-                  <p><span className="terminal-prompt">&gt;</span> cd ../dashboard &amp;&amp; npm install &amp;&amp; npm run dev</p>
+                </BentoCard>
+
+                <BentoCard span={6} accentColor="var(--accent-cyan)" className="fade-in fade-in-delay-2">
+                  <BentoHeader
+                    badge="DOCKERaccia-"
+                    title="Docker Compose Setup"
+                    description="Preferred production deployment:"
+                  />
+                  <div className="terminal-window">
+                    <div className="terminal-body">
+                      <p><span className="terminal-prompt">&gt;</span> docker-compose up --build -d</p>
+                      <p style={{ color: "var(--terminal-green)" }}>✔ Backend container running on http://localhost:8000</p>
+                      <p style={{ color: "var(--terminal-green)" }}>✔ Dashboard container running on http://localhost:3000</p>
+                    </div>
+                  </div>
+                </BentoCard>
+              </BentoGrid>
+
+              <div className="card" style={{ marginTop: 24 }}>
+                <h3 style={{ fontSize: 18, fontWeight: 700, marginBottom: 16, color: "var(--text-primary)" }}>
+                  Development Workflow
+                </h3>
+                <p style={{ color: "var(--text-secondary)", marginBottom: 16, lineHeight: 1.6 }}>
+                  AgentFlow is designed to be developed locally and deployed anywhere. No cloud lock-in, no proprietary services.
+                </p>
+
+                <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+                  {[
+                    { icon: "💻", title: "Local Development", desc: "Build and test everything on your local machine." },
+                    { icon: "🐳", title: "Container Ready", desc: "Docker images for backend and frontend components." },
+                    { icon: "🚀", title: "Cloud Agnostic", desc: "Deploy to any cloud provider or on-premise." },
+                    { icon: "🔌", title: "Plug & Play", desc: "Swap LLM providers via configuration." },
+                  ].map((feature, index) => (
+                    <div key={feature.title} className="feature-pillar" style={{ flex: 1, minWidth: 120 }}>
+                      <div style={{ fontSize: 24, marginBottom: 8 }}>{feature.icon}</div>
+                      <h4 style={{ fontSize: 14, fontWeight: 700, marginBottom: 4 }}>{feature.title}</h4>
+                      <p style={{ fontSize: 12, color: "var(--text-secondary)", lineHeight: 1.4 }}>{feature.desc}</p>
+                    </div>
+                  ))}
                 </div>
               </div>
 
-              <h3 style={{ fontSize: 18, fontWeight: 700, margin: "20px 0 12px" }}>Docker Compose Setup</h3>
-              <div className="terminal-window">
-                <div className="terminal-body">
-                  <p><span className="terminal-prompt">&gt;</span> docker-compose up --build -d</p>
-                  <p style={{ color: "var(--terminal-green)" }}>✔ Backend container running on http://localhost:8000</p>
-                  <p style={{ color: "var(--terminal-green)" }}>✔ Dashboard container running on http://localhost:3000</p>
+              <div className="card" style={{ marginTop: 24 }}>
+                <h3 style={{ fontSize: 18, fontWeight: 700, marginBottom: 16, color: "var(--text-primary)" }}>
+                  🔧 Configuration & Customization
+                </h3>
+                <p style={{ color: "var(--text-secondary)", marginBottom: 16, lineHeight: 1.6 }}>
+                  AgentFlow is fully configurable. Adjust model temperatures, context windows, and quality thresholds via YAML config files or environment variables.
+                </p>
+
+                <div className="terminal-window">
+                  <div className="terminal-body">
+                    <p style={{ color: "var(--text-muted)" }}># .env</p>
+                    <p><span className="terminal-prompt">&gt;</span> MODEL_REGISTRY=claude://opus,claude://sonnet,claude://haiku,openrouter://gpt-4o</p>
+                    <p><span className="terminal-prompt">&gt;</span> DEFAULT_MODEL=claude://sonnet</p>
+                    <p><span className="terminal-prompt">&gt;</span> TEMPERATURE=0.2</p>
+                    <p><span className="terminal-prompt">&gt;</span> MAX_CONTEXT_WINDOW=2048</p>
+                  </div>
                 </div>
               </div>
             </div>
-          )}
+          )}  {/* END: Docs section */}
 
-          {/* VIEW: DOWNLOAD */}
+          {/* VIEW: DOWNLOAD - Enhanced */}
           {saasTab === "download" && (
-            <div className="card">
-              <h2 className="card-title" style={{ fontSize: 24, marginBottom: 8 }}>
-                Download &amp; Offline Packages
+            <div>
+              <h2 className="card-title" style={{ fontSize: 28, marginBottom: 12, fontWeight: 800 }}>
+                <span style={{ color: "var(--neon-green)" }}>Download</span> &amp; Offline Packages
               </h2>
-              <p style={{ color: "var(--text-secondary)", marginBottom: 24 }}>
+              <p style={{ color: "var(--text-secondary)", marginBottom: 32, fontSize: 16, lineHeight: 1.6 }}>
                 Download packaged bundles for offline execution or deployment.
               </p>
 
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 16 }}>
-                <div className="bento-card">
+              <BentoGrid columns={12} gap={20}>
+                <BentoCard span={4} accentColor="var(--neon-green)" className="fade-in">
                   <h4 style={{ fontSize: 16, fontWeight: 700, marginBottom: 6 }}>Source Code Tarball (.zip)</h4>
                   <p style={{ color: "var(--text-secondary)", fontSize: 13, marginBottom: 14 }}>Complete backend engine, dashboard UI, and tests.</p>
                   <button className="btn btn-primary btn-sm" onClick={() => showToast("Preparing source zip archive...", "success")}>
                     Download Source Bundle
                   </button>
-                </div>
-                <div className="bento-card">
+                </BentoCard>
+
+                <BentoCard span={8} accentColor="var(--accent-cyan)" className="fade-in fade-in-delay-1">
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
                     <h4 style={{ fontSize: 16, fontWeight: 700, margin: 0, color: "var(--text-primary)" }}>Executive Slide Deck (.pdf)</h4>
                     <span className="badge badge-green" style={{ fontSize: 10 }}>PURE-CODE</span>
@@ -1712,8 +1855,9 @@ export default function Home() {
                       </span>
                     )}
                   </div>
-                </div>
-                <div className="bento-card">
+                </BentoCard>
+
+                <BentoCard span={6} accentColor="var(--accent-cyan)" className="fade-in fade-in-delay-2">
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
                     <h4 style={{ fontSize: 16, fontWeight: 700, margin: 0, color: "var(--text-primary)" }}>GraphQL Schema (.graphql)</h4>
                     <span className="badge badge-cyan" style={{ fontSize: 10 }}>APOLLO &amp; STRAWBERRY</span>
@@ -1757,8 +1901,9 @@ export default function Home() {
                       </span>
                     )}
                   </div>
-                </div>
-                <div className="bento-card">
+                </BentoCard>
+
+                <BentoCard span={6} accentColor="var(--neon-green)" className="fade-in fade-in-delay-3">
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
                     <h4 style={{ fontSize: 16, fontWeight: 700, margin: 0, color: "var(--text-primary)" }}>Synthetic Seed Data (.sql / .json)</h4>
                     <span className="badge badge-green" style={{ fontSize: 10 }}>MOCK &amp; FIXTURES</span>
@@ -1811,23 +1956,99 @@ export default function Home() {
                       </span>
                     )}
                   </div>
-                </div>
-              </div>
+                </BentoCard>
+              </BentoGrid>
             </div>
           )}
 
-          {/* VIEW: ABOUT */}
+          {/* VIEW: ABOUT - Enhanced */}
           {saasTab === "about" && (
-            <div className="card">
-              <h2 className="card-title" style={{ fontSize: 24, marginBottom: 8 }}>
-                About AgentFlow &amp; Architecture
-              </h2>
-              <p style={{ color: "var(--text-secondary)", lineHeight: 1.7, marginBottom: 16 }}>
+            <div>
+              <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 16 }}>
+                <img
+                  src="/logo.png"
+                  alt="AgentFlow"
+                  style={{
+                    width: 52,
+                    height: 52,
+                    objectFit: "contain",
+                    filter: "drop-shadow(0 0 16px rgba(0, 255, 102, 0.55))",
+                    borderRadius: "12px",
+                    background: "rgba(10, 15, 29, 0.7)",
+                    padding: "6px",
+                    border: "1px solid rgba(0, 255, 102, 0.3)",
+                  }}
+                />
+                <div>
+                  <h2 className="card-title" style={{ fontSize: 28, marginBottom: 4, fontWeight: 800 }}>
+                    <span style={{ color: "var(--neon-green)" }}>About</span>{" "}AgentFlow &amp; Architecture
+                  </h2>
+                  <div style={{ color: "var(--text-muted)", fontSize: 12.5, fontFamily: "var(--font-mono)" }}>
+                    AUTONOMOUS 7-AGENT ORCHESTRATION PLATFORM • v1.0.0
+                  </div>
+                </div>
+              </div>
+              <p style={{ color: "var(--text-secondary)", lineHeight: 1.7, marginBottom: 24, fontSize: 16 }}>
                 Modern generative AI fails at software engineering because single prompts try to solve too many things simultaneously. When an LLM produces a PRD, Database Schema, and Source Code in one prompt, hallucinations compound exponentially.
               </p>
-              <p style={{ color: "var(--text-secondary)", lineHeight: 1.7 }}>
-                <strong>AgentFlow</strong> separates the engineering process into isolated, verifiable agent stages bounded by an explicit Directed Acyclic Graph (DAG). Every section is cryptographically hashed, audited for cross-document consistency, and statically verified with AST syntax checkers before execution.
-              </p>
+
+              <BentoGrid columns={12} gap={20}>
+                <BentoCard span={8} accentColor="var(--accent-purple)" className="fade-in">
+                  <BentoHeader
+                    badge="CORE PRINCIPLE"
+                    title="Deterministic DAG Pipeline"
+                    description="AgentFlow decomposes complex software engineering tasks into smaller, well-scoped problems solved by specialized agents in topological dependency order."
+                  />
+
+                  <p style={{ color: "var(--text-secondary)", lineHeight: 1.7, marginTop: 16, fontSize: 14 }}>
+                    Whenever a downstream artifact depends on an upstream specification, only the minimal required diff context is passed, preventing prompt hallucination compounding while preserving correctness guarantees through AST verification.
+                  </p>
+
+                  <div style={{ display: "flex", gap: 8, marginTop: 16, flexWrap: "wrap" }}>
+                    <span className="badge badge-cyan" style={{ fontSize: 12 }}>Topological Sorting</span>
+                    <span className="badge badge-green" style={{ fontSize: 12 }}>Context Isolation</span>
+                    <span className="badge badge-yellow" style={{ fontSize: 12 }}>AST Verification</span>
+                    <span className="badge badge-red" style={{ fontSize: 12 }}>Multi-Model Consensus</span>
+                  </div>
+                </BentoCard>
+
+                <BentoCard span={4} accentColor="var(--accent-yellow)" className="fade-in fade-in-delay-1">
+                  <BentoHeader
+                    badge="ARCHITECTURE"
+                    title="7-Agent Fleet"
+                    description="Specialized, decoupled workers operating in strict DAG order."
+                  />
+
+                  <ul className="feature-list" style={{ marginTop: 12 }}>
+                    <li style={{ marginBottom: 8 }}>
+                      <span className="feature-check" style={{ color: "var(--neon-green)" }}>✓</span>
+                      <span className="feature-text" style={{ fontSize: 13 }}>PRD Creator</span>
+                    </li>
+                    <li style={{ marginBottom: 8 }}>
+                      <span className="feature-check" style={{ color: "var(--neon-green)" }}>✓</span>
+                      <span className="feature-text" style={{ fontSize: 13 }}>SDD Architect</span>
+                    </li>
+                    <li style={{ marginBottom: 8 }}>
+                      <span className="feature-check" style={{ color: "var(--neon-green)" }}>✓</span>
+                      <span className="feature-text" style={{ fontSize: 13 }}>DB Schema Engineer</span>
+                    </li>
+                    <li style={{ marginBottom: 8 }}>
+                      <span className="feature-check" style={{ color: "var(--neon-green)" }}>✓</span>
+                      <span className="feature-text" style={{ fontSize: 13 }}>API Contract Designer</span>
+                    </li>
+                    <li style={{ marginBottom: 8 }}>
+                      <span className="feature-check" style={{ color: "var(--neon-green)" }}>✓</span>
+                      <span className="feature-text" style={{ fontSize: 13 }}>Auditor & Cross-Ref</span>
+                    </li>
+                  </ul>
+                </BentoCard>
+              </BentoGrid>
+
+              <div className="card" style={{ marginTop: 24, padding: 24 }}>
+                <p style={{ color: "var(--text-secondary)", lineHeight: 1.7, fontSize: 14 }}>
+                  <strong>AgentFlow</strong> separates the engineering process into isolated, verifiable agent stages bounded by an explicit Directed Acyclic Graph (DAG). Every section is cryptographically hashed, audited for cross-document consistency, and statically verified with AST syntax checkers before execution.
+                </p>
+              </div>
             </div>
           )}
 
@@ -6602,7 +6823,17 @@ export default function Home() {
             {/* Brand Column */}
             <div className="footer-brand-col">
               <div className="footer-brand-logo" onClick={() => setSaasTab("home")}>
-                <div className="brand-icon" style={{ width: 22, height: 22, fontSize: 11, borderRadius: 5 }}>AF</div>
+                <img
+                  src="/logo.png"
+                  alt="AgentFlow"
+                  style={{
+                    width: 22,
+                    height: 22,
+                    objectFit: "contain",
+                    filter: "drop-shadow(0 0 6px rgba(0, 255, 102, 0.45))",
+                    borderRadius: 4,
+                  }}
+                />
                 <span className="footer-brand-name">AgentFlow</span>
               </div>
               <p className="footer-brand-desc">

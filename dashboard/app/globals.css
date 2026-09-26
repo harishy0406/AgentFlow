@@ -881,6 +881,19 @@ html, body {
   transition: all 0.2s ease;
 }
 
+.brand-logo-img {
+  width: 30px;
+  height: 30px;
+  object-fit: contain;
+  filter: drop-shadow(0 0 8px rgba(0, 255, 102, 0.45));
+  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), filter 0.25s ease;
+}
+
+.navbar-brand:hover .brand-logo-img {
+  transform: scale(1.1) rotate(-3deg);
+  filter: drop-shadow(0 0 16px rgba(0, 229, 255, 0.75));
+}
+
 .navbar-brand h1 {
   font-family: var(--font-display);
   font-size: 17px;
@@ -1122,6 +1135,187 @@ html, body {
 .bento-card:hover {
   border-color: var(--border-hover);
   transform: translateY(-1px);
+}
+
+/* Enhanced Bento Grid System - Modern & Responsive */
+.bento-grid-enhanced {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: 16px;
+  margin-top: 24px;
+}
+
+.bento-card-enhanced {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 24px;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: default;
+}
+
+.bento-card-enhanced:hover {
+  border-color: var(--border-hover);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-glow);
+}
+
+.bento-card-enhanced.pricing-popular {
+  background: linear-gradient(135deg, var(--accent-yellow)15 0%, transparent 100%);
+  border: 1px solid var(--accent-yellow)20;
+}
+
+.bento-card-enhanced.pricing-popular:hover {
+  border-color: var(--accent-yellow)40;
+  box-shadow: 0 8px 24px var(--accent-yellow)20;
+}
+
+.bento-header {
+  margin-bottom: 16px;
+}
+
+.bento-badge {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 6px;
+  display: inline-block;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.feature-list, .pricing-features {
+  list-style: none;
+  padding: 0;
+  margin: 12px 0 0 0;
+}
+
+.feature-item, .pricing-feature-item {
+  display: flex;
+  align-items: flex-start;
+  margin-bottom: 8px;
+  font-size: 13px;
+}
+
+.feature-check, .pricing-feature-check {
+  margin-right: 8px;
+  min-width: 16px;
+}
+
+.feature-text, .pricing-feature-text {
+  color: var(--text-primary);
+}
+
+.price-display {
+  margin: 16px 0;
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.price-amount {
+  font-size: 36px;
+  font-weight: 900;
+  font-family: var(--font-display);
+  color: var(--text-primary);
+}
+
+.price-period {
+  font-size: 14px;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.pricing-button {
+  margin-top: 16px;
+  width: 100%;
+  padding: 12px;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 14px;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  border: none;
+}
+
+.popular-button {
+  background: var(--accent-yellow);
+  color: var(--bg-primary);
+}
+
+.popular-badge {
+  background: var(--accent-yellow);
+  color: var(--bg-primary);
+  font-size: 11px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  align-self: flex-start;
+  margin-bottom: 12px;
+}
+
+/* Responsive Grid Adjustments */
+@media (max-width: 1200px) {
+  .bento-grid-enhanced {
+    grid-template-columns: repeat(8, 1fr);
+  }
+  .bento-card-enhanced {
+    grid-column: span 4;
+  }
+}
+
+@media (max-width: 768px) {
+  .bento-grid-enhanced {
+    grid-template-columns: repeat(4, 1fr);
+  }
+  .bento-card-enhanced {
+    grid-column: span 4;
+  }
+}
+
+@media (max-width: 480px) {
+  .bento-grid-enhanced {
+    grid-template-columns: 1fr;
+  }
+  .bento-card-enhanced {
+    grid-column: span 1;
+  }
+}
+
+/* Animation Effects */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.bento-animate {
+  animation: fadeInUp 0.5s ease-out;
+}
+
+.bento-animate-delay-1 {
+  animation-delay: 0.1s;
+}
+
+.bento-animate-delay-2 {
+  animation-delay: 0.2s;
+}
+
+.bento-animate-delay-3 {
+  animation-delay: 0.3s;
+}
+
+.bento-animate-delay-4 {
+  animation-delay: 0.4s;
 }
 
 /* Cards (Standard) */
@@ -2357,6 +2551,19 @@ html, body {
   cursor: pointer;
 }
 
+.footer-brand-logo img {
+  width: 22px;
+  height: 22px;
+  object-fit: contain;
+  filter: drop-shadow(0 0 6px rgba(0, 255, 102, 0.45));
+  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), filter 0.25s ease;
+}
+
+.footer-brand-logo:hover img {
+  transform: scale(1.15) rotate(-3deg);
+  filter: drop-shadow(0 0 12px rgba(0, 229, 255, 0.75));
+}
+
 .footer-brand-name {
   font-family: var(--font-display);
   font-size: 16px;
@@ -2432,4 +2639,48 @@ html, body {
   gap: 16px;
   font-size: 12px;
   color: var(--text-muted);
+}
+
+/* Enhanced styles for existing bento grid */
+.bento-card {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.bento-card:hover {
+  border-color: var(--border-hover);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-glow);
+}
+
+/* Pricing card enhancements */
+.bento-card:nth-child(2) {
+  border: 1px solid var(--border-hover);
+  background: var(--bg-secondary);
+}
+
+/* Animation classes */
+.fade-in {
+  animation: fadeInUp 0.6s ease-out;
+}
+
+.fade-in-delay-1 {
+  animation-delay: 0.1s;
+}
+
+.fade-in-delay-2 {
+  animation-delay: 0.2s;
+}
+
+.fade-in-delay-3 {
+  animation-delay: 0.3s;
+}
+
+.fade-in-delay-4 {
+  animation-delay: 0.4s;
+}
+
+/* Card enhancements */
+.card:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-glow);
 }
