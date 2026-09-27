@@ -3021,7 +3021,7 @@ export default function Home() {
                                 lineHeight: "1.5",
                                 transition: "all 0.2s ease",
                                 border: clarifyAnswers.length > 50 ? "2px solid var(--terminal-green)" : "1px solid var(--border)"
-                              }};
+                              }}
                             />
                             <div style={{
                               position: "absolute",
@@ -3200,26 +3200,181 @@ export default function Home() {
                 {/* Tab: Projects List */}
                 {activeTab === "projects" && (
                   <div className="card">
-                    <h2 className="card-title">Your Projects</h2>
+                    {/* Gradient Projects Header */}
+                    <div style={{
+                      background: "linear-gradient(135deg, var(--terminal-purple) 0%, var(--terminal-magenta) 50%, var(--terminal-violet) 100%)",
+                      padding: "16px 20px 16px",
+                      borderRadius: "10px 10px 0 0",
+                      margin: "0 -20px 20px -20px",
+                      position: "relative",
+                      overflow: "hidden"
+                    }}>
+                      <div style={{
+                        position: "absolute",
+                        top: "-20px",
+                        right: "-20px",
+                        width: "100px",
+                        height: "100px",
+                        background: "radial-gradient(circle, rgba(255,255,255,0.15) 0%, transparent 70%)",
+                        borderRadius: "50%"
+                      }} />
+                      <div style={{ position: "relative", zIndex: 1 }}>
+                        <h2 style={{ color: "var(--bg-card)", margin: 0, fontSize: 16, fontWeight: 700, display: "flex", alignItems: "center", gap: "6px" }}>
+                          <span style={{ fontSize: "20px" }}>📂</span> YOUR PROJECT PORTFOLIO
+                        </h2>
+                        <p style={{ color: "rgba(255,255,255,0.88)", fontSize: 11, margin: "4px 0 0" }}>
+                          Manage all your autonomous DAG fleet projects with real-time artifact monitoring.
+                        </p>
+                      </div>
+                    </div>
+
                     {projects.length === 0 ? (
-                      <p style={{ color: "var(--text-muted)" }}>No projects yet. Create one to get started.</p>
-                    ) : (
-                      projects.map((p) => (
-                        <div
-                          key={p.id}
-                          className="drift-item"
-                          style={{ cursor: "pointer" }}
-                          onClick={() => handleSelectProject(p)}
-                        >
-                          <div className="drift-item-body">
-                            <strong>{p.name}</strong>
-                            <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 4 }}>
-                              {p.brief?.substring(0, 120)}...
-                            </div>
-                          </div>
-                          <button className="btn btn-secondary btn-sm">Open →</button>
+                      {/* Enhanced Empty State */}
+                      <div style={{ padding: "40px 20px", textAlign: "center", background: "linear-gradient(135deg, rgba(30,144,255,0.02) 0%, rgba(255,255,255,0.01) 100%)", borderRadius: "8px", marginTop: "20px" }}>
+                        <div style={{ fontSize: "48px", marginBottom: "16px", opacity: "0.6" }}>🚀</div>
+                        <h3 style={{ fontSize: "14px", fontWeight: 700, color: "var(--text-primary)", margin: "0 0 8px" }}>
+                          NO FLEETS DEPLOYED YET
+                        </h3>
+                        <p style={{ color: "var(--text-muted)", fontSize: "13px", margin: "0 0 24px" }}>
+                          Launch your first autonomous multi-agent workflow to generate software artifacts.
+                        </p>
+                        <button className="btn btn-primary" onClick={() => setActiveTab("create")} style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}>
+                          <span style={{ fontSize: "14px" }}>✨</span> CREATE NEW FLEET
+                        </button>
+                        <div style={{ marginTop: "16px", padding: "16px", background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "8px", fontSize: "11px", textAlign: "left" }}>
+                          <strong>Quick Start:</strong>
+                          <ul style={{ paddingLeft: "16px", margin: "6px 0" }}>
+                            <li>➤ Click "Create New Fleet" above</li>
+                            <li>➤ Describe your software system requirements</li>
+                            <li>➤ Let the 7-agent DAG generate artifacts automatically</li>
+                            <li>➤ Monitor your projects here</li>
+                          </ul>
                         </div>
-                      ))
+                      </div>
+                    ) : (
+                      <div>
+                        {/* Project Stats Header */}
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px", padding: "0 4px" }}>
+                          <div style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.5px", color: "var(--text-muted)" }}>
+                            ACTIVE FLEETS • {projects.length} PROJECT{projects.length !== 1 ? "S" : ""}
+                          </div>
+                          <div style={{ display: "flex", gap: "4px" }}>
+                            <span className="badge badge-green" style={{ fontSize: "9px", padding: "2px 6px" }}>
+                              <span style={{ marginRight: "2px" }}>📦</span> PROJECTS
+                            </span>
+                            <span className="badge badge-blue" style={{ fontSize: "9px", padding: "2px 6px" }}>
+                              <span style={{ marginRight: "2px" }}>🤖</span> DAG FLEETS
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Enhanced Project Cards */}
+                        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: "16px" }}>
+                          {projects.map((p) => {
+                            const artifactCount = p.artifact_nodes?.length || 0;
+                            const completionPercentage = artifactCount > 0 ? Math.min(100, (p.artifact_nodes?.filter(a => a.status === "fresh").length / artifactCount) * 100) : 0;
+
+                            return (
+                              <div
+                                key={p.id}
+                                onClick={() => handleSelectProject(p)}
+                                style={{
+                                  background: "var(--bg-secondary)",
+                                  border: "1px solid var(--border)",
+                                  borderRadius: "12px",
+                                  padding: "16px",
+                                  cursor: "pointer",
+                                  transition: "all 0.2s ease",
+                                  position: "relative",
+                                  overflow: "hidden"
+                                }}
+                                onMouseEnter={(e) => {
+                                  e.currentTarget.style.borderColor = "var(--terminal-purple)";
+                                  e.currentTarget.style.transform = "translateY(-2px)";
+                                  e.currentTarget.style.boxShadow = "0 6px 16px rgba(0, 0, 0, 0.2)";
+                                }}
+                                onMouseLeave={(e) => {
+                                  e.currentTarget.style.borderColor = "var(--border)";
+                                  e.currentTarget.style.transform = "none";
+                                  e.currentTarget.style.boxShadow = "none";
+                                }}
+                              >
+                                {/* Project Type Badge */}
+                                <div style={{
+                                  position: "absolute",
+                                  top: "12px",
+                                  right: "12px",
+                                  fontSize: "9px",
+                                  fontWeight: 700,
+                                  background: "linear-gradient(135deg, var(--terminal-cyan), var(--terminal-teal))",
+                                  color: "var(--bg-card)",
+                                  padding: "2px 8px",
+                                  borderRadius: "4px",
+                                  textTransform: "uppercase",
+                                  letterSpacing: "0.5px"
+                                }}>
+                                  🤖 AUTONOMOUS DAG
+                                </div>
+
+                                {/* Project Title */}
+                                <div style={{ fontSize: "14px", fontWeight: 700, color: "var(--text-primary)", marginBottom: "6px", display: "flex", alignItems: "center", gap: "6px" }}>
+                                  <span style={{ fontSize: "16px" }}>📋</span>
+                                  {p.name}
+                                </div>
+
+                                {/* Project Brief */}
+                                <div style={{ fontSize: "12px", color: "var(--text-muted)", marginBottom: "12px", lineClamp: 2, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
+                                  {p.brief}
+                                </div>
+
+                                {/* Project Stats */}
+                                <div style={{ display: "flex", gap: "16px", marginBottom: "12px", fontSize: "11px" }}>
+                                  <div style={{ color: "var(--text-muted)" }}>
+                                    <span style={{ color: "var(--terminal-yellow)", fontWeight: 700, fontSize: "14px" }}>{artifactCount}</span> Artifacts
+                                  </div>
+                                  <div style={{ color: "var(--text-muted)" }}>
+                                    <span style={{ color: "var(--terminal-green)", fontWeight: 700, fontSize: "14px" }}>{Math.round(completionPercentage)}%</span> Complete
+                                  </div>
+                                  <div style={{ color: "var(--text-muted)" }}>
+                                    Status: <span style={{ color: "var(--terminal-cyan)", fontWeight: 700 }}>ACTIVE</span>
+                                  </div>
+                                </div>
+
+                                {/* Progress Bar */}
+                                <div style={{ background: "var(--bg-card)", height: "6px", borderRadius: "4px", overflow: "hidden", marginBottom: "12px" }}>
+                                  <div style={{
+                                    background: "linear-gradient(90deg, var(--terminal-purple), var(--terminal-magenta))",
+                                    height: "100%",
+                                    width: `${completionPercentage}%`,
+                                    transition: "width 0.3s ease",
+                                    borderRadius: "4px"
+                                  }}></div>
+                                </div>
+
+                                {/* Action Footer */}
+                                <div style={{ display: "flex", justifyContent: "flex-end" }}>
+                                  <button className="btn btn-secondary btn-sm" onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleSelectProject(p);
+                                  }} style={{ display: "inline-flex", alignItems: "center", gap: "4px" }}>
+                                    Open Project <span style={{ fontSize: "12px" }}>→</span>
+                                  </button>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+
+                        {/* Launch New Project Button */}
+                        <div style={{ marginTop: "24px", padding: "16px", background: "linear-gradient(135deg, rgba(30,144,255,0.05) 0%, rgba(255,255,255,0.02) 100%)", borderRadius: "8px", textAlign: "center" }}>
+                          <button className="btn btn-primary" onClick={() => setActiveTab("create")} style={{ display: "inline-flex", alignItems: "center", gap: "6px", fontWeight: 700 }}>
+                            <span style={{ fontSize: "14px" }}>✨</span> CREATE NEW AUTONOMOUS FLEET
+                          </button>
+                          <p style={{ fontSize: "10px", color: "var(--text-muted)", margin: "4px 0 0", fontWeight: 600, letterSpacing: "0.5px" }}>
+                            ORCHESTRATE A NEW 7-STAGE DAG PIPELINE
+                          </p>
+                        </div>
+                      </div>
                     )}
                   </div>
                 )}
