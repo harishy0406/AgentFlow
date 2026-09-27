@@ -3229,7 +3229,7 @@ export default function Home() {
                     </div>
 
                     {projects.length === 0 ? (
-                      {/* Enhanced Empty State */}
+                      /* Enhanced Empty State */
                       <div style={{ padding: "40px 20px", textAlign: "center", background: "linear-gradient(135deg, rgba(30,144,255,0.02) 0%, rgba(255,255,255,0.01) 100%)", borderRadius: "8px", marginTop: "20px" }}>
                         <div style={{ fontSize: "48px", marginBottom: "16px", opacity: "0.6" }}>🚀</div>
                         <h3 style={{ fontSize: "14px", fontWeight: 700, color: "var(--text-primary)", margin: "0 0 8px" }}>
@@ -3299,21 +3299,16 @@ export default function Home() {
                                   e.currentTarget.style.boxShadow = "none";
                                 }}
                               >
-                                {/* Project Type Badge */}
                                 <div style={{
                                   position: "absolute",
                                   top: "12px",
                                   right: "12px",
                                   fontSize: "9px",
                                   fontWeight: 700,
-                                  background: "linear-gradient(135deg, var(--terminal-cyan), var(--terminal-teal))",
-                                  color: "var(--bg-card)",
-                                  padding: "2px 8px",
                                   borderRadius: "4px",
                                   textTransform: "uppercase",
                                   letterSpacing: "0.5px"
                                 }}>
-                                  🤖 AUTONOMOUS DAG
                                 </div>
 
                                 {/* Project Title */}
