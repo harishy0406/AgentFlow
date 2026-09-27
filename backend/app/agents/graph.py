@@ -94,7 +94,7 @@ def run_pipeline(
 
     for art_type, content in artifacts_map.items():
         if status_callback:
-            status_callback(art_type, "generating")
+            status_callback(art_type, f"{art_type.lower()}_started")
 
         node = (
             db.query(ArtifactNode)
@@ -110,14 +110,14 @@ def run_pipeline(
                 project_id=project_id,
                 artifact_type=art_type,
                 version=1,
-                status="fresh",
+                status="generating",
                 generated_by_model="claude-3-haiku"
             )
             db.add(node)
             db.flush()
         else:
             node.version += 1
-            node.status = "fresh"
+            node.status = "generating"
 
         # Clear existing sections and replace with generated content
         db.query(ArtifactSection).filter(ArtifactSection.artifact_node_id == node.id).delete()
@@ -189,7 +189,7 @@ def run_pipeline(
                 pass
 
         if status_callback:
-            status_callback(art_type, "fresh")
+            status_callback(art_type, f"{art_type.lower()}_completed")
 
         nodes_created.append(node)
 
