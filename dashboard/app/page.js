@@ -7504,9 +7504,9 @@ export default function Home() {
 
               {migrationSubTab === "tables" && (
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 14 }}>
-                  {migrationData.tables?.map((tbl) => (
+                  {migrationData.tables?.map((tbl, tblIndex) => (
                     <div
-                      key={tbl.name}
+                      key={`tbl-${tblIndex}-${tbl.name}`}
                       style={{
                         background: "var(--bg-card)",
                         border: "1px solid var(--border)",
@@ -7523,9 +7523,9 @@ export default function Home() {
                         </span>
                       </div>
                       <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                        {tbl.columns?.map((col) => (
+                        {tbl.columns?.map((col, colIndex) => (
                           <div
-                            key={col.name}
+                            key={`col-${tblIndex}-${colIndex}-${col.name}`}
                             style={{
                               fontSize: 11,
                               display: "flex",
