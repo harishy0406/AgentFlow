@@ -2733,7 +2733,7 @@ export default function Home() {
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
                         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                           <span style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "1px", color: "var(--text-muted)" }}>STEP 1</span>
-                          <span style={{ fontSize: 12, fontWeight: 600, color: clarifyStep === "brief" ? "var(--text-primary)" : "var(--text-muted)" }}>BR сбор Fever Pitch</span>
+                          <span style={{ fontSize: 12, fontWeight: 600, color: clarifyStep === "brief" ? "var(--text-primary)" : "var(--text-muted)" }}>Brief Pitch</span>
                         </div>
                         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                           <span style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "1px", color: "var(--text-muted)" }}>STEP 2</span>
