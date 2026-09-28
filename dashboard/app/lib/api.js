@@ -35,10 +35,22 @@ export async function createProject(name, brief, clarifications = null) {
   });
 }
 
-export async function clarifyProject(brief) {
+export async function clarifyProject(brief, templateId = null) {
   return request("/projects/clarify", {
     method: "POST",
-    body: JSON.stringify({ brief }),
+    body: JSON.stringify({ brief, template_id: templateId }),
+  });
+}
+
+export async function seedProjectTemplate(templateId, name, brief, clarifications = null) {
+  return request("/projects/seed-template", {
+    method: "POST",
+    body: JSON.stringify({
+      template_id: templateId,
+      name,
+      brief,
+      clarifications,
+    }),
   });
 }
 

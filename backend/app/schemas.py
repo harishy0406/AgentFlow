@@ -76,6 +76,14 @@ class Project(ProjectBase):
 
 class ClarifyRequest(BaseModel):
     brief: str
+    template_id: Optional[str] = None
+
+
+class ProjectSeedTemplateCreate(BaseModel):
+    template_id: Optional[str] = None
+    name: str
+    brief: str
+    clarifications: Optional[str] = None
 
 
 

@@ -10,8 +10,6 @@ if exist "backend\venv\Scripts\python.exe" (
     python start.py %*
 )
 
-if %ERRORLEVEL% NEQ 0 (
-    echo.
-    echo [AgentFlow] Process ended with exit code %ERRORLEVEL%.
-    pause
-)
+echo.
+echo [AgentFlow] Session ended. Press any key to exit...
+pause >nul

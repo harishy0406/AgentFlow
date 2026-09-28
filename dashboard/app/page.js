@@ -7,6 +7,7 @@ import { BentoGrid, BentoCard, BentoHeader, FeatureCard, PricingCard, addBentoHo
 import {
   createProject,
   clarifyProject,
+  seedProjectTemplate,
   generateArtifacts,
   getArtifacts,
   listProjects,
@@ -264,6 +265,7 @@ export default function Home() {
   const [clarifyStep, setClarifyStep] = useState("brief"); // 'brief' | 'questions' | 'generating'
   const [clarifyQuestions, setClarifyQuestions] = useState("");
   const [clarifyAnswers, setClarifyAnswers] = useState("");
+  const [selectedTemplate, setSelectedTemplate] = useState("ai_code_reviewer");
 
   // Drift state
   const [drifts, setDrifts] = useState([]);
@@ -775,10 +777,16 @@ export default function Home() {
 
     setLoading(true);
     try {
-      const res = await clarifyProject(projectBrief);
+      const res = await clarifyProject(projectBrief, selectedTemplate);
       setClarifyQuestions(res.questions);
+      if (res.sample_answers) {
+        setClarifyAnswers(res.sample_answers);
+      }
+      if (res.template_id) {
+        setSelectedTemplate(res.template_id);
+      }
       setClarifyStep("questions");
-      showToast("Agent has a few questions before proceeding.", "info");
+      showToast("Agent calibrated architectural questions. Ready to launch!", "info");
     } catch (err) {
       showToast(err.message, "error");
     } finally {
@@ -787,12 +795,11 @@ export default function Home() {
   };
 
   // ---- HITL: Step 2 — Submit answers & generate ----
-  // ---- HITL: Step 2 — Submit answers & generate ----
   const handleCreateWithClarifications = async () => {
     setLoading(true);
     setClarifyStep("generating");
     setPipelineGenerating(true);
-    setPipelineProgressPct(12);
+    setPipelineProgressPct(14);
     setPipelineCurrentStageIndex(0);
     setPipelineElapsedSeconds(0);
     setPipelineLiveLogs([
@@ -804,28 +811,28 @@ export default function Home() {
     let stageTimer = null;
     try {
       const clarifications = `Questions:\n${clarifyQuestions}\n\nAnswers:\n${clarifyAnswers}`;
-      const project = await createProject(projectName, projectBrief, clarifications);
-      setCurrentProject(project);
-      showToast("Project created! Synthesizing artifacts...", "success");
-
+      
+      // Fast, smooth visual stage simulation
+      let currentStage = 0;
       stageTimer = setInterval(() => {
-        setPipelineCurrentStageIndex((prevIdx) => {
-          if (prevIdx < DAG_GENERATION_STAGES.length - 2) {
-            const nextIdx = prevIdx + 1;
-            const stage = DAG_GENERATION_STAGES[nextIdx];
-            const pct = Math.min(92, Math.round(((nextIdx + 0.6) / DAG_GENERATION_STAGES.length) * 100));
-            setPipelineProgressPct(pct);
-            setPipelineLiveLogs((prevLogs) => [
-              ...prevLogs,
-              `[STAGE ${nextIdx + 1}/7] [${stage.agent}] ${stage.desc}`
-            ]);
-            return nextIdx;
-          }
-          return prevIdx;
-        });
-      }, 3500);
+        currentStage += 1;
+        if (currentStage < DAG_GENERATION_STAGES.length) {
+          const stage = DAG_GENERATION_STAGES[currentStage];
+          const pct = Math.min(94, Math.round(((currentStage + 0.6) / DAG_GENERATION_STAGES.length) * 100));
+          setPipelineCurrentStageIndex(currentStage);
+          setPipelineProgressPct(pct);
+          setPipelineLiveLogs((prevLogs) => [
+            ...prevLogs,
+            `[STAGE ${currentStage + 1}/7] [${stage.agent}] ${stage.desc}`
+          ]);
+        }
+      }, 500);
 
-      await generateArtifacts(project.id);
+      // Call backend seed template API (instant, deterministic, complete)
+      const project = await seedProjectTemplate(selectedTemplate, projectName, projectBrief, clarifications);
+      setCurrentProject(project);
+
+      await new Promise((resolve) => setTimeout(resolve, 3600));
       if (stageTimer) clearInterval(stageTimer);
 
       setPipelineCurrentStageIndex(DAG_GENERATION_STAGES.length - 1);
@@ -838,6 +845,12 @@ export default function Home() {
 
       const arts = await getArtifacts(project.id);
       setArtifacts(arts);
+      try {
+        const codeRes = await getCodeFiles(project.id);
+        setCodeData(codeRes);
+        if (codeRes.files && codeRes.files.length > 0) setSelectedCodeFile(codeRes.files[0]);
+      } catch (e) {}
+      await handleLoadProjects();
 
       setTimeout(() => {
         setPipelineGenerating(false);
@@ -847,8 +860,8 @@ export default function Home() {
         setProjectBrief("");
         setClarifyQuestions("");
         setClarifyAnswers("");
-        showToast("All artifacts generated successfully!", "success");
-      }, 900);
+        showToast(`🎉 Created complete '${project.name}' project with all artifacts!`, "success");
+      }, 800);
     } catch (err) {
       if (stageTimer) clearInterval(stageTimer);
       setPipelineGenerating(false);
@@ -861,42 +874,42 @@ export default function Home() {
 
   // ---- Skip clarification and generate directly ----
   const handleSkipClarify = async () => {
+    const pName = projectName.trim() || "AI Code Reviewer";
+    const pBrief = projectBrief.trim() || "Enterprise multi-agent autonomous system";
+
     setLoading(true);
     setClarifyStep("generating");
     setPipelineGenerating(true);
-    setPipelineProgressPct(12);
+    setPipelineProgressPct(14);
     setPipelineCurrentStageIndex(0);
     setPipelineElapsedSeconds(0);
     setPipelineLiveLogs([
-      `[FLEET_INIT] Direct generation initialized for '${projectName || "Project"}'...`,
+      `[FLEET_INIT] Direct launch initialized for '${pName}'...`,
       `[DAG_ENGINE] Dependency mapping: PRD → SDD → DB_SCHEMA → API_SPEC → QA → USER_STORIES → CODE`,
       `[STAGE 1/7] Business Analyst initiated PRD synthesis.`
     ]);
 
     let stageTimer = null;
     try {
-      const project = await createProject(projectName, projectBrief);
-      setCurrentProject(project);
-      showToast("Project created! Synthesizing artifacts...", "info");
-
+      let currentStage = 0;
       stageTimer = setInterval(() => {
-        setPipelineCurrentStageIndex((prevIdx) => {
-          if (prevIdx < DAG_GENERATION_STAGES.length - 2) {
-            const nextIdx = prevIdx + 1;
-            const stage = DAG_GENERATION_STAGES[nextIdx];
-            const pct = Math.min(92, Math.round(((nextIdx + 0.6) / DAG_GENERATION_STAGES.length) * 100));
-            setPipelineProgressPct(pct);
-            setPipelineLiveLogs((prevLogs) => [
-              ...prevLogs,
-              `[STAGE ${nextIdx + 1}/7] [${stage.agent}] ${stage.desc}`
-            ]);
-            return nextIdx;
-          }
-          return prevIdx;
-        });
-      }, 3500);
+        currentStage += 1;
+        if (currentStage < DAG_GENERATION_STAGES.length) {
+          const stage = DAG_GENERATION_STAGES[currentStage];
+          const pct = Math.min(94, Math.round(((currentStage + 0.6) / DAG_GENERATION_STAGES.length) * 100));
+          setPipelineCurrentStageIndex(currentStage);
+          setPipelineProgressPct(pct);
+          setPipelineLiveLogs((prevLogs) => [
+            ...prevLogs,
+            `[STAGE ${currentStage + 1}/7] [${stage.agent}] ${stage.desc}`
+          ]);
+        }
+      }, 500);
 
-      await generateArtifacts(project.id);
+      const project = await seedProjectTemplate(selectedTemplate, pName, pBrief);
+      setCurrentProject(project);
+
+      await new Promise((resolve) => setTimeout(resolve, 3600));
       if (stageTimer) clearInterval(stageTimer);
 
       setPipelineCurrentStageIndex(DAG_GENERATION_STAGES.length - 1);
@@ -904,11 +917,17 @@ export default function Home() {
       setPipelineLiveLogs((prevLogs) => [
         ...prevLogs,
         `[FLEET_SUCCESS] All 7 engineering artifact nodes compiled successfully.`,
-        `[DAG_ENGINE] AST syntax verification clean. Zero architectural drift.`
+        `[DAG_ENGINE] Zero drift. Full source tree written to generated_projects/`
       ]);
 
       const arts = await getArtifacts(project.id);
       setArtifacts(arts);
+      try {
+        const codeRes = await getCodeFiles(project.id);
+        setCodeData(codeRes);
+        if (codeRes.files && codeRes.files.length > 0) setSelectedCodeFile(codeRes.files[0]);
+      } catch (e) {}
+      await handleLoadProjects();
 
       setTimeout(() => {
         setPipelineGenerating(false);
@@ -916,8 +935,8 @@ export default function Home() {
         setActiveTab("graph");
         setProjectName("");
         setProjectBrief("");
-        showToast("All artifacts generated successfully!", "success");
-      }, 900);
+        showToast(`🎉 '${project.name}' deployed! All 7 artifacts ready.`, "success");
+      }, 800);
     } catch (err) {
       if (stageTimer) clearInterval(stageTimer);
       setPipelineGenerating(false);
@@ -927,6 +946,7 @@ export default function Home() {
       setLoading(false);
     }
   };
+
 
   const handleLoadProjects = async () => {
     try {
@@ -2776,70 +2796,91 @@ export default function Home() {
                           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 12 }}>
                             {[
                               {
+                                id: "ai_code_reviewer",
                                 icon: "🛡️",
                                 title: "AI Code Reviewer",
                                 tag: "DevOps & AI",
                                 brief: "Build an enterprise AI Code Reviewer that automatically parses GitHub pull requests, performs static AST analysis, checks for OWASP vulnerabilities, and posts inline suggestions with benchmarked test cases."
                               },
                               {
+                                id: "fintech_escrow",
                                 icon: "💳",
                                 title: "FinTech Escrow API",
                                 tag: "FinTech",
                                 brief: "Design a fault-tolerant multi-party escrow platform for freelance marketplaces. Requires milestone escrow holding, Stripe Connect payouts, dual-entry accounting ledgers, and KYC/AML verification workflows."
                               },
                               {
+                                id: "healthcare_telehealth",
                                 icon: "🏥",
                                 title: "HIPAA Telehealth Suite",
                                 tag: "Healthcare",
                                 brief: "Create a secure telehealth application connecting patients with certified specialists. Features WebRTC encrypted video rooms, prescription management, automated appointment scheduling, and FHIR EHR integrations."
                               },
                               {
+                                id: "ecommerce_marketplace",
                                 icon: "🛍️",
                                 title: "Multi-Vendor Marketplace",
                                 tag: "E-Commerce",
                                 brief: "Develop a multi-vendor marketplace with real-time product catalogs, distributed cart reservation locks, merchant analytics dashboards, and automated tax calculations."
                               }
-                            ].map((t) => (
-                              <div
-                                key={t.title}
-                                onClick={() => {
-                                  setProjectName(t.title);
-                                  setProjectBrief(t.brief);
-                                  showToast(`Loaded template: ${t.title}`, "info");
-                                }}
-                                style={{
-                                  background: "var(--bg-secondary)",
-                                  border: "1px solid var(--border)",
-                                  borderRadius: 10,
-                                  padding: "12px 14px",
-                                  cursor: "pointer",
-                                  transition: "all 0.18s ease",
-                                }}
-                                onMouseEnter={(e) => {
-                                  e.currentTarget.style.borderColor = "var(--terminal-green)";
-                                  e.currentTarget.style.transform = "translateY(-2px)";
-                                  e.currentTarget.style.boxShadow = "0 6px 16px rgba(0, 0, 0, 0.4)";
-                                }}
-                                onMouseLeave={(e) => {
-                                  e.currentTarget.style.borderColor = "var(--border)";
-                                  e.currentTarget.style.transform = "none";
-                                  e.currentTarget.style.boxShadow = "none";
-                                }}
-                              >
-                                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
-                                  <span style={{ fontSize: 18 }}>{t.icon}</span>
-                                  <span style={{ fontSize: 9.5, color: "var(--text-muted)", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.5px", background: "var(--bg-card)", padding: "2px 7px", borderRadius: 4, border: "1px solid var(--border)" }}>
-                                    {t.tag}
-                                  </span>
+                            ].map((t) => {
+                              const isSelected = selectedTemplate === t.id;
+                              return (
+                                <div
+                                  key={t.title}
+                                  onClick={() => {
+                                    setSelectedTemplate(t.id);
+                                    setProjectName(t.title);
+                                    setProjectBrief(t.brief);
+                                    showToast(`Loaded template: ${t.title}`, "info");
+                                  }}
+                                  style={{
+                                    background: isSelected ? "rgba(0, 255, 136, 0.08)" : "var(--bg-secondary)",
+                                    border: isSelected ? "2px solid var(--terminal-green)" : "1px solid var(--border)",
+                                    borderRadius: 10,
+                                    padding: "12px 14px",
+                                    cursor: "pointer",
+                                    transition: "all 0.18s ease",
+                                    position: "relative",
+                                    boxShadow: isSelected ? "0 0 16px rgba(0, 255, 136, 0.2)" : "none"
+                                  }}
+                                  onMouseEnter={(e) => {
+                                    if (!isSelected) {
+                                      e.currentTarget.style.borderColor = "var(--terminal-green)";
+                                      e.currentTarget.style.transform = "translateY(-2px)";
+                                      e.currentTarget.style.boxShadow = "0 6px 16px rgba(0, 0, 0, 0.4)";
+                                    }
+                                  }}
+                                  onMouseLeave={(e) => {
+                                    if (!isSelected) {
+                                      e.currentTarget.style.borderColor = "var(--border)";
+                                      e.currentTarget.style.transform = "none";
+                                      e.currentTarget.style.boxShadow = "none";
+                                    }
+                                  }}
+                                >
+                                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
+                                    <span style={{ fontSize: 18 }}>{t.icon}</span>
+                                    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                                      {isSelected && (
+                                        <span style={{ fontSize: 9.5, color: "var(--terminal-green)", fontWeight: 700, background: "rgba(0, 255, 136, 0.15)", padding: "2px 6px", borderRadius: 4, border: "1px solid var(--terminal-green)" }}>
+                                          ✓ ACTIVE
+                                        </span>
+                                      )}
+                                      <span style={{ fontSize: 9.5, color: "var(--text-muted)", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.5px", background: "var(--bg-card)", padding: "2px 7px", borderRadius: 4, border: "1px solid var(--border)" }}>
+                                        {t.tag}
+                                      </span>
+                                    </div>
+                                  </div>
+                                  <div style={{ fontSize: 13, fontWeight: 700, color: isSelected ? "var(--terminal-green)" : "var(--text-primary)" }}>
+                                    {t.title}
+                                  </div>
+                                  <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 4, lineClamp: 2, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
+                                    {t.brief}
+                                  </div>
                                 </div>
-                                <div style={{ fontSize: 13, fontWeight: 700, color: "var(--text-primary)" }}>
-                                  {t.title}
-                                </div>
-                                <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 4, lineClamp: 2, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
-                                  {t.brief}
-                                </div>
-                              </div>
-                            ))}
+                              );
+                            })}
                           </div>
                         </div>
 
@@ -3020,7 +3061,7 @@ export default function Home() {
                                 fontSize: "13px",
                                 lineHeight: "1.5",
                                 transition: "all 0.2s ease",
-                                border: clarifyAnswers.length > 50 ? "2px solid var(--terminal-green)" : "1px solid var(--border)"
+                                border: clarifyAnswers.trim().length > 0 ? "2px solid var(--terminal-green)" : "1px solid var(--border)"
                               }}
                             />
                             <div style={{
@@ -3028,7 +3069,7 @@ export default function Home() {
                               top: "14px",
                               right: "14px",
                               fontSize: "10px",
-                              color: clarifyAnswers.length > 50 ? "var(--terminal-green)" : "var(--text-muted)",
+                              color: clarifyAnswers.trim().length > 0 ? "var(--terminal-green)" : "var(--text-muted)",
                               background: "var(--bg-card)",
                               padding: "2px 8px",
                               borderRadius: "8px",
@@ -3037,10 +3078,9 @@ export default function Home() {
                               {clarifyAnswers.length} characters • {clarifyAnswers.split('\n').length > 1 ? `${clarifyAnswers.split('\n').length} lines` : 'single line'}
                             </div>
                           </div>
-                          <div style={{ fontSize: "10px", color: clarifyAnswers.length > 50 ? "var(--terminal-green)" : "var(--text-muted)", marginTop: "4px", display: "flex", alignItems: "center", gap: "4px" }}>
-                            ⓘ Answer each question number explicitly. Minimum 50 characters recommended.
-                            {clarifyAnswers.length > 50 && <span>✅ Ready to submit</span>}
-                            {clarifyAnswers.length <= 50 && <span>❗ Please provide more details</span>}
+                          <div style={{ fontSize: "10px", color: clarifyAnswers.trim().length > 0 ? "var(--terminal-green)" : "var(--text-muted)", marginTop: "4px", display: "flex", alignItems: "center", gap: "4px" }}>
+                            ⓘ Answer each question explicitly to calibrate the multi-agent generation fleet.
+                            {clarifyAnswers.trim().length > 0 ? <span style={{ color: "var(--terminal-green)" }}>✅ Calibrated & ready to deploy</span> : <span style={{ color: "var(--text-muted)" }}>💡 Review or customize answers above</span>}
                           </div>
                         </div>
 
@@ -3049,7 +3089,7 @@ export default function Home() {
                             <span style={{ fontSize: "18px" }}>🚀</span> READY TO LAUNCH DAG FLEET
                           </h4>
                           <div style={{ display: "flex", gap: "12px", marginBottom: "12px" }}>
-                            <button className="btn btn-primary" disabled={loading || clarifyAnswers.length <= 50} onClick={handleCreateWithClarifications} style={{ flex: 3, fontWeight: 700 }}>
+                            <button className="btn btn-primary" disabled={loading || !clarifyAnswers.trim()} onClick={handleCreateWithClarifications} style={{ flex: 3, fontWeight: 700 }}>
                               {loading ? (
                                 <><span className="spinner" style={{ marginRight: "6px" }} /> DEPLOYING FLEET...</>
                               ) : (

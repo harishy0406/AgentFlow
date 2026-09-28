@@ -202,37 +202,66 @@ def main():
 
     py_exe, npm_exe = check_prerequisites()
 
+    def spawn_backend():
+        free_port(8000)
+        env = os.environ.copy()
+        env["PYTHONUNBUFFERED"] = "1"
+        env["PYTHONIOENCODING"] = "utf-8"
+        # Watch only the Python code directory to avoid triggering reloads on SQLite writes or generated files
+        cmd = [
+            py_exe, "-m", "uvicorn", "app.main:app",
+            "--host", "0.0.0.0",
+            "--port", "8000",
+            "--reload",
+            "--reload-dir", "app",
+        ]
+        proc = subprocess.Popen(
+            cmd,
+            cwd=str(BACKEND_DIR),
+            stdin=subprocess.DEVNULL,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
+            bufsize=1,
+            encoding="utf-8",
+            errors="replace",
+            env=env,
+        )
+        processes.append(proc)
+        t = threading.Thread(target=stream_logs, args=(proc, "BACKEND", CYAN), daemon=True)
+        t.start()
+        return proc
+
+    def spawn_dashboard():
+        free_port(3000)
+        env = os.environ.copy()
+        # Allocate 4GB heap space to avoid out-of-memory during Next.js Turbopack HMR recompilation
+        env["NODE_OPTIONS"] = "--max-old-space-size=4096"
+        env["PORT"] = "3000"
+        env["NEXT_TELEMETRY_DISABLED"] = "1"
+        cmd = [npm_exe, "run", "dev"]
+        proc = subprocess.Popen(
+            cmd,
+            cwd=str(DASHBOARD_DIR),
+            stdin=subprocess.DEVNULL,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
+            bufsize=1,
+            encoding="utf-8",
+            errors="replace",
+            env=env,
+        )
+        processes.append(proc)
+        t = threading.Thread(target=stream_logs, args=(proc, "DASHBOARD", GREEN), daemon=True)
+        t.start()
+        return proc
+
     log(f"\n{CYAN}{BOLD}>> Starting Backend (FastAPI on :8000)...{RESET}")
-    backend_proc = subprocess.Popen(
-        [py_exe, "-m", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"],
-        cwd=str(BACKEND_DIR),
-        stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT,
-        text=True,
-        bufsize=1,
-        encoding="utf-8",
-        errors="replace",
-    )
-    processes.append(backend_proc)
+    backend_proc = spawn_backend()
 
     log(f"{GREEN}{BOLD}>> Starting Dashboard (Next.js on :3000)...{RESET}")
-    dashboard_proc = subprocess.Popen(
-        [npm_exe, "run", "dev"],
-        cwd=str(DASHBOARD_DIR),
-        stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT,
-        text=True,
-        bufsize=1,
-        encoding="utf-8",
-        errors="replace",
-    )
-    processes.append(dashboard_proc)
-
-    # Start background streaming threads
-    t_backend = threading.Thread(target=stream_logs, args=(backend_proc, "BACKEND", CYAN), daemon=True)
-    t_dash = threading.Thread(target=stream_logs, args=(dashboard_proc, "DASHBOARD", GREEN), daemon=True)
-    t_backend.start()
-    t_dash.start()
+    dashboard_proc = spawn_dashboard()
 
     # Health check watcher in separate thread to not block log streaming
     def health_and_open_browser():
@@ -267,16 +296,59 @@ def main():
 
     threading.Thread(target=health_and_open_browser, daemon=True).start()
 
-    # Keep main thread alive waiting for child process exits or Ctrl+C
+    # Resilient process supervisor: automatically recovers crashed child processes
+    backend_restarts = 0
+    dashboard_restarts = 0
+    last_backend_restart = 0.0
+    last_dashboard_restart = 0.0
+
     try:
-        while True:
+        while not shutting_down:
+            now = time.time()
+
+            # Monitor Backend Process
             if backend_proc.poll() is not None and not shutting_down:
-                log(f"{RED}[Error] Backend process terminated unexpectedly (code {backend_proc.returncode}).{RESET}")
-                cleanup()
+                code = backend_proc.returncode
+                log(f"\n{YELLOW}[Supervisor] Backend terminated unexpectedly (code {code}). Auto-recovering...{RESET}")
+                if now - last_backend_restart < 15:
+                    backend_restarts += 1
+                else:
+                    backend_restarts = 1
+                last_backend_restart = now
+
+                if backend_restarts > 5:
+                    log(f"{RED}[Supervisor] Backend is restarting too rapidly. Pausing 5s before retrying...{RESET}")
+                    time.sleep(5)
+                    backend_restarts = 0
+                else:
+                    time.sleep(1)
+
+                if not shutting_down:
+                    backend_proc = spawn_backend()
+                    log(f"{GREEN}[Supervisor] Backend recovered and running on port 8000.{RESET}")
+
+            # Monitor Dashboard Process
             if dashboard_proc.poll() is not None and not shutting_down:
-                log(f"{RED}[Error] Dashboard process terminated unexpectedly (code {dashboard_proc.returncode}).{RESET}")
-                cleanup()
-            time.sleep(0.5)
+                code = dashboard_proc.returncode
+                log(f"\n{YELLOW}[Supervisor] Dashboard terminated unexpectedly (code {code}). Auto-recovering...{RESET}")
+                if now - last_dashboard_restart < 15:
+                    dashboard_restarts += 1
+                else:
+                    dashboard_restarts = 1
+                last_dashboard_restart = now
+
+                if dashboard_restarts > 5:
+                    log(f"{RED}[Supervisor] Dashboard is restarting too rapidly. Pausing 5s before retrying...{RESET}")
+                    time.sleep(5)
+                    dashboard_restarts = 0
+                else:
+                    time.sleep(1)
+
+                if not shutting_down:
+                    dashboard_proc = spawn_dashboard()
+                    log(f"{GREEN}[Supervisor] Dashboard recovered and running on port 3000.{RESET}")
+
+            time.sleep(1.0)
     except KeyboardInterrupt:
         cleanup()
 

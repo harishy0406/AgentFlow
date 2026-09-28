@@ -60,26 +60,34 @@ def scaffold_project_files(
     Returns metadata including target directory path and list of files written.
     """
     slug = sanitize_project_slug(project_name)
-    target_dir = Path(base_dir) / slug
-    target_dir.mkdir(parents=True, exist_ok=True)
+    target_dirs = [Path(base_dir) / slug]
+    
+    # Also write to parent or child generated_projects if running from root vs backend
+    if Path("../generated_projects").exists():
+        target_dirs.append(Path("../generated_projects") / slug)
+    if Path("backend/generated_projects").exists():
+        target_dirs.append(Path("backend/generated_projects") / slug)
 
     files_dict = parse_code_files(code_content)
     files_written: List[str] = []
 
-    for rel_path, content in files_dict.items():
-        dest_path = target_dir / rel_path
-        dest_path.parent.mkdir(parents=True, exist_ok=True)
-        with open(dest_path, "w", encoding="utf-8") as f:
-            f.write(content)
-        files_written.append(rel_path)
+    for t_dir in target_dirs:
+        t_dir.mkdir(parents=True, exist_ok=True)
+        for rel_path, content in files_dict.items():
+            dest_path = t_dir / rel_path
+            dest_path.parent.mkdir(parents=True, exist_ok=True)
+            with open(dest_path, "w", encoding="utf-8") as f:
+                f.write(content)
+            if rel_path not in files_written:
+                files_written.append(rel_path)
 
-    # Always ensure a basic README is present if not already created
-    readme_path = target_dir / "README.md"
-    if not readme_path.exists():
-        readme_content = f"# {project_name}\n\nGenerated automatically by **AgentFlow Orchestrator**.\n\n## Getting Started\nCheck `backend/` and `frontend/` directories."
-        with open(readme_path, "w", encoding="utf-8") as f:
-            f.write(readme_content)
-        files_written.append("README.md")
+        readme_path = t_dir / "README.md"
+        if not readme_path.exists():
+            readme_content = f"# {project_name}\n\nGenerated automatically by **AgentFlow Orchestrator**.\n\n## Getting Started\nCheck `backend/` and `frontend/` directories."
+            with open(readme_path, "w", encoding="utf-8") as f:
+                f.write(readme_content)
+            if "README.md" not in files_written:
+                files_written.append("README.md")
 
     return {
         "project_slug": slug,
