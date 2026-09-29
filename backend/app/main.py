@@ -481,7 +481,8 @@ async def generate_project_artifacts(project_id: UUID, db: Session = Depends(get
                 db=db,
                 name=project.name,
                 brief=project.brief,
-                clarifications=project.clarifications
+                clarifications=project.clarifications,
+                existing_project=project
             )
             db.refresh(project)
 

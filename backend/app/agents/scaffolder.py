@@ -91,7 +91,7 @@ def scaffold_project_files(
 
     return {
         "project_slug": slug,
-        "target_path": str(target_dir.resolve()),
+        "target_path": str(target_dirs[0].resolve()),
         "files_written": files_written,
         "file_count": len(files_written),
     }

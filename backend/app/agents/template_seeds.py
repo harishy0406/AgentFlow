@@ -1010,7 +1010,8 @@ def seed_template_project(
     name: str,
     brief: str,
     template_id: Optional[str] = None,
-    clarifications: Optional[str] = None
+    clarifications: Optional[str] = None,
+    existing_project: Optional[models.Project] = None
 ) -> models.Project:
     """
     Creates a project with all 7 topological artifacts, sections, traces,
@@ -1042,16 +1043,22 @@ def seed_template_project(
         db.commit()
         db.refresh(workspace)
 
-    # 3. Create Project
-    project = models.Project(
-        name=proj_name,
-        brief=proj_brief,
-        clarifications=proj_clarifications,
-        workspace_id=workspace.id
-    )
-    db.add(project)
-    db.commit()
-    db.refresh(project)
+    # 3. Create or Use Existing Project
+    if existing_project is not None:
+        project = existing_project
+        if not project.workspace_id:
+            project.workspace_id = workspace.id
+            db.commit()
+    else:
+        project = models.Project(
+            name=proj_name,
+            brief=proj_brief,
+            clarifications=proj_clarifications,
+            workspace_id=workspace.id
+        )
+        db.add(project)
+        db.commit()
+        db.refresh(project)
 
     # 4. Generate All 7 Artifact Nodes & Sections
     art_nodes: Dict[str, models.ArtifactNode] = {}
