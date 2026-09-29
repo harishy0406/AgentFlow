@@ -61,7 +61,7 @@ def print_banner():
 /_/   \\_\\____|_____|_| \\_| |_| |_|   |_____\\___/  \\_/\\_/   
 ========================================================================{RESET}
   {BOLD}AgentFlow{RESET} - {DIM}Autonomous Multi-Agent Workflow Orchestration Platform{RESET}
-  {DIM} Harish Gautham{RESET}
+  {DIM}Engineered by M Harish Gautham • Deterministic Multi-Agent DAG Fleet{RESET}
 """
     log(banner)
 
@@ -190,11 +190,23 @@ def wait_for_service(url, name, timeout=30):
     return False
 
 
+def ensure_static_assets():
+    """Ensures master logo assets are present in dashboard public and assets directories."""
+    root_logo = ROOT_DIR / "logo.png"
+    if root_logo.exists():
+        for target_dir in [DASHBOARD_DIR / "public", ROOT_DIR / "assets", DASHBOARD_DIR / "public" / "assets"]:
+            target_dir.mkdir(parents=True, exist_ok=True)
+            target_file = target_dir / "logo.png"
+            if not target_file.exists():
+                shutil.copy2(root_logo, target_file)
+
+
 def main():
     signal.signal(signal.SIGINT, cleanup)
     signal.signal(signal.SIGTERM, cleanup)
 
     print_banner()
+    ensure_static_assets()
 
     # Ensure ports 8000 & 3000 are not blocked by zombie processes
     free_port(8000)
