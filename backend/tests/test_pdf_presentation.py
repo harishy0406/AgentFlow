@@ -124,3 +124,30 @@ def test_pdf_presentation_endpoints():
     finally:
         db.delete(project)
         db.commit()
+
+
+def test_pdf_presentation_empty_project_with_links():
+    """Verify that projects with zero artifact nodes still generate complete 10-slide deck with TOC links."""
+    db = next(get_db())
+
+    project = Project(
+        id=uuid4(),
+        name="Empty Initialized App",
+        brief="",
+    )
+    db.add(project)
+    db.commit()
+    db.refresh(project)
+
+    try:
+        pdf_bytes = generate_project_presentation_pdf(str(project.id), db)
+        assert isinstance(pdf_bytes, bytes)
+        assert len(pdf_bytes) > 5000
+        assert pdf_bytes.startswith(b"%PDF-1.")
+        # Verify internal link annotations
+        assert b"/Link" in pdf_bytes
+        assert b"/Annots" in pdf_bytes
+    finally:
+        db.delete(project)
+        db.commit()
+
