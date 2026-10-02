@@ -213,6 +213,8 @@ export default function Home() {
   const [selectedSdkLang, setSelectedSdkLang] = useState("typescript");
   const [selectedSdkFile, setSelectedSdkFile] = useState(null);
   const [sdkCopied, setSdkCopied] = useState(false);
+  const [copiedSdkSnippet, setCopiedSdkSnippet] = useState(false);
+  const [selectedPackageManager, setSelectedPackageManager] = useState("npm");
 
   // Webhooks & Event Broker state
   const [eventCatalog, setEventCatalog] = useState(null);
@@ -7024,6 +7026,26 @@ export default function Home() {
 
                       <div style={{ display: "flex", gap: 8 }}>
                         <button
+                          className="btn btn-secondary btn-sm"
+                          disabled={!sdkCatalog?.packages?.[selectedSdkLang]}
+                          onClick={() => {
+                            const pkg = sdkCatalog?.packages?.[selectedSdkLang];
+                            if (!pkg) return;
+                            const blob = new Blob([JSON.stringify(pkg, null, 2)], { type: "application/json" });
+                            const url = URL.createObjectURL(blob);
+                            const a = document.createElement("a");
+                            a.href = url;
+                            a.download = `${(currentProject.title || "Project").replace(/\s+/g, "_")}_${selectedSdkLang}_sdk.json`;
+                            a.click();
+                            URL.revokeObjectURL(url);
+                            showToast(`Exported ${selectedSdkLang.toUpperCase()} SDK bundle!`, "success");
+                          }}
+                          title="Export complete SDK package definitions and files as JSON"
+                        >
+                          📥 Export Bundle (.json)
+                        </button>
+
+                        <button
                           className="btn btn-primary btn-sm"
                           disabled={sdkLoading}
                           onClick={async () => {
@@ -7061,6 +7083,9 @@ export default function Home() {
                             key={lang.id}
                             onClick={() => {
                               setSelectedSdkLang(lang.id);
+                              if (lang.id === "typescript") setSelectedPackageManager("npm");
+                              if (lang.id === "python") setSelectedPackageManager("pip");
+                              if (lang.id === "curl") setSelectedPackageManager("bash");
                               const pkg = sdkCatalog?.packages?.[lang.id];
                               if (pkg?.files?.length > 0) {
                                 setSelectedSdkFile(pkg.files[0]);
@@ -7096,7 +7121,7 @@ export default function Home() {
                           border: "1px solid var(--border)",
                           borderRadius: 8,
                           padding: "12px 16px",
-                          marginBottom: 20,
+                          marginBottom: 16,
                           display: "flex",
                           justifyContent: "space-between",
                           alignItems: "center",
@@ -7104,10 +7129,37 @@ export default function Home() {
                           gap: 12,
                         }}
                       >
-                        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                          <span style={{ fontSize: 11, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: 0.5, fontWeight: 700 }}>
-                            Install:
-                          </span>
+                        <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+                          {/* Package Manager Selector Chips */}
+                          <div style={{ display: "flex", gap: 4, background: "var(--bg-primary)", padding: 2, borderRadius: 4, border: "1px solid var(--border)" }}>
+                            {(selectedSdkLang === "typescript"
+                              ? ["npm", "pnpm", "yarn", "bun"]
+                              : selectedSdkLang === "python"
+                              ? ["pip", "uv", "poetry"]
+                              : ["bash", "httpie"]
+                            ).map((pm) => (
+                              <button
+                                key={pm}
+                                type="button"
+                                onClick={() => setSelectedPackageManager(pm)}
+                                style={{
+                                  padding: "2px 8px",
+                                  fontSize: 11,
+                                  fontWeight: 700,
+                                  borderRadius: 3,
+                                  border: "none",
+                                  cursor: "pointer",
+                                  background: selectedPackageManager === pm ? "var(--accent-blue)" : "transparent",
+                                  color: selectedPackageManager === pm ? "#000" : "var(--text-muted)",
+                                  fontFamily: "var(--font-mono)",
+                                }}
+                              >
+                                {pm}
+                              </button>
+                            ))}
+                          </div>
+
+                          {/* Calculated Install Command */}
                           <code
                             style={{
                               background: "var(--bg-primary)",
@@ -7119,7 +7171,23 @@ export default function Home() {
                               fontFamily: "var(--font-mono)",
                             }}
                           >
-                            {sdkCatalog.packages[selectedSdkLang].install_command}
+                            {(() => {
+                              const pkg = sdkCatalog?.packages?.[selectedSdkLang];
+                              const slug = (currentProject?.name || "project").toLowerCase().replace(/[^a-z0-9]+/g, "-");
+                              if (selectedSdkLang === "typescript") {
+                                if (selectedPackageManager === "pnpm") return `pnpm add @${slug}/client-sdk`;
+                                if (selectedPackageManager === "yarn") return `yarn add @${slug}/client-sdk`;
+                                if (selectedPackageManager === "bun") return `bun add @${slug}/client-sdk`;
+                                return `npm install @${slug}/client-sdk`;
+                              }
+                              if (selectedSdkLang === "python") {
+                                if (selectedPackageManager === "uv") return `uv add ${slug}-sdk`;
+                                if (selectedPackageManager === "poetry") return `poetry add ${slug}-sdk`;
+                                return `pip install ${slug}-sdk`;
+                              }
+                              if (selectedPackageManager === "httpie") return `http GET "http://localhost:8000/api/v1/projects"`;
+                              return pkg?.install_command || "npm install @agentflow/sdk";
+                            })()}
                           </code>
                         </div>
 
@@ -7135,13 +7203,65 @@ export default function Home() {
                             className="btn btn-secondary btn-sm"
                             style={{ fontSize: 11, padding: "3px 8px" }}
                             onClick={() => {
-                              navigator.clipboard.writeText(sdkCatalog.packages[selectedSdkLang].install_command);
-                              showToast("Installation command copied!", "success");
+                              const slug = (currentProject?.name || "project").toLowerCase().replace(/[^a-z0-9]+/g, "-");
+                              let cmd = sdkCatalog.packages[selectedSdkLang].install_command;
+                              if (selectedSdkLang === "typescript") {
+                                if (selectedPackageManager === "pnpm") cmd = `pnpm add @${slug}/client-sdk`;
+                                else if (selectedPackageManager === "yarn") cmd = `yarn add @${slug}/client-sdk`;
+                                else if (selectedPackageManager === "bun") cmd = `bun add @${slug}/client-sdk`;
+                                else cmd = `npm install @${slug}/client-sdk`;
+                              } else if (selectedSdkLang === "python") {
+                                if (selectedPackageManager === "uv") cmd = `uv add ${slug}-sdk`;
+                                else if (selectedPackageManager === "poetry") cmd = `poetry add ${slug}-sdk`;
+                                else cmd = `pip install ${slug}-sdk`;
+                              }
+                              navigator.clipboard.writeText(cmd);
+                              showToast(`Copied ${selectedPackageManager} command!`, "success");
                             }}
                           >
                             Copy Command
                           </button>
                         </div>
+                      </div>
+                    )}
+
+                    {/* Quickstart Usage Snippet Box */}
+                    {sdkCatalog?.packages?.[selectedSdkLang]?.readme_snippet && (
+                      <div
+                        style={{
+                          background: "#0d1117",
+                          border: "1px solid var(--border)",
+                          borderRadius: 8,
+                          padding: "12px 16px",
+                          marginBottom: 20,
+                        }}
+                      >
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+                          <span style={{ fontSize: 11, fontWeight: 700, color: "var(--accent-blue)", textTransform: "uppercase", letterSpacing: 0.5 }}>
+                            ⚡ Quickstart Usage Code Snippet
+                          </span>
+                          <button
+                            type="button"
+                            className="btn btn-secondary btn-sm"
+                            style={{
+                              fontSize: 10,
+                              padding: "2px 8px",
+                              color: copiedSdkSnippet ? "var(--terminal-green)" : undefined,
+                              borderColor: copiedSdkSnippet ? "var(--terminal-green)" : undefined,
+                            }}
+                            onClick={() => {
+                              navigator.clipboard.writeText(sdkCatalog.packages[selectedSdkLang].readme_snippet);
+                              setCopiedSdkSnippet(true);
+                              showToast("Copied quickstart snippet!", "success");
+                              setTimeout(() => setCopiedSdkSnippet(false), 2000);
+                            }}
+                          >
+                            {copiedSdkSnippet ? "✓ Copied Snippet" : "📋 Copy Snippet"}
+                          </button>
+                        </div>
+                        <pre style={{ margin: 0, padding: 0, fontSize: 12, color: "#e6edf3", fontFamily: "var(--font-mono)", overflowX: "auto", lineHeight: 1.5 }}>
+                          {sdkCatalog.packages[selectedSdkLang].readme_snippet}
+                        </pre>
                       </div>
                     )}
 
