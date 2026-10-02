@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect, useRef } from "react";
+import { useState, useCallback, useEffect, useRef, useMemo } from "react";
 import DependencyGraph from "./components/DependencyGraph";
 import DiffViewer from "./components/DiffViewer";
 import { BentoGrid, BentoCard, BentoHeader, FeatureCard, PricingCard, addBentoHoverEffects } from "./components/BentoGrid";
@@ -390,6 +390,300 @@ export default function Home() {
     setToast({ message, type });
     setTimeout(() => setToast(null), 3000);
   }, []);
+
+  // Global Quick-Action Command Palette (Ctrl+K / Cmd+K)
+  const [showCommandPalette, setShowCommandPalette] = useState(false);
+  const [commandSearch, setCommandSearch] = useState("");
+  const [commandSelectedIndex, setCommandSelectedIndex] = useState(0);
+
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        setShowCommandPalette((prev) => !prev);
+        setCommandSearch("");
+        setCommandSelectedIndex(0);
+      } else if (e.key === "Escape" && showCommandPalette) {
+        setShowCommandPalette(false);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [showCommandPalette]);
+
+  const commandPaletteItems = useMemo(() => [
+    // Studio Views
+    {
+      id: "tab-graph",
+      title: "Architecture Topology Graph",
+      category: "Studio",
+      icon: "⚡",
+      badge: "Tab",
+      action: () => {
+        setSaasTab("studio");
+        setActiveTab("graph");
+        setShowCommandPalette(false);
+        showToast("Switched to Architecture Topology Graph", "info");
+      },
+      keywords: "graph nodes topology architecture microservices dag"
+    },
+    {
+      id: "tab-code",
+      title: "Codebase & File Explorer",
+      category: "Studio",
+      icon: "💻",
+      badge: "Tab",
+      action: () => {
+        setSaasTab("studio");
+        setActiveTab("code");
+        setShowCommandPalette(false);
+        showToast("Switched to Codebase Explorer", "info");
+      },
+      keywords: "code file tree explorer files source slide deck presentation"
+    },
+    {
+      id: "tab-security",
+      title: "Security Shield & CVE Audit",
+      category: "Studio",
+      icon: "🛡️",
+      badge: "Tab",
+      action: () => {
+        setSaasTab("studio");
+        setActiveTab("security");
+        setShowCommandPalette(false);
+        showToast("Switched to Security Shield", "info");
+      },
+      keywords: "security audit vulnerabilities cve cvss shield patch"
+    },
+    {
+      id: "tab-sandbox",
+      title: "Mock API Sandbox & Simulation",
+      category: "Studio",
+      icon: "⚡",
+      badge: "Tab",
+      action: () => {
+        setSaasTab("studio");
+        setActiveTab("sandbox");
+        setShowCommandPalette(false);
+        showToast("Switched to Mock API Sandbox", "info");
+      },
+      keywords: "api sandbox mock endpoints simulation test curl headers"
+    },
+    {
+      id: "tab-sdks",
+      title: "Client SDK Generator",
+      category: "Studio",
+      icon: "📦",
+      badge: "Tab",
+      action: () => {
+        setSaasTab("studio");
+        setActiveTab("sdks");
+        setShowCommandPalette(false);
+        showToast("Switched to Client SDKs", "info");
+      },
+      keywords: "sdk client generator typescript python curl npm pip install"
+    },
+    {
+      id: "tab-loadtest",
+      title: "Load Testing Suite (k6)",
+      category: "Studio",
+      icon: "🚀",
+      badge: "Tab",
+      action: () => {
+        setSaasTab("studio");
+        setActiveTab("loadtest");
+        setShowCommandPalette(false);
+        showToast("Switched to Load Testing Suite", "info");
+      },
+      keywords: "load test k6 benchmark stress performance rps"
+    },
+    {
+      id: "tab-drifts",
+      title: "Architectural Drift Detector",
+      category: "Studio",
+      icon: "🔄",
+      badge: "Tab",
+      action: () => {
+        setSaasTab("studio");
+        setActiveTab("drifts");
+        setShowCommandPalette(false);
+        showToast("Switched to Architectural Drifts", "info");
+      },
+      keywords: "drift detector violations lint diff contract"
+    },
+    {
+      id: "tab-metrics",
+      title: "System & Agent Telemetry Metrics",
+      category: "Studio",
+      icon: "📊",
+      badge: "Tab",
+      action: () => {
+        setSaasTab("studio");
+        setActiveTab("metrics");
+        setShowCommandPalette(false);
+        showToast("Switched to System Metrics", "info");
+      },
+      keywords: "metrics telemetry tokens latency cost stats"
+    },
+    {
+      id: "tab-create",
+      title: "Autonomous Creator Studio",
+      category: "Studio",
+      icon: "✨",
+      badge: "Tab",
+      action: () => {
+        setSaasTab("studio");
+        setActiveTab("create");
+        setShowCommandPalette(false);
+      },
+      keywords: "create new project prompt studio synthesize dag"
+    },
+
+    // Quick Actions
+    {
+      id: "action-slide-deck",
+      title: "Preview Architecture Slide Deck",
+      category: "Quick Action",
+      icon: "📑",
+      badge: "Deck",
+      action: () => {
+        setShowCommandPalette(false);
+        if (currentProject) {
+          setSlideModalOpen(true);
+        } else {
+          showToast("Please select or generate a project first to view its Slide Deck", "warning");
+        }
+      },
+      keywords: "slide deck presentation report pdf export view preview slides"
+    },
+    {
+      id: "action-download-zip",
+      title: "Export Project Repository ZIP",
+      category: "Quick Action",
+      icon: "📥",
+      badge: "Export",
+      action: () => {
+        setShowCommandPalette(false);
+        if (currentProject) {
+          window.location.href = getDownloadZipUrl(currentProject.id);
+          showToast("Starting repository ZIP download...", "success");
+        } else {
+          showToast("Please select a project to download", "warning");
+        }
+      },
+      keywords: "download zip repo repository code bundle export archive"
+    },
+    {
+      id: "action-theme-toggle",
+      title: "Toggle Dark / Light Theme",
+      category: "Quick Action",
+      icon: theme === "dark" ? "☀️" : "🌙",
+      badge: "Theme",
+      action: () => {
+        setTheme(theme === "dark" ? "light" : "dark");
+        setShowCommandPalette(false);
+        showToast(`Theme switched to ${theme === "dark" ? "Light" : "Dark"}`, "success");
+      },
+      keywords: "theme mode toggle dark light appearance color"
+    },
+    {
+      id: "action-run-audit",
+      title: "Trigger Security Shield Vulnerability Audit",
+      category: "Quick Action",
+      icon: "🔍",
+      badge: "Scan",
+      action: async () => {
+        setSaasTab("studio");
+        setActiveTab("security");
+        setShowCommandPalette(false);
+        if (currentProject) {
+          try {
+            showToast("Running Security Shield vulnerability audit...", "info");
+            const audit = await runSecurityAudit(currentProject.id);
+            setSecurityAudit(audit);
+            showToast(`Security scan complete. Grade: ${audit.security_grade} (${audit.overall_score}/100)`, "success");
+          } catch (err) {
+            showToast("Failed to run security audit: " + (err.message || "Unknown error"), "error");
+          }
+        } else {
+          showToast("Switched to Security Shield (select a project to scan)", "info");
+        }
+      },
+      keywords: "security run audit scan vulnerabilities check cve"
+    },
+
+    // Navigation Pages
+    {
+      id: "nav-home",
+      title: "Go to Home / Platform Overview",
+      category: "Navigation",
+      icon: "🏠",
+      badge: "Page",
+      action: () => {
+        setSaasTab("home");
+        setShowCommandPalette(false);
+      },
+      keywords: "home landing overview platform welcome"
+    },
+    {
+      id: "nav-pricing",
+      title: "Go to Pricing & Tiers",
+      category: "Navigation",
+      icon: "💎",
+      badge: "Page",
+      action: () => {
+        setSaasTab("pricing");
+        setShowCommandPalette(false);
+      },
+      keywords: "pricing tiers cost plans enterprise pro billing"
+    },
+    {
+      id: "nav-docs",
+      title: "Go to Documentation & Setup Guide",
+      category: "Navigation",
+      icon: "📖",
+      badge: "Page",
+      action: () => {
+        setSaasTab("docs");
+        setShowCommandPalette(false);
+      },
+      keywords: "docs documentation setup guide api reference manual"
+    },
+    {
+      id: "nav-download",
+      title: "Go to Download & CLI Tools",
+      category: "Navigation",
+      icon: "⬇️",
+      badge: "Page",
+      action: () => {
+        setSaasTab("download");
+        setShowCommandPalette(false);
+      },
+      keywords: "download cli desktop runner package app release install"
+    },
+    {
+      id: "nav-about",
+      title: "Go to About & Engineering Story",
+      category: "Navigation",
+      icon: "ℹ️",
+      badge: "Page",
+      action: () => {
+        setSaasTab("about");
+        setShowCommandPalette(false);
+      },
+      keywords: "about team story mission architecture philosophy"
+    }
+  ], [theme, currentProject, showToast]);
+
+  const filteredCommandItems = useMemo(() => {
+    if (!commandSearch.trim()) return commandPaletteItems;
+    const q = commandSearch.toLowerCase().trim();
+    return commandPaletteItems.filter((item) =>
+      item.title.toLowerCase().includes(q) ||
+      item.category.toLowerCase().includes(q) ||
+      item.keywords.toLowerCase().includes(q)
+    );
+  }, [commandSearch, commandPaletteItems]);
 
   // Floating AI Agent Pet ("Flowy") Chatbot, Draggable & Regex Navigation
   const [petCheer, setPetCheer] = useState(false);
@@ -1120,6 +1414,47 @@ export default function Home() {
         </div>
 
         <div className="navbar-actions">
+          {/* Quick Command Palette Trigger Button */}
+          <button
+            className="command-palette-trigger-btn"
+            onClick={() => {
+              setShowCommandPalette(true);
+              setCommandSearch("");
+              setCommandSelectedIndex(0);
+            }}
+            title="Open Command Palette (Ctrl+K or Cmd+K)"
+            aria-label="Open Command Palette"
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "7px",
+              background: "rgba(255, 255, 255, 0.04)",
+              border: "1px solid rgba(255, 255, 255, 0.12)",
+              color: "var(--text-secondary, #94a3b8)",
+              padding: "5px 11px",
+              borderRadius: "8px",
+              fontSize: "0.8rem",
+              fontWeight: 500,
+              cursor: "pointer",
+              transition: "all 0.15s ease",
+            }}
+          >
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="11" cy="11" r="8" />
+              <line x1="21" y1="21" x2="16.65" y2="16.65" />
+            </svg>
+            <span>Quick Jump</span>
+            <kbd style={{
+              background: "rgba(255, 255, 255, 0.09)",
+              border: "1px solid rgba(255, 255, 255, 0.16)",
+              borderRadius: "4px",
+              padding: "1px 5px",
+              fontSize: "0.68rem",
+              fontFamily: "var(--font-mono, monospace)",
+              color: "var(--text-primary, #f8fafc)"
+            }}>⌘K</kbd>
+          </button>
+
           {/* Theme Toggle Button */}
           <button
             className="theme-toggle-btn"
@@ -9960,6 +10295,223 @@ export default function Home() {
                   </pre>
                 </div>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Global Quick-Action Command Palette Modal (Ctrl+K / Cmd+K) */}
+      {showCommandPalette && (
+        <div
+          className="modal-overlay"
+          onClick={() => setShowCommandPalette(false)}
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(0, 0, 0, 0.72)",
+            backdropFilter: "blur(10px)",
+            WebkitBackdropFilter: "blur(10px)",
+            display: "flex",
+            alignItems: "flex-start",
+            justifyContent: "center",
+            paddingTop: "12vh",
+            zIndex: 99999,
+          }}
+        >
+          <div
+            className="modal-card command-palette-modal"
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              width: "100%",
+              maxWidth: 620,
+              background: "#0d1117",
+              border: "1px solid rgba(255, 255, 255, 0.16)",
+              borderRadius: 14,
+              boxShadow: "0 24px 70px rgba(0, 0, 0, 0.85), 0 0 0 1px rgba(99, 102, 241, 0.25)",
+              overflow: "hidden",
+              display: "flex",
+              flexDirection: "column",
+              maxHeight: "75vh",
+            }}
+          >
+            {/* Command Palette Search Header */}
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 12,
+                padding: "14px 18px",
+                borderBottom: "1px solid rgba(255, 255, 255, 0.1)",
+                background: "rgba(255, 255, 255, 0.02)",
+              }}
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--primary, #6366f1)" strokeWidth="2.2">
+                <circle cx="11" cy="11" r="8" />
+                <line x1="21" y1="21" x2="16.65" y2="16.65" />
+              </svg>
+              <input
+                type="text"
+                value={commandSearch}
+                onChange={(e) => {
+                  setCommandSearch(e.target.value);
+                  setCommandSelectedIndex(0);
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "ArrowDown") {
+                    e.preventDefault();
+                    if (filteredCommandItems.length > 0) {
+                      setCommandSelectedIndex((prev) => (prev + 1) % filteredCommandItems.length);
+                    }
+                  } else if (e.key === "ArrowUp") {
+                    e.preventDefault();
+                    if (filteredCommandItems.length > 0) {
+                      setCommandSelectedIndex((prev) => (prev - 1 + filteredCommandItems.length) % filteredCommandItems.length);
+                    }
+                  } else if (e.key === "Enter") {
+                    e.preventDefault();
+                    if (filteredCommandItems[commandSelectedIndex]) {
+                      filteredCommandItems[commandSelectedIndex].action();
+                    }
+                  } else if (e.key === "Escape") {
+                    e.preventDefault();
+                    setShowCommandPalette(false);
+                  }
+                }}
+                placeholder="Type a command, jump to a tab, or search actions..."
+                autoFocus
+                style={{
+                  flex: 1,
+                  background: "transparent",
+                  border: "none",
+                  outline: "none",
+                  color: "var(--text-primary, #f8fafc)",
+                  fontSize: "1rem",
+                  fontFamily: "inherit",
+                }}
+              />
+              {commandSearch && (
+                <button
+                  onClick={() => {
+                    setCommandSearch("");
+                    setCommandSelectedIndex(0);
+                  }}
+                  style={{
+                    background: "transparent",
+                    border: "none",
+                    color: "var(--text-muted)",
+                    cursor: "pointer",
+                    padding: "2px 6px",
+                    fontSize: 12,
+                  }}
+                >
+                  ✕
+                </button>
+              )}
+              <kbd
+                onClick={() => setShowCommandPalette(false)}
+                style={{
+                  background: "rgba(255, 255, 255, 0.08)",
+                  border: "1px solid rgba(255, 255, 255, 0.12)",
+                  borderRadius: 4,
+                  padding: "2px 6px",
+                  fontSize: 10,
+                  fontFamily: "var(--font-mono, monospace)",
+                  color: "var(--text-muted)",
+                  cursor: "pointer",
+                }}
+              >
+                ESC
+              </kbd>
+            </div>
+
+            {/* Results List */}
+            <div
+              style={{
+                overflowY: "auto",
+                padding: "8px",
+                flex: 1,
+              }}
+            >
+              {filteredCommandItems.length === 0 ? (
+                <div style={{ padding: "32px 16px", textAlign: "center", color: "var(--text-muted)", fontSize: 13 }}>
+                  No commands or navigation destinations match &quot;{commandSearch}&quot;
+                </div>
+              ) : (
+                filteredCommandItems.map((item, index) => {
+                  const isSelected = index === commandSelectedIndex;
+                  return (
+                    <div
+                      key={item.id}
+                      onClick={() => item.action()}
+                      onMouseEnter={() => setCommandSelectedIndex(index)}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        padding: "10px 14px",
+                        borderRadius: 8,
+                        cursor: "pointer",
+                        background: isSelected ? "rgba(99, 102, 241, 0.15)" : "transparent",
+                        border: isSelected ? "1px solid rgba(99, 102, 241, 0.35)" : "1px solid transparent",
+                        transition: "all 0.1s ease",
+                      }}
+                    >
+                      <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                        <span style={{ fontSize: 16 }}>{item.icon}</span>
+                        <div>
+                          <div style={{ fontSize: 13, fontWeight: 600, color: isSelected ? "#a5b4fc" : "var(--text-primary, #f8fafc)" }}>
+                            {item.title}
+                          </div>
+                          <div style={{ fontSize: 11, color: "var(--text-muted)" }}>
+                            {item.category}
+                          </div>
+                        </div>
+                      </div>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                        <span
+                          style={{
+                            fontSize: 10,
+                            fontFamily: "var(--font-mono, monospace)",
+                            background: "rgba(255, 255, 255, 0.06)",
+                            border: "1px solid rgba(255, 255, 255, 0.1)",
+                            padding: "2px 6px",
+                            borderRadius: 4,
+                            color: "var(--text-secondary, #94a3b8)",
+                          }}
+                        >
+                          {item.badge}
+                        </span>
+                        {isSelected && (
+                          <span style={{ fontSize: 12, color: "#818cf8" }}>↵</span>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+
+            {/* Command Palette Footer */}
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                padding: "8px 16px",
+                borderTop: "1px solid rgba(255, 255, 255, 0.08)",
+                background: "rgba(0, 0, 0, 0.25)",
+                fontSize: 11,
+                color: "var(--text-muted)",
+              }}
+            >
+              <div style={{ display: "flex", gap: 14 }}>
+                <span><kbd style={{ fontFamily: "monospace", background: "rgba(255,255,255,0.08)", padding: "1px 4px", borderRadius: 3 }}>↑↓</kbd> to navigate</span>
+                <span><kbd style={{ fontFamily: "monospace", background: "rgba(255,255,255,0.08)", padding: "1px 4px", borderRadius: 3 }}>↵</kbd> to select</span>
+                <span><kbd style={{ fontFamily: "monospace", background: "rgba(255,255,255,0.08)", padding: "1px 4px", borderRadius: 3 }}>esc</kbd> to close</span>
+              </div>
+              <div>
+                <span>{filteredCommandItems.length} results</span>
+              </div>
             </div>
           </div>
         </div>
