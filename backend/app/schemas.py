@@ -487,6 +487,7 @@ class MockApiRequest(BaseModel):
     body: Optional[Dict[str, Any]] = None
     query_params: Optional[Dict[str, str]] = None
     headers: Optional[Dict[str, str]] = None
+    simulate_status: Optional[int] = None
 
 
 class MockApiResponse(BaseModel):

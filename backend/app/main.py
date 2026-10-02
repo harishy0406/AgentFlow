@@ -1771,6 +1771,7 @@ def run_mock_api_request(
             body=payload.body,
             query_params=payload.query_params,
             headers=payload.headers,
+            simulate_status=payload.simulate_status,
             db=db
         )
         return res

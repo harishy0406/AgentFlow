@@ -183,6 +183,9 @@ export default function Home() {
   const [mockPath, setMockPath] = useState("/api/v1/health");
   const [mockBody, setMockBody] = useState("");
   const [mockHeaders, setMockHeaders] = useState('{\n  "Authorization": "Bearer sample_jwt_token",\n  "Content-Type": "application/json"\n}');
+  const [mockSimulateStatus, setMockSimulateStatus] = useState("");
+  const [showMockHeadersEditor, setShowMockHeadersEditor] = useState(false);
+  const [copiedCurl, setCopiedCurl] = useState(false);
   const [mockExecuting, setMockExecuting] = useState(false);
   const [mockResponse, setMockResponse] = useState(null);
   const [mockHistory, setMockHistory] = useState([]);
@@ -5847,6 +5850,96 @@ export default function Home() {
                             }}
                           />
 
+                          {/* Status Code Simulation Selector */}
+                          <select
+                            value={mockSimulateStatus}
+                            onChange={(e) => setMockSimulateStatus(e.target.value)}
+                            style={{
+                              background: "var(--bg-card)",
+                              color: mockSimulateStatus ? (parseInt(mockSimulateStatus) >= 400 ? "var(--accent-red)" : "var(--terminal-green)") : "var(--text-muted)",
+                              border: `1px solid ${mockSimulateStatus ? (parseInt(mockSimulateStatus) >= 400 ? "var(--accent-red)" : "var(--terminal-green)") : "var(--border)"}`,
+                              borderRadius: 6,
+                              padding: "8px 10px",
+                              fontFamily: "var(--font-mono)",
+                              fontSize: 12,
+                              fontWeight: 600,
+                              cursor: "pointer",
+                              outline: "none",
+                            }}
+                            title="Simulate specific HTTP response status codes & RFC-7807 error structures"
+                          >
+                            <option value="">⚡ Status: Auto (200/201)</option>
+                            <option value="200">200 OK</option>
+                            <option value="201">201 Created</option>
+                            <option value="204">204 No Content</option>
+                            <option value="400">400 Bad Request</option>
+                            <option value="401">401 Unauthorized</option>
+                            <option value="403">403 Forbidden</option>
+                            <option value="404">404 Not Found</option>
+                            <option value="422">422 Unprocessable</option>
+                            <option value="429">429 Rate Limited</option>
+                            <option value="500">500 Server Error</option>
+                            <option value="503">503 Unavailable</option>
+                          </select>
+
+                          {/* Headers Toggle Button */}
+                          <button
+                            type="button"
+                            className="btn btn-secondary btn-sm"
+                            onClick={() => setShowMockHeadersEditor(!showMockHeadersEditor)}
+                            style={{
+                              padding: "8px 12px",
+                              fontSize: 12,
+                              color: showMockHeadersEditor ? "var(--accent-blue)" : undefined,
+                              borderColor: showMockHeadersEditor ? "var(--accent-blue)" : undefined,
+                            }}
+                            title="Configure custom request headers (Authorization, X-Api-Key, etc.)"
+                          >
+                            Headers
+                          </button>
+
+                          {/* Copy cURL Button */}
+                          <button
+                            type="button"
+                            className="btn btn-secondary btn-sm"
+                            onClick={() => {
+                              try {
+                                const baseUrl = typeof window !== "undefined" ? window.location.origin : "http://localhost:8000";
+                                let curl = `curl -X ${mockMethod} "${baseUrl}/projects/${currentProject.id}/mock-api" \\\n  -H "Content-Type: application/json"`;
+                                if (mockSimulateStatus) {
+                                  curl += ` \\\n  -H "X-Mock-Status: ${mockSimulateStatus}"`;
+                                }
+                                let headersObj = null;
+                                if (mockHeaders.trim()) {
+                                  try { headersObj = JSON.parse(mockHeaders); } catch (e) { }
+                                }
+                                let payload = {
+                                  method: mockMethod,
+                                  path: mockPath,
+                                  headers: headersObj,
+                                  body: (["POST", "PUT", "PATCH"].includes(mockMethod) && mockBody.trim()) ? JSON.parse(mockBody) : null,
+                                  simulate_status: mockSimulateStatus ? parseInt(mockSimulateStatus, 10) : null,
+                                };
+                                curl += ` \\\n  -d '${JSON.stringify(payload, null, 2)}'`;
+                                navigator.clipboard.writeText(curl);
+                                setCopiedCurl(true);
+                                showToast("cURL command copied to clipboard!", "success");
+                                setTimeout(() => setCopiedCurl(false), 2000);
+                              } catch (e) {
+                                showToast("Failed to copy cURL: " + e.message, "error");
+                              }
+                            }}
+                            style={{
+                              padding: "8px 12px",
+                              fontSize: 12,
+                              color: copiedCurl ? "var(--terminal-green)" : undefined,
+                              borderColor: copiedCurl ? "var(--terminal-green)" : undefined,
+                            }}
+                            title="Copy cURL command for this simulated API request"
+                          >
+                            {copiedCurl ? "✓ cURL Copied" : "📋 cURL"}
+                          </button>
+
                           <button
                             className="btn btn-primary btn-sm"
                             disabled={mockExecuting}
@@ -5864,10 +5957,23 @@ export default function Home() {
                                   }
                                 }
 
+                                let parsedHeaders = null;
+                                if (mockHeaders.trim()) {
+                                  try {
+                                    parsedHeaders = JSON.parse(mockHeaders);
+                                  } catch (e) {
+                                    showToast("Invalid JSON headers format: " + e.message, "error");
+                                    setMockExecuting(false);
+                                    return;
+                                  }
+                                }
+
                                 const res = await executeMockApiCall(currentProject.id, {
                                   method: mockMethod,
                                   path: mockPath,
                                   body: parsedBody,
+                                  headers: parsedHeaders,
+                                  simulateStatus: mockSimulateStatus || null,
                                 });
                                 setMockResponse(res);
                                 setMockHistory((prev) => [
@@ -5880,7 +5986,7 @@ export default function Home() {
                                   },
                                   ...prev.slice(0, 9),
                                 ]);
-                                showToast(`Simulated ${mockMethod} ${mockPath} -> ${res.status_code} ${res.status_text}`, "success");
+                                showToast(`Simulated ${mockMethod} ${mockPath} -> ${res.status_code} ${res.status_text}`, res.status_code >= 400 ? "warning" : "success");
                               } catch (err) {
                                 showToast(err.message, "error");
                               } finally {
@@ -5892,6 +5998,78 @@ export default function Home() {
                             {mockExecuting ? "Executing..." : "Send Request"}
                           </button>
                         </div>
+
+                        {/* Request Headers Editor */}
+                        {showMockHeadersEditor && (
+                          <div
+                            style={{
+                              background: "var(--bg-card)",
+                              border: "1px solid var(--border)",
+                              borderRadius: 8,
+                              padding: 12,
+                              marginBottom: 12,
+                            }}
+                          >
+                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+                              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                                <label style={{ fontSize: 11, fontWeight: 700, color: "var(--accent-blue)", textTransform: "uppercase" }}>
+                                  Request Headers (JSON)
+                                </label>
+                                <span style={{ fontSize: 11, color: "var(--text-muted)" }}>
+                                  Simulate authentication tokens, tenant headers, and custom gateway metadata
+                                </span>
+                              </div>
+                              <div style={{ display: "flex", gap: 6 }}>
+                                <button
+                                  type="button"
+                                  className="btn btn-secondary btn-sm"
+                                  style={{ fontSize: 10, padding: "2px 8px" }}
+                                  onClick={() => {
+                                    setMockHeaders(JSON.stringify({
+                                      "Authorization": "Bearer sample_agentflow_jwt_token",
+                                      "X-Api-Key": "af_live_sandbox_key_9981",
+                                      "Content-Type": "application/json"
+                                    }, null, 2));
+                                  }}
+                                >
+                                  + Auth Preset
+                                </button>
+                                <button
+                                  type="button"
+                                  className="btn btn-secondary btn-sm"
+                                  style={{ fontSize: 10, padding: "2px 8px" }}
+                                  onClick={() => {
+                                    try {
+                                      if (mockHeaders.trim()) {
+                                        setMockHeaders(JSON.stringify(JSON.parse(mockHeaders), null, 2));
+                                      }
+                                    } catch (e) { }
+                                  }}
+                                >
+                                  Format JSON
+                                </button>
+                              </div>
+                            </div>
+                            <textarea
+                              value={mockHeaders}
+                              onChange={(e) => setMockHeaders(e.target.value)}
+                              placeholder='{\n  "Authorization": "Bearer token",\n  "Content-Type": "application/json"\n}'
+                              style={{
+                                width: "100%",
+                                minHeight: 90,
+                                background: "var(--bg-primary)",
+                                color: "var(--text-primary)",
+                                border: "1px solid var(--border)",
+                                borderRadius: 6,
+                                padding: 10,
+                                fontFamily: "var(--font-mono)",
+                                fontSize: 12,
+                                resize: "vertical",
+                                outline: "none",
+                              }}
+                            />
+                          </div>
+                        )}
 
                         {/* Request Body & Headers Editor (for POST / PUT / PATCH) */}
                         {["POST", "PUT", "PATCH"].includes(mockMethod) && (

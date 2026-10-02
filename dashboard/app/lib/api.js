@@ -335,7 +335,7 @@ export async function listMockRoutes(projectId) {
   return request(`/projects/${projectId}/mock-routes`);
 }
 
-export async function executeMockApiCall(projectId, { method = "GET", path = "/", body = null, queryParams = null, headers = null } = {}) {
+export async function executeMockApiCall(projectId, { method = "GET", path = "/", body = null, queryParams = null, headers = null, simulateStatus = null } = {}) {
   return request(`/projects/${projectId}/mock-api`, {
     method: "POST",
     body: JSON.stringify({
@@ -344,6 +344,7 @@ export async function executeMockApiCall(projectId, { method = "GET", path = "/"
       body,
       query_params: queryParams,
       headers,
+      simulate_status: simulateStatus ? parseInt(simulateStatus, 10) : null,
     }),
   });
 }

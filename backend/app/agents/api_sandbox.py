@@ -181,6 +181,7 @@ def execute_mock_api_call(
     body: Optional[Dict[str, Any]] = None,
     query_params: Optional[Dict[str, str]] = None,
     headers: Optional[Dict[str, str]] = None,
+    simulate_status: Optional[int] = None,
     db: Optional[Session] = None
 ) -> Dict[str, Any]:
     """
@@ -230,22 +231,149 @@ def execute_mock_api_call(
             matched_route = r
             break
 
-    # Determine status code
-    if matched_route:
+    # Determine status code (support explicit override via header, param, or simulate_status)
+    forced_status = simulate_status
+    if not forced_status and headers:
+        for hk, hv in headers.items():
+            if hk.lower() in ("x-mock-status", "x-status-code", "x-mock-status-code"):
+                try:
+                    forced_status = int(hv)
+                    break
+                except (ValueError, TypeError):
+                    pass
+    if not forced_status and query_params and "_status" in query_params:
+        try:
+            forced_status = int(query_params["_status"])
+        except (ValueError, TypeError):
+            pass
+
+    STATUS_TEXT_MAP = {
+        200: "OK",
+        201: "Created",
+        202: "Accepted",
+        204: "No Content",
+        400: "Bad Request",
+        401: "Unauthorized",
+        403: "Forbidden",
+        404: "Not Found",
+        409: "Conflict",
+        422: "Unprocessable Entity",
+        429: "Too Many Requests",
+        500: "Internal Server Error",
+        502: "Bad Gateway",
+        503: "Service Unavailable",
+    }
+
+    if forced_status and forced_status in STATUS_TEXT_MAP:
+        status_code = forced_status
+        status_text = STATUS_TEXT_MAP[forced_status]
+        route_desc = (
+            f"Simulated {status_code} {status_text} response for: "
+            + (matched_route.get("description", f"{req_method} {req_path}") if matched_route else f"{req_method} {req_path}")
+        )
+    elif matched_route:
         status_code = 201 if req_method == "POST" else 200
+        status_text = "Created" if status_code == 201 else "OK"
         route_desc = matched_route.get("description", "Declared endpoint")
     else:
         # Fallback simulation
         status_code = 201 if req_method == "POST" else 200
+        status_text = "Created" if status_code == 201 else "OK"
         route_desc = f"Simulated dynamic endpoint: {req_method} {req_path}"
 
     start_time = time.time()
-    response_body = _synthesize_mock_response(req_method, req_path, schemas, body)
+    if status_code >= 400:
+        if status_code == 400:
+            response_body = {
+                "type": "https://errors.agentflow.dev/v1/bad-request",
+                "title": "Bad Request",
+                "status": 400,
+                "detail": "The request payload failed structural validation against OpenAPI schema definitions.",
+                "invalid_parameters": [
+                    {"name": "body", "reason": "Missing required field or invalid type format"}
+                ],
+                "timestamp": "2026-10-02T12:00:00Z"
+            }
+        elif status_code == 401:
+            response_body = {
+                "type": "https://errors.agentflow.dev/v1/unauthorized",
+                "title": "Unauthorized",
+                "status": 401,
+                "detail": "Missing, expired, or malformed Bearer authorization token in request headers.",
+                "realm": "AgentFlow Gateway Security",
+                "timestamp": "2026-10-02T12:00:00Z"
+            }
+        elif status_code == 403:
+            response_body = {
+                "type": "https://errors.agentflow.dev/v1/forbidden",
+                "title": "Forbidden",
+                "status": 403,
+                "detail": "Principal does not have the required scopes or RBAC roles to access this resource.",
+                "required_scopes": ["api:write", "admin"],
+                "timestamp": "2026-10-02T12:00:00Z"
+            }
+        elif status_code == 404:
+            response_body = {
+                "type": "https://errors.agentflow.dev/v1/not-found",
+                "title": "Not Found",
+                "status": 404,
+                "detail": f"The target resource at path '{req_path}' does not exist or has been removed.",
+                "timestamp": "2026-10-02T12:00:00Z"
+            }
+        elif status_code == 422:
+            response_body = {
+                "type": "https://errors.agentflow.dev/v1/unprocessable-entity",
+                "title": "Unprocessable Entity",
+                "status": 422,
+                "detail": "Semantic validation failed on submitted entity attributes.",
+                "validation_errors": [
+                    {"field": "name", "error": "Value cannot be null or empty string"},
+                    {"field": "email", "error": "Must conform to standard RFC 5322 email specification"}
+                ],
+                "timestamp": "2026-10-02T12:00:00Z"
+            }
+        elif status_code == 429:
+            response_body = {
+                "type": "https://errors.agentflow.dev/v1/rate-limited",
+                "title": "Too Many Requests",
+                "status": 429,
+                "detail": "Rate limit quota exceeded for client identity (100 req/min).",
+                "retry_after_seconds": 45,
+                "timestamp": "2026-10-02T12:00:00Z"
+            }
+        elif status_code == 500:
+            response_body = {
+                "type": "https://errors.agentflow.dev/v1/internal-server-error",
+                "title": "Internal Server Error",
+                "status": 500,
+                "detail": "Simulated upstream service degradation or uncaught runtime exception.",
+                "incident_id": str(uuid.uuid4())[:8],
+                "timestamp": "2026-10-02T12:00:00Z"
+            }
+        elif status_code == 503:
+            response_body = {
+                "type": "https://errors.agentflow.dev/v1/service-unavailable",
+                "title": "Service Unavailable",
+                "status": 503,
+                "detail": "Service is undergoing temporary maintenance. Please retry later.",
+                "retry_after_seconds": 30,
+                "timestamp": "2026-10-02T12:00:00Z"
+            }
+        else:
+            response_body = {
+                "status": status_code,
+                "error": status_text,
+                "message": f"Simulated HTTP {status_code} {status_text} error response.",
+                "path": req_path
+            }
+    else:
+        response_body = _synthesize_mock_response(req_method, req_path, schemas, body)
+
     latency_ms = max(12, int((time.time() - start_time) * 1000) + 18)
 
     return {
         "status_code": status_code,
-        "status_text": "OK" if status_code == 200 else "Created",
+        "status_text": status_text,
         "method": req_method,
         "path": req_path,
         "matched_contract": bool(matched_route),
@@ -255,7 +383,7 @@ def execute_mock_api_call(
             "content-type": "application/json; charset=utf-8",
             "x-powered-by": "AgentFlow-Sandbox-Engine/1.0",
             "x-request-id": str(uuid.uuid4()),
-            "x-ratelimit-remaining": "999",
+            "x-ratelimit-remaining": "999" if status_code != 429 else "0",
             "server": "uvicorn/0.30.0"
         },
         "response_body": response_body,
