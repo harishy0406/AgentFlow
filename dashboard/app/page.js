@@ -292,6 +292,8 @@ export default function Home() {
   const [showDeckPreviewModal, setShowDeckPreviewModal] = useState(false);
   const [codeFileSearch, setCodeFileSearch] = useState("");
   const [copiedCodeFilePath, setCopiedCodeFilePath] = useState(null);
+  const [isCreatingCodeFile, setIsCreatingCodeFile] = useState(false);
+  const [newCodeFilePath, setNewCodeFilePath] = useState("");
 
   // Timeline state
   const [timelineData, setTimelineData] = useState(null);
@@ -4161,13 +4163,91 @@ export default function Home() {
                               )}
                             </div>
                             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 6, padding: "0 4px" }}>
-                              <span style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase" }}>
-                                Files
-                              </span>
-                              <span style={{ fontSize: 10, color: "var(--accent-blue)", fontWeight: 600 }}>
-                                {(codeData.files || []).filter((f) => !codeFileSearch ? true : f.path.toLowerCase().includes(codeFileSearch.toLowerCase())).length} of {codeData.files.length}
-                              </span>
+                              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                                <span style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase" }}>
+                                  Files
+                                </span>
+                                <span style={{ fontSize: 10, color: "var(--accent-blue)", fontWeight: 600 }}>
+                                  {(codeData.files || []).filter((f) => !codeFileSearch ? true : f.path.toLowerCase().includes(codeFileSearch.toLowerCase())).length} of {codeData.files.length}
+                                </span>
+                              </div>
+                              <button
+                                type="button"
+                                className="btn btn-secondary btn-sm"
+                                style={{ fontSize: 10, padding: "2px 7px" }}
+                                onClick={() => {
+                                  setIsCreatingCodeFile(!isCreatingCodeFile);
+                                  setNewCodeFilePath("");
+                                }}
+                                title="Create a new source file in this project"
+                              >
+                                {isCreatingCodeFile ? "✕ Cancel" : "+ New File"}
+                              </button>
                             </div>
+
+                            {/* Inline New File Creator */}
+                            {isCreatingCodeFile && (
+                              <div style={{ marginTop: 8, padding: 8, background: "var(--bg-primary)", border: "1px solid var(--border)", borderRadius: 6 }}>
+                                <input
+                                  type="text"
+                                  value={newCodeFilePath}
+                                  onChange={(e) => setNewCodeFilePath(e.target.value)}
+                                  placeholder="e.g. tests/test_custom.py"
+                                  style={{
+                                    width: "100%",
+                                    padding: "5px 8px",
+                                    fontSize: 12,
+                                    background: "var(--bg-card)",
+                                    color: "var(--text-primary)",
+                                    border: "1px solid var(--border)",
+                                    borderRadius: 4,
+                                    marginBottom: 6,
+                                    outline: "none",
+                                    fontFamily: "var(--font-mono)",
+                                  }}
+                                  onKeyDown={(e) => {
+                                    if (e.key === "Enter" && newCodeFilePath.trim()) {
+                                      const path = newCodeFilePath.trim();
+                                      const newFile = { path, content: "# New file created in AgentFlow\n" };
+                                      setCodeData((prev) => ({
+                                        ...prev,
+                                        files: [...(prev?.files || []), newFile],
+                                      }));
+                                      setSelectedCodeFile(newFile);
+                                      setIsEditingCode(true);
+                                      setEditingCodeContent(newFile.content);
+                                      setIsCreatingCodeFile(false);
+                                      setNewCodeFilePath("");
+                                      showToast(`Created ${path}! Edit content and click Save.`, "success");
+                                    }
+                                  }}
+                                />
+                                <div style={{ display: "flex", justifyContent: "flex-end", gap: 4 }}>
+                                  <button
+                                    type="button"
+                                    className="btn btn-primary btn-sm"
+                                    style={{ fontSize: 10, padding: "3px 8px" }}
+                                    disabled={!newCodeFilePath.trim()}
+                                    onClick={() => {
+                                      const path = newCodeFilePath.trim();
+                                      const newFile = { path, content: "# New file created in AgentFlow\n" };
+                                      setCodeData((prev) => ({
+                                        ...prev,
+                                        files: [...(prev?.files || []), newFile],
+                                      }));
+                                      setSelectedCodeFile(newFile);
+                                      setIsEditingCode(true);
+                                      setEditingCodeContent(newFile.content);
+                                      setIsCreatingCodeFile(false);
+                                      setNewCodeFilePath("");
+                                      showToast(`Created ${path}! Edit content and click Save.`, "success");
+                                    }}
+                                  >
+                                    Create
+                                  </button>
+                                </div>
+                              </div>
+                            )}
                           </div>
 
                           <div style={{ overflowY: "auto", flex: 1, maxHeight: 420 }}>
@@ -4175,18 +4255,20 @@ export default function Home() {
                               .filter((f) => !codeFileSearch ? true : f.path.toLowerCase().includes(codeFileSearch.toLowerCase()))
                               .map((file) => {
                                 const isSelected = selectedCodeFile?.path === file.path;
+                                const ext = file.path.includes(".") ? file.path.split(".").pop().toUpperCase() : "TXT";
+                                const lineCount = (file.content || "").split("\n").length;
                                 return (
                                   <div
                                     key={file.path}
                                     onClick={() => setSelectedCodeFile(file)}
                                     style={{
-                                      padding: "8px 10px",
+                                      padding: "6px 8px",
                                       borderRadius: 6,
-                                      fontSize: 13,
+                                      fontSize: 12,
                                       cursor: "pointer",
                                       display: "flex",
                                       alignItems: "center",
-                                      gap: 8,
+                                      gap: 6,
                                       background: isSelected ? "var(--bg-hover)" : "transparent",
                                       color: isSelected ? "var(--accent-blue)" : "var(--text-primary)",
                                       fontWeight: isSelected ? 600 : 400,
@@ -4196,8 +4278,8 @@ export default function Home() {
                                     <span>
                                       {file.path.endsWith(".py")
                                         ? "🐍"
-                                        : file.path.endsWith(".jsx") || file.path.endsWith(".js")
-                                        ? "⚛️"
+                                        : file.path.endsWith(".jsx") || file.path.endsWith(".js") || file.path.endsWith(".ts") || file.path.endsWith(".tsx")
+                                        ? "⚡"
                                         : file.path.endsWith(".md")
                                         ? "📝"
                                         : file.path.endsWith(".json")
@@ -4206,15 +4288,35 @@ export default function Home() {
                                         ? "⚙️"
                                         : file.path.includes("Dockerfile")
                                         ? "🐳"
+                                        : file.path.endsWith(".sql")
+                                        ? "🗄️"
                                         : "📄"}
                                     </span>
-                                    <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                                    <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1 }}>
                                       {file.path}
+                                    </span>
+                                    <span
+                                      style={{
+                                        fontSize: 9,
+                                        padding: "1px 4px",
+                                        borderRadius: 3,
+                                        background: isSelected ? "rgba(56, 189, 248, 0.2)" : "rgba(255, 255, 255, 0.06)",
+                                        color: isSelected ? "var(--accent-blue)" : "var(--text-muted)",
+                                        fontFamily: "var(--font-mono)",
+                                        fontWeight: 700,
+                                      }}
+                                    >
+                                      {ext}
+                                    </span>
+                                    <span style={{ fontSize: 10, color: "var(--text-muted)", fontFamily: "var(--font-mono)" }}>
+                                      {lineCount}L
                                     </span>
                                   </div>
                                 );
                               })}
-                            {(codeData.files || []).filter((f) => !codeFileSearch ? true : f.path.toLowerCase().includes(codeFileSearch.toLowerCase())).length === 0 && (
+                            {(codeData.files || [])
+                              .filter((f) => !codeFileSearch ? true : f.path.toLowerCase().includes(codeFileSearch.toLowerCase()))
+                              .length === 0 && (
                               <div style={{ fontSize: 12, color: "var(--text-muted)", padding: "12px 8px", textAlign: "center" }}>
                                 No files match &quot;{codeFileSearch}&quot;
                               </div>
