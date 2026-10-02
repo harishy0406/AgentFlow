@@ -196,6 +196,8 @@ export default function Home() {
   const [securityScanning, setSecurityScanning] = useState(false);
   const [securityRemediating, setSecurityRemediating] = useState(false);
   const [securityFilterSeverity, setSecurityFilterSeverity] = useState("ALL");
+  const [securitySearchQuery, setSecuritySearchQuery] = useState("");
+  const [copiedRemediationId, setCopiedRemediationId] = useState(null);
 
   // Performance Load Testing & Benchmark state
   const [loadTestResult, setLoadTestResult] = useState(null);
@@ -6291,6 +6293,25 @@ export default function Home() {
                         >
                           {securityRemediating ? "Applying Patches..." : "Auto-Remediate Vulnerabilities"}
                         </button>
+
+                        <button
+                          className="btn btn-secondary btn-sm"
+                          disabled={!securityAudit}
+                          onClick={() => {
+                            if (!securityAudit) return;
+                            const blob = new Blob([JSON.stringify(securityAudit, null, 2)], { type: "application/json" });
+                            const url = URL.createObjectURL(blob);
+                            const a = document.createElement("a");
+                            a.href = url;
+                            a.download = `${(currentProject.title || "Project").replace(/\s+/g, "_")}_security_audit.json`;
+                            a.click();
+                            URL.revokeObjectURL(url);
+                            showToast("Exported Security Audit (.json)!", "success");
+                          }}
+                          title="Export complete security report as JSON for CI/CD gates"
+                        >
+                          📥 Export Audit (.json)
+                        </button>
                       </div>
                     </div>
 
@@ -6374,27 +6395,73 @@ export default function Home() {
                           Audit Findings &amp; CWE Remediation Rules
                         </h3>
                         <div style={{ display: "flex", gap: 6 }}>
-                          {["ALL", "CRITICAL", "HIGH", "MEDIUM", "LOW"].map((sev) => (
-                            <button
-                              key={sev}
-                              onClick={() => setSecurityFilterSeverity(sev)}
-                              style={{
-                                padding: "4px 10px",
-                                fontSize: 11,
-                                fontWeight: 700,
-                                borderRadius: 4,
-                                background: securityFilterSeverity === sev ? "var(--text-primary)" : "var(--bg-secondary)",
-                                color: securityFilterSeverity === sev ? "var(--bg-primary)" : "var(--text-muted)",
-                                border: "1px solid var(--border)",
-                                cursor: "pointer",
-                                fontFamily: "var(--font-mono)",
-                                transition: "all 0.15s ease",
-                              }}
-                            >
-                              {sev}
-                            </button>
-                          ))}
+                          {["ALL", "CRITICAL", "HIGH", "MEDIUM", "LOW"].map((sev) => {
+                            const count =
+                              sev === "ALL"
+                                ? (securityAudit?.vulnerabilities?.length || 0)
+                                : (securityAudit?.vulnerabilities?.filter((x) => x.severity === sev).length || 0);
+                            return (
+                              <button
+                                key={sev}
+                                onClick={() => setSecurityFilterSeverity(sev)}
+                                style={{
+                                  padding: "4px 10px",
+                                  fontSize: 11,
+                                  fontWeight: 700,
+                                  borderRadius: 4,
+                                  background: securityFilterSeverity === sev ? "var(--text-primary)" : "var(--bg-secondary)",
+                                  color: securityFilterSeverity === sev ? "var(--bg-primary)" : "var(--text-muted)",
+                                  border: "1px solid var(--border)",
+                                  cursor: "pointer",
+                                  fontFamily: "var(--font-mono)",
+                                  transition: "all 0.15s ease",
+                                }}
+                              >
+                                {sev} ({count})
+                              </button>
+                            );
+                          })}
                         </div>
+                      </div>
+
+                      {/* Live Security Search Input */}
+                      <div style={{ position: "relative", marginBottom: 14 }}>
+                        <input
+                          type="text"
+                          value={securitySearchQuery}
+                          onChange={(e) => setSecuritySearchQuery(e.target.value)}
+                          placeholder="🔍 Search findings by title, CWE identifier, file target, or remediation keyword..."
+                          style={{
+                            width: "100%",
+                            padding: "8px 30px 8px 12px",
+                            background: "var(--bg-secondary)",
+                            border: "1px solid var(--border)",
+                            borderRadius: 6,
+                            color: "var(--text-primary)",
+                            fontSize: 12,
+                            outline: "none",
+                            fontFamily: "var(--font-sans)",
+                          }}
+                        />
+                        {securitySearchQuery && (
+                          <button
+                            type="button"
+                            onClick={() => setSecuritySearchQuery("")}
+                            style={{
+                              position: "absolute",
+                              right: 8,
+                              top: "50%",
+                              transform: "translateY(-50%)",
+                              background: "transparent",
+                              border: "none",
+                              color: "var(--text-muted)",
+                              cursor: "pointer",
+                              fontSize: 12,
+                            }}
+                          >
+                            ✕
+                          </button>
+                        )}
                       </div>
 
                       {securityLoading ? (
@@ -6422,6 +6489,17 @@ export default function Home() {
                         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
                           {securityAudit.vulnerabilities
                             .filter((v) => securityFilterSeverity === "ALL" || v.severity === securityFilterSeverity)
+                            .filter((v) => {
+                              if (!securitySearchQuery.trim()) return true;
+                              const q = securitySearchQuery.toLowerCase();
+                              return (
+                                (v.title || "").toLowerCase().includes(q) ||
+                                (v.cwe_id || "").toLowerCase().includes(q) ||
+                                (v.file_target || "").toLowerCase().includes(q) ||
+                                (v.remediation || "").toLowerCase().includes(q) ||
+                                (v.owasp_category || "").toLowerCase().includes(q)
+                              );
+                            })
                             .map((v) => {
                               const badgeBg =
                                 v.severity === "CRITICAL"
@@ -6431,6 +6509,8 @@ export default function Home() {
                                     : "rgba(255, 255, 255, 0.05)";
                               const badgeColor =
                                 v.severity === "CRITICAL" ? "var(--accent-red)" : v.severity === "HIGH" ? "#FB923C" : "var(--text-secondary)";
+                              const cvssScore =
+                                v.severity === "CRITICAL" ? "9.8" : v.severity === "HIGH" ? "7.5" : v.severity === "MEDIUM" ? "5.3" : "3.1";
 
                               return (
                                 <div
@@ -6442,8 +6522,8 @@ export default function Home() {
                                     padding: 14,
                                   }}
                                 >
-                                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 6 }}>
-                                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 6, flexWrap: "wrap", gap: 8 }}>
+                                    <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
                                       <span
                                         style={{
                                           fontSize: 10,
@@ -6457,6 +6537,20 @@ export default function Home() {
                                         }}
                                       >
                                         {v.severity}
+                                      </span>
+                                      <span
+                                        style={{
+                                          fontSize: 10,
+                                          fontWeight: 800,
+                                          padding: "2px 6px",
+                                          borderRadius: 4,
+                                          background: v.severity === "CRITICAL" ? "rgba(248, 113, 113, 0.15)" : "rgba(56, 189, 248, 0.15)",
+                                          color: v.severity === "CRITICAL" ? "var(--accent-red)" : "var(--accent-blue)",
+                                          fontFamily: "var(--font-mono)",
+                                        }}
+                                        title="Estimated Common Vulnerability Scoring System (CVSS v3.1)"
+                                      >
+                                        CVSS {cvssScore}
                                       </span>
                                       <strong style={{ fontSize: 13, color: "var(--text-primary)" }}>{v.title}</strong>
                                     </div>
@@ -6488,8 +6582,30 @@ export default function Home() {
                                     </pre>
                                   )}
 
-                                  <div style={{ fontSize: 12, color: "var(--text-primary)", background: "var(--bg-primary)", borderLeft: "3px solid var(--border-hover)", padding: "8px 12px", borderRadius: 4 }}>
-                                    <strong style={{ color: "var(--text-secondary)" }}>Remediation:</strong> {v.remediation}
+                                  <div style={{ fontSize: 12, color: "var(--text-primary)", background: "var(--bg-primary)", borderLeft: "3px solid var(--border-hover)", padding: "10px 14px", borderRadius: 4, display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12 }}>
+                                    <div style={{ flex: 1 }}>
+                                      <strong style={{ color: "var(--text-secondary)" }}>Remediation:</strong> {v.remediation}
+                                    </div>
+                                    <button
+                                      type="button"
+                                      className="btn btn-secondary btn-sm"
+                                      style={{
+                                        fontSize: 11,
+                                        padding: "3px 8px",
+                                        whiteSpace: "nowrap",
+                                        color: copiedRemediationId === v.id ? "var(--terminal-green)" : undefined,
+                                        borderColor: copiedRemediationId === v.id ? "var(--terminal-green)" : undefined,
+                                      }}
+                                      onClick={() => {
+                                        navigator.clipboard.writeText(v.remediation);
+                                        setCopiedRemediationId(v.id);
+                                        showToast(`Copied remediation for ${v.title}!`, "success");
+                                        setTimeout(() => setCopiedRemediationId(null), 2000);
+                                      }}
+                                      title="Copy code remediation patch to clipboard"
+                                    >
+                                      {copiedRemediationId === v.id ? "✓ Copied" : "📋 Copy Patch"}
+                                    </button>
                                   </div>
                                 </div>
                               );
