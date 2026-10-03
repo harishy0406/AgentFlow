@@ -543,6 +543,7 @@ class LoadTestRequest(BaseModel):
     virtual_users: int = 50
     duration_seconds: int = 10
     ramp_up_seconds: int = 2
+    scenario: Optional[str] = "load"
     payload_body: Optional[Dict[str, Any]] = None
 
 
@@ -564,6 +565,17 @@ class OptimizationRecommendation(BaseModel):
     code_example: Optional[str] = None
 
 
+class SlaEvaluation(BaseModel):
+    status: str  # PASS, BREACHED
+    p95_target_ms: float = 200.0
+    p95_actual_ms: float
+    p95_passed: bool
+    error_rate_target_pct: float = 1.0
+    error_rate_actual_pct: float
+    error_rate_passed: bool
+    summary: str
+
+
 class LoadTestResult(BaseModel):
     id: str
     project_id: UUID
@@ -572,6 +584,7 @@ class LoadTestResult(BaseModel):
     method: str
     virtual_users: int
     duration_seconds: int
+    scenario: Optional[str] = "load"
     total_requests: int
     successful_requests: int
     failed_requests: int
@@ -581,6 +594,8 @@ class LoadTestResult(BaseModel):
     latencies: LatencyPercentiles
     status_distribution: Dict[str, int]
     recommendations: List[OptimizationRecommendation] = []
+    sla_evaluation: Optional[SlaEvaluation] = None
+    k6_script_code: Optional[str] = None
     timestamp: str
 
 

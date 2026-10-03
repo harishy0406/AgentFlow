@@ -9,6 +9,7 @@ and generating actionable database/caching performance optimization recommendati
 import math
 import random
 import uuid
+import json
 from uuid import UUID
 from datetime import datetime, timezone
 from typing import Dict, Any, List, Optional, Union
@@ -16,6 +17,89 @@ from sqlalchemy.orm import Session
 
 from ..models import Project, ArtifactNode
 from .openapi_generator import _extract_routes, _extract_schemas
+
+
+SCENARIO_PRESETS: Dict[str, Dict[str, int]] = {
+    "smoke": {"vu": 5, "duration": 5, "ramp_up": 1},
+    "load": {"vu": 50, "duration": 10, "ramp_up": 2},
+    "stress": {"vu": 200, "duration": 15, "ramp_up": 3},
+    "spike": {"vu": 500, "duration": 10, "ramp_up": 1},
+    "soak": {"vu": 100, "duration": 30, "ramp_up": 5},
+}
+
+
+def _generate_k6_script(
+    project_name: str,
+    endpoint: str,
+    method: str,
+    vus: int,
+    duration: int,
+    ramp_up: int = 2,
+    payload_body: Optional[Dict[str, Any]] = None,
+    scenario: str = "load"
+) -> str:
+    """Generates an executable Grafana k6 script ready for local execution or CI/CD."""
+    payload_str = json.dumps(payload_body or {"benchmark": True, "source": "k6-agentflow"}, indent=2)
+    escaped_payload = payload_str.replace("\n", "\n    ")
+
+    return f"""// ============================================================================
+// Auto-generated Grafana k6 Performance Benchmark Script
+// Project: {project_name}
+// Profile: {scenario.upper()} ({vus} VUs over {duration}s)
+// Run locally: k6 run k6_benchmark.js
+// ============================================================================
+import http from 'k6/http';
+import {{ check, sleep }} from 'k6';
+import {{ Rate, Trend }} from 'k6/metrics';
+
+// Custom metric telemetry
+export const errorRate = new Rate('errors');
+export const latencyTrend = new Trend('api_latency');
+
+export const options = {{
+  stages: [
+    {{ duration: '{ramp_up}s', target: {vus} }}, // Stage 1: Ramp-up
+    {{ duration: '{duration}s', target: {vus} }}, // Stage 2: Sustained load
+    {{ duration: '3s', target: 0 }},  // Stage 3: Graceful teardown
+  ],
+  thresholds: {{
+    http_req_duration: ['p(95)<200', 'p(99)<400'], // 95% latency SLA < 200ms
+    errors: ['rate<0.01'],                         // Strict error threshold < 1%
+  }},
+}};
+
+const BASE_URL = __ENV.TARGET_HOST || 'http://localhost:8000';
+const ENDPOINT = '{endpoint}';
+
+export default function () {{
+  const url = `${{BASE_URL}}${{ENDPOINT}}`;
+  const headers = {{
+    'Content-Type': 'application/json',
+    'User-Agent': 'k6-agentflow-loadtester/1.0',
+    'X-Benchmark-Scenario': '{scenario}',
+  }};
+
+  let res;
+  if ('{method}' === 'POST' || '{method}' === 'PUT') {{
+    const payload = JSON.stringify({escaped_payload});
+    res = http.{method.lower()}(url, payload, {{ headers }});
+  }} else {{
+    res = http.{method.lower()}(url, {{ headers }});
+  }}
+
+  // Record latency telemetry
+  latencyTrend.add(res.timings.duration);
+
+  // Validate SLA checks
+  const success = check(res, {{
+    'status is 200 or 201': (r) => r.status === 200 || r.status === 201,
+    'response under 300ms': (r) => r.timings.duration < 300,
+  }});
+
+  errorRate.add(!success);
+  sleep(0.05); // Paced inter-iteration delay
+}}
+"""
 
 
 def _generate_performance_recommendations(
@@ -80,6 +164,7 @@ def execute_project_load_test(
     virtual_users: int = 50,
     duration_seconds: int = 10,
     ramp_up_seconds: int = 2,
+    scenario: Optional[str] = "load",
     payload_body: Optional[Dict[str, Any]] = None,
     db: Optional[Session] = None
 ) -> Dict[str, Any]:
@@ -107,8 +192,17 @@ def execute_project_load_test(
     schemas = _extract_schemas(db_text)
 
     # Sanitize inputs
-    vu = max(5, min(virtual_users, 2000))
-    duration = max(2, min(duration_seconds, 60))
+    norm_scenario = (scenario or "load").lower().strip()
+    preset = SCENARIO_PRESETS.get(norm_scenario)
+    if preset and virtual_users == 50 and duration_seconds == 10:
+        vu = preset["vu"]
+        duration = preset["duration"]
+        ramp_up = preset["ramp_up"]
+    else:
+        vu = max(5, min(virtual_users, 2000))
+        duration = max(2, min(duration_seconds, 60))
+        ramp_up = max(1, min(ramp_up_seconds, 10))
+
     req_method = method.upper()
 
     # Base characteristics
@@ -165,6 +259,33 @@ def execute_project_load_test(
         schemas=schemas
     )
 
+    # SLA evaluation
+    p95_passed = p95_ms <= 200.0
+    error_rate_passed = error_rate_pct <= 1.0
+    sla_passed = p95_passed and error_rate_passed
+
+    sla_evaluation = {
+        "status": "PASS" if sla_passed else "BREACHED",
+        "p95_target_ms": 200.0,
+        "p95_actual_ms": p95_ms,
+        "p95_passed": p95_passed,
+        "error_rate_target_pct": 1.0,
+        "error_rate_actual_pct": error_rate_pct,
+        "error_rate_passed": error_rate_passed,
+        "summary": "All latency and error rate SLAs satisfied under concurrency." if sla_passed else f"SLA breached: p95 latency {p95_ms}ms (target <=200ms), error rate {error_rate_pct}% (target <=1.0%)."
+    }
+
+    k6_script_code = _generate_k6_script(
+        project_name=project.name,
+        endpoint=target_endpoint,
+        method=req_method,
+        vus=vu,
+        duration=duration,
+        ramp_up=ramp_up,
+        payload_body=payload_body,
+        scenario=norm_scenario
+    )
+
     return {
         "id": str(uuid.uuid4())[:8],
         "project_id": project.id,
@@ -173,6 +294,7 @@ def execute_project_load_test(
         "method": req_method,
         "virtual_users": vu,
         "duration_seconds": duration,
+        "scenario": norm_scenario,
         "total_requests": total_requests,
         "successful_requests": successful_requests,
         "failed_requests": failed_requests,
@@ -190,5 +312,7 @@ def execute_project_load_test(
         },
         "status_distribution": status_dist,
         "recommendations": recommendations,
+        "sla_evaluation": sla_evaluation,
+        "k6_script_code": k6_script_code,
         "timestamp": datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC"),
     }

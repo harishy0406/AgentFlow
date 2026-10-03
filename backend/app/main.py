@@ -1847,6 +1847,7 @@ def trigger_project_load_test(
             virtual_users=payload.virtual_users,
             duration_seconds=payload.duration_seconds,
             ramp_up_seconds=payload.ramp_up_seconds,
+            scenario=payload.scenario,
             payload_body=payload.payload_body,
             db=db
         )

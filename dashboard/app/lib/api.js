@@ -373,6 +373,7 @@ export async function runProjectLoadTest(projectId, {
   virtualUsers = 50,
   durationSeconds = 10,
   rampUpSeconds = 2,
+  scenario = "load",
   payloadBody = null,
 } = {}) {
   return request(`/projects/${projectId}/load-test`, {
@@ -383,6 +384,7 @@ export async function runProjectLoadTest(projectId, {
       virtual_users: virtualUsers,
       duration_seconds: durationSeconds,
       ramp_up_seconds: rampUpSeconds,
+      scenario,
       payload_body: payloadBody,
     }),
   });

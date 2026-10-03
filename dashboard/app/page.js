@@ -206,6 +206,8 @@ export default function Home() {
   const [loadTestMethod, setLoadTestMethod] = useState("GET");
   const [loadTestUsers, setLoadTestUsers] = useState(100);
   const [loadTestDuration, setLoadTestDuration] = useState(10);
+  const [loadTestScenario, setLoadTestScenario] = useState("load");
+  const [loadTestSubTab, setLoadTestSubTab] = useState("metrics"); // 'metrics' | 'k6'
 
   // Multi-Language Client SDK state
   const [sdkCatalog, setSdkCatalog] = useState(null);
@@ -7068,7 +7070,25 @@ export default function Home() {
                         </p>
                       </div>
 
-                      <div style={{ display: "flex", gap: 8 }}>
+                      <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                        {loadTestResult && (
+                          <button
+                            className="btn btn-secondary btn-sm"
+                            onClick={() => {
+                              const blob = new Blob([JSON.stringify(loadTestResult, null, 2)], { type: "application/json" });
+                              const url = URL.createObjectURL(blob);
+                              const a = document.createElement("a");
+                              a.href = url;
+                              a.download = `loadtest_report_${currentProject.name || "project"}.json`;
+                              a.click();
+                              URL.revokeObjectURL(url);
+                              showToast("Exported benchmark JSON report", "success");
+                            }}
+                            title="Export benchmark metrics as JSON"
+                          >
+                            📥 Export (.json)
+                          </button>
+                        )}
                         <button
                           className="btn btn-primary btn-sm"
                           disabled={loadTestingRunning}
@@ -7080,6 +7100,7 @@ export default function Home() {
                                 method: loadTestMethod,
                                 virtualUsers: loadTestUsers,
                                 durationSeconds: loadTestDuration,
+                                scenario: loadTestScenario,
                               });
                               setLoadTestResult(res);
                               showToast(`Benchmark completed: ${res.requests_per_sec.toFixed(0)} RPS @ ${res.latencies.p95_ms}ms p95 latency!`, "success");
@@ -7094,6 +7115,47 @@ export default function Home() {
                           {loadTestingRunning ? "Running Benchmark..." : "Launch Load Test"}
                         </button>
                       </div>
+                    </div>
+
+                    {/* Scenario Presets Quick Bar */}
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14, flexWrap: "wrap" }}>
+                      <span style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase" }}>
+                        Scenario Preset:
+                      </span>
+                      {[
+                        { id: "smoke", label: "⚡ Smoke", vus: 5, sec: 5 },
+                        { id: "load", label: "🚀 Load", vus: 50, sec: 10 },
+                        { id: "stress", label: "🔥 Stress", vus: 200, sec: 15 },
+                        { id: "spike", label: "⚡ Spike", vus: 500, sec: 10 },
+                        { id: "soak", label: "🌊 Soak", vus: 100, sec: 30 },
+                      ].map((sc) => {
+                        const active = loadTestScenario === sc.id;
+                        return (
+                          <button
+                            key={sc.id}
+                            type="button"
+                            onClick={() => {
+                              setLoadTestScenario(sc.id);
+                              setLoadTestUsers(sc.vus);
+                              setLoadTestDuration(sc.sec);
+                              showToast(`Preset: ${sc.label} (${sc.vus} VUs, ${sc.sec}s)`, "info");
+                            }}
+                            style={{
+                              background: active ? "var(--primary, #6366f1)" : "var(--bg-secondary)",
+                              color: active ? "#fff" : "var(--text-secondary)",
+                              border: active ? "1px solid var(--primary, #6366f1)" : "1px solid var(--border)",
+                              borderRadius: 6,
+                              padding: "4px 10px",
+                              fontSize: 11,
+                              fontWeight: active ? 700 : 500,
+                              cursor: "pointer",
+                              transition: "all 0.15s ease",
+                            }}
+                          >
+                            {sc.label} ({sc.vus} VUs)
+                          </button>
+                        );
+                      })}
                     </div>
 
                     {/* Benchmark Configurator Bento */}
@@ -7163,9 +7225,9 @@ export default function Home() {
                         </div>
                         <input
                           type="range"
-                          min="10"
+                          min="5"
                           max="1000"
-                          step="10"
+                          step="5"
                           value={loadTestUsers}
                           onChange={(e) => setLoadTestUsers(Number(e.target.value))}
                           style={{ width: "100%", accentColor: "var(--terminal-green)" }}
@@ -7184,7 +7246,7 @@ export default function Home() {
                         <input
                           type="range"
                           min="3"
-                          max="30"
+                          max="60"
                           step="1"
                           value={loadTestDuration}
                           onChange={(e) => setLoadTestDuration(Number(e.target.value))}
@@ -7196,86 +7258,221 @@ export default function Home() {
                     {/* Benchmark Results Display */}
                     {loadTestResult ? (
                       <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-                        {/* KPI Metrics Grid */}
-                        <div
-                          style={{
-                            display: "grid",
-                            gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
-                            gap: 12,
-                          }}
-                        >
-                          <div style={{ background: "var(--bg-secondary)", border: "1px solid var(--border)", borderRadius: 8, padding: 14 }}>
-                            <div style={{ fontSize: 11, color: "var(--text-muted)", textTransform: "uppercase" }}>THROUGHPUT (RPS)</div>
-                            <div style={{ fontSize: 24, fontWeight: 900, color: "var(--terminal-green)", marginTop: 2, fontFamily: "var(--font-display)" }}>
-                              {loadTestResult.requests_per_sec.toFixed(1)} req/s
-                            </div>
-                            <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 4 }}>
-                              {loadTestResult.total_requests} total requests
-                            </div>
-                          </div>
-
-                          <div style={{ background: "var(--bg-secondary)", border: "1px solid var(--border)", borderRadius: 8, padding: 14 }}>
-                            <div style={{ fontSize: 11, color: "var(--text-muted)", textTransform: "uppercase" }}>P95 LATENCY</div>
-                            <div style={{ fontSize: 24, fontWeight: 900, color: loadTestResult.latencies.p95_ms < 50 ? "var(--terminal-green)" : loadTestResult.latencies.p95_ms < 150 ? "var(--text-primary)" : "var(--accent-red)", marginTop: 2, fontFamily: "var(--font-display)" }}>
-                              {loadTestResult.latencies.p95_ms.toFixed(1)} ms
-                            </div>
-                            <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 4 }}>
-                              95% of users faster
-                            </div>
-                          </div>
-
-                          <div style={{ background: "var(--bg-secondary)", border: "1px solid var(--border)", borderRadius: 8, padding: 14 }}>
-                            <div style={{ fontSize: 11, color: "var(--text-muted)", textTransform: "uppercase" }}>ERROR RATE</div>
-                            <div style={{ fontSize: 24, fontWeight: 900, color: loadTestResult.error_rate_pct === 0 ? "var(--terminal-green)" : "var(--accent-red)", marginTop: 2, fontFamily: "var(--font-display)" }}>
-                              {loadTestResult.error_rate_pct}%
-                            </div>
-                            <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 4 }}>
-                              {loadTestResult.failed_requests} failed requests
-                            </div>
-                          </div>
-
-                          <div style={{ background: "var(--bg-secondary)", border: "1px solid var(--border)", borderRadius: 8, padding: 14 }}>
-                            <div style={{ fontSize: 11, color: "var(--text-muted)", textTransform: "uppercase" }}>BANDWIDTH TRANSFER</div>
-                            <div style={{ fontSize: 24, fontWeight: 900, color: "var(--text-primary)", marginTop: 2, fontFamily: "var(--font-display)" }}>
-                              {loadTestResult.throughput_mb_per_sec.toFixed(2)} MB/s
-                            </div>
-                            <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 4 }}>
-                              Payload wire transfer
-                            </div>
-                          </div>
+                        {/* Sub-tab switcher: Metrics vs k6 Script */}
+                        <div style={{ display: "flex", gap: 8, borderBottom: "1px solid var(--border)", paddingBottom: 10 }}>
+                          <button
+                            type="button"
+                            onClick={() => setLoadTestSubTab("metrics")}
+                            style={{
+                              background: loadTestSubTab === "metrics" ? "var(--bg-secondary)" : "transparent",
+                              color: loadTestSubTab === "metrics" ? "var(--text-primary)" : "var(--text-muted)",
+                              border: loadTestSubTab === "metrics" ? "1px solid var(--border)" : "1px solid transparent",
+                              borderRadius: 6,
+                              padding: "6px 14px",
+                              fontSize: 12,
+                              fontWeight: 700,
+                              cursor: "pointer",
+                            }}
+                          >
+                            📊 Performance Telemetry &amp; SLAs
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setLoadTestSubTab("k6")}
+                            style={{
+                              background: loadTestSubTab === "k6" ? "var(--bg-secondary)" : "transparent",
+                              color: loadTestSubTab === "k6" ? "var(--text-primary)" : "var(--text-muted)",
+                              border: loadTestSubTab === "k6" ? "1px solid var(--border)" : "1px solid transparent",
+                              borderRadius: 6,
+                              padding: "6px 14px",
+                              fontSize: 12,
+                              fontWeight: 700,
+                              cursor: "pointer",
+                            }}
+                          >
+                            ⚡ Executable k6 Script (k6.js)
+                          </button>
                         </div>
 
-                        {/* Latency Percentiles Detailed Card */}
-                        <div
-                          style={{
-                            background: "var(--bg-card)",
-                            border: "1px solid var(--border)",
-                            borderRadius: 8,
-                            padding: 16,
-                          }}
-                        >
-                          <div style={{ fontSize: 13, fontWeight: 700, color: "var(--text-primary)", marginBottom: 12 }}>
-                            Latency Distribution &amp; Tail Percentiles
+                        {loadTestSubTab === "k6" ? (
+                          <div style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 8, padding: 16 }}>
+                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12, flexWrap: "wrap", gap: 8 }}>
+                              <div style={{ fontSize: 13, fontWeight: 700, color: "var(--text-primary)", display: "flex", alignItems: "center", gap: 8 }}>
+                                <span>Grafana k6 Executable Test Runner</span>
+                                <code style={{ fontSize: 11, background: "rgba(255,255,255,0.06)", padding: "2px 6px", borderRadius: 4, color: "#818cf8" }}>
+                                  k6 run k6_benchmark.js
+                                </code>
+                              </div>
+                              <div style={{ display: "flex", gap: 8 }}>
+                                <button
+                                  className="btn btn-secondary btn-sm"
+                                  onClick={() => {
+                                    if (loadTestResult.k6_script_code) {
+                                      navigator.clipboard.writeText(loadTestResult.k6_script_code);
+                                      showToast("Copied k6 script to clipboard!", "success");
+                                    }
+                                  }}
+                                >
+                                  📋 Copy k6 Script
+                                </button>
+                                <button
+                                  className="btn btn-primary btn-sm"
+                                  onClick={() => {
+                                    if (loadTestResult.k6_script_code) {
+                                      const blob = new Blob([loadTestResult.k6_script_code], { type: "application/javascript" });
+                                      const url = URL.createObjectURL(blob);
+                                      const a = document.createElement("a");
+                                      a.href = url;
+                                      a.download = `k6_benchmark_${currentProject.name || "agentflow"}.js`;
+                                      a.click();
+                                      URL.revokeObjectURL(url);
+                                      showToast("Downloaded k6_benchmark.js", "success");
+                                    }
+                                  }}
+                                >
+                                  📥 Download k6.js
+                                </button>
+                              </div>
+                            </div>
+                            <pre style={{
+                              background: "#050505",
+                              border: "1px solid var(--border)",
+                              borderRadius: 8,
+                              padding: 16,
+                              fontSize: 12,
+                              fontFamily: "var(--font-mono)",
+                              color: "var(--terminal-green)",
+                              overflowX: "auto",
+                              whiteSpace: "pre-wrap",
+                              margin: 0,
+                              maxHeight: "440px"
+                            }}>
+                              {loadTestResult.k6_script_code}
+                            </pre>
                           </div>
-                          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(110px, 1fr))", gap: 10 }}>
-                            {[
-                              { label: "Minimum", val: loadTestResult.latencies.min_ms, color: "var(--terminal-green)" },
-                              { label: "Average", val: loadTestResult.latencies.avg_ms, color: "var(--text-primary)" },
-                              { label: "p50 (Median)", val: loadTestResult.latencies.p50_ms, color: "var(--text-primary)" },
-                              { label: "p90", val: loadTestResult.latencies.p90_ms, color: "var(--text-primary)" },
-                              { label: "p95", val: loadTestResult.latencies.p95_ms, color: "var(--text-secondary)" },
-                              { label: "p99 (Tail)", val: loadTestResult.latencies.p99_ms, color: "#FB923C" },
-                              { label: "Maximum", val: loadTestResult.latencies.max_ms, color: "var(--accent-red)" },
-                            ].map((p, idx) => (
-                              <div key={idx} style={{ background: "var(--bg-secondary)", padding: "8px 10px", borderRadius: 6, border: "1px solid var(--border)" }}>
-                                <div style={{ fontSize: 10, color: "var(--text-muted)", textTransform: "uppercase" }}>{p.label}</div>
-                                <div style={{ fontSize: 15, fontWeight: 800, color: p.color, fontFamily: "var(--font-mono)", marginTop: 2 }}>
-                                  {p.val} ms
+                        ) : (
+                          <>
+                            {/* SLA Compliance Banner */}
+                            {loadTestResult.sla_evaluation && (
+                              <div
+                                style={{
+                                  background: loadTestResult.sla_evaluation.status === "PASS" ? "rgba(16, 185, 129, 0.08)" : "rgba(239, 68, 68, 0.08)",
+                                  border: `1px solid ${loadTestResult.sla_evaluation.status === "PASS" ? "rgba(16, 185, 129, 0.3)" : "rgba(239, 68, 68, 0.3)"}`,
+                                  borderRadius: 8,
+                                  padding: "12px 16px",
+                                  display: "flex",
+                                  justifyContent: "space-between",
+                                  alignItems: "center",
+                                  flexWrap: "wrap",
+                                  gap: 12,
+                                }}
+                              >
+                                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                                  <span
+                                    style={{
+                                      fontSize: 11,
+                                      fontWeight: 800,
+                                      padding: "3px 8px",
+                                      borderRadius: 4,
+                                      background: loadTestResult.sla_evaluation.status === "PASS" ? "var(--terminal-green)" : "var(--accent-red)",
+                                      color: "#000",
+                                    }}
+                                  >
+                                    {loadTestResult.sla_evaluation.status === "PASS" ? "✓ SLA PASS" : "⚠️ SLA BREACHED"}
+                                  </span>
+                                  <span style={{ fontSize: 13, color: "var(--text-primary)", fontWeight: 600 }}>
+                                    {loadTestResult.sla_evaluation.summary}
+                                  </span>
+                                </div>
+                                <div style={{ display: "flex", gap: 14, fontSize: 12, color: "var(--text-muted)" }}>
+                                  <span>p95 Target: <strong>&le; 200ms</strong> ({loadTestResult.latencies.p95_ms}ms {loadTestResult.sla_evaluation.p95_passed ? "✓" : "✗"})</span>
+                                  <span>Error Rate Target: <strong>&le; 1.0%</strong> ({loadTestResult.error_rate_pct}% {loadTestResult.sla_evaluation.error_rate_passed ? "✓" : "✗"})</span>
                                 </div>
                               </div>
-                            ))}
-                          </div>
-                        </div>
+                            )}
+
+                            {/* KPI Metrics Grid */}
+                            <div
+                              style={{
+                                display: "grid",
+                                gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
+                                gap: 12,
+                              }}
+                            >
+                              <div style={{ background: "var(--bg-secondary)", border: "1px solid var(--border)", borderRadius: 8, padding: 14 }}>
+                                <div style={{ fontSize: 11, color: "var(--text-muted)", textTransform: "uppercase" }}>THROUGHPUT (RPS)</div>
+                                <div style={{ fontSize: 24, fontWeight: 900, color: "var(--terminal-green)", marginTop: 2, fontFamily: "var(--font-display)" }}>
+                                  {loadTestResult.requests_per_sec.toFixed(1)} req/s
+                                </div>
+                                <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 4 }}>
+                                  {loadTestResult.total_requests} total requests
+                                </div>
+                              </div>
+
+                              <div style={{ background: "var(--bg-secondary)", border: "1px solid var(--border)", borderRadius: 8, padding: 14 }}>
+                                <div style={{ fontSize: 11, color: "var(--text-muted)", textTransform: "uppercase" }}>P95 LATENCY</div>
+                                <div style={{ fontSize: 24, fontWeight: 900, color: loadTestResult.latencies.p95_ms < 50 ? "var(--terminal-green)" : loadTestResult.latencies.p95_ms < 150 ? "var(--text-primary)" : "var(--accent-red)", marginTop: 2, fontFamily: "var(--font-display)" }}>
+                                  {loadTestResult.latencies.p95_ms.toFixed(1)} ms
+                                </div>
+                                <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 4 }}>
+                                  95% of users faster
+                                </div>
+                              </div>
+
+                              <div style={{ background: "var(--bg-secondary)", border: "1px solid var(--border)", borderRadius: 8, padding: 14 }}>
+                                <div style={{ fontSize: 11, color: "var(--text-muted)", textTransform: "uppercase" }}>ERROR RATE</div>
+                                <div style={{ fontSize: 24, fontWeight: 900, color: loadTestResult.error_rate_pct === 0 ? "var(--terminal-green)" : "var(--accent-red)", marginTop: 2, fontFamily: "var(--font-display)" }}>
+                                  {loadTestResult.error_rate_pct}%
+                                </div>
+                                <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 4 }}>
+                                  {loadTestResult.failed_requests} failed requests
+                                </div>
+                              </div>
+
+                              <div style={{ background: "var(--bg-secondary)", border: "1px solid var(--border)", borderRadius: 8, padding: 14 }}>
+                                <div style={{ fontSize: 11, color: "var(--text-muted)", textTransform: "uppercase" }}>BANDWIDTH TRANSFER</div>
+                                <div style={{ fontSize: 24, fontWeight: 900, color: "var(--text-primary)", marginTop: 2, fontFamily: "var(--font-display)" }}>
+                                  {loadTestResult.throughput_mb_per_sec.toFixed(2)} MB/s
+                                </div>
+                                <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 4 }}>
+                                  Payload wire transfer
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Latency Percentiles Detailed Card */}
+                            <div
+                              style={{
+                                background: "var(--bg-card)",
+                                border: "1px solid var(--border)",
+                                borderRadius: 8,
+                                padding: 16,
+                              }}
+                            >
+                              <div style={{ fontSize: 13, fontWeight: 700, color: "var(--text-primary)", marginBottom: 12 }}>
+                                Latency Distribution &amp; Tail Percentiles
+                              </div>
+                              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(110px, 1fr))", gap: 10 }}>
+                                {[
+                                  { label: "Minimum", val: loadTestResult.latencies.min_ms, color: "var(--terminal-green)" },
+                                  { label: "Average", val: loadTestResult.latencies.avg_ms, color: "var(--text-primary)" },
+                                  { label: "p50 (Median)", val: loadTestResult.latencies.p50_ms, color: "var(--text-primary)" },
+                                  { label: "p90", val: loadTestResult.latencies.p90_ms, color: "var(--text-primary)" },
+                                  { label: "p95", val: loadTestResult.latencies.p95_ms, color: "var(--text-secondary)" },
+                                  { label: "p99 (Tail)", val: loadTestResult.latencies.p99_ms, color: "#FB923C" },
+                                  { label: "Maximum", val: loadTestResult.latencies.max_ms, color: "var(--accent-red)" },
+                                ].map((p, idx) => (
+                                  <div key={idx} style={{ background: "var(--bg-secondary)", padding: "8px 10px", borderRadius: 6, border: "1px solid var(--border)" }}>
+                                    <div style={{ fontSize: 10, color: "var(--text-muted)", textTransform: "uppercase" }}>{p.label}</div>
+                                    <div style={{ fontSize: 15, fontWeight: 800, color: p.color, fontFamily: "var(--font-mono)", marginTop: 2 }}>
+                                      {p.val} ms
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          </>
+                        )}
 
                         {/* AI Performance Tuning Recommendations */}
                         {loadTestResult.recommendations?.length > 0 && (
