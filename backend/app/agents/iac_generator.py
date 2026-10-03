@@ -596,6 +596,342 @@ ALLOWED_ORIGINS=http://localhost:3000,http://127.0.0.1:3000
     ]
 
 
+def _generate_terraform_azure(project_slug: str, app_name: str) -> List[IacFile]:
+    main_tf = f"""terraform {{
+  required_version = ">= 1.5.0"
+  required_providers {{
+    azurerm = {{
+      source  = "hashicorp/azurerm"
+      version = "~> 3.90"
+    }}
+  }}
+  backend "azurerm" {{
+    resource_group_name  = "{project_slug}-tfstate-rg"
+    storage_account_name = "{project_slug.replace('-', '')[:18]}tf"
+    container_name       = "tfstate"
+    key                  = "production.terraform.tfstate"
+  }}
+}}
+
+provider "azurerm" {{
+  features {{}}
+}}
+
+# Resource Group
+resource "azurerm_resource_group" "rg" {{
+  name     = "{project_slug}-rg"
+  location = var.location
+  tags = {{
+    Application = "{app_name}"
+    Environment = var.environment
+    ManagedBy   = "AgentFlow-IaC"
+  }}
+}}
+
+# Virtual Network & Subnets
+resource "azurerm_virtual_network" "vnet" {{
+  name                = "{project_slug}-vnet"
+  location            = azurerm_resource_group.rg.location
+  resource_group_name = azurerm_resource_group.rg.name
+  address_space       = ["10.0.0.0/16"]
+}}
+
+resource "azurerm_subnet" "aks_subnet" {{
+  name                 = "aks-subnet"
+  resource_group_name  = azurerm_resource_group.rg.name
+  virtual_network_name = azurerm_virtual_network.vnet.name
+  address_prefixes     = ["10.0.1.0/24"]
+}}
+
+resource "azurerm_subnet" "db_subnet" {{
+  name                 = "db-subnet"
+  resource_group_name  = azurerm_resource_group.rg.name
+  virtual_network_name = azurerm_virtual_network.vnet.name
+  address_prefixes     = ["10.0.2.0/24"]
+  delegation {{
+    name = "fs-delegation"
+    service_delegation {{
+      name    = "Microsoft.DBforPostgreSQL/flexibleServers"
+      actions = ["Microsoft.Network/virtualNetworks/subnets/join/action"]
+    }}
+  }}
+}}
+
+# Azure Database for PostgreSQL Flexible Server
+resource "azurerm_postgresql_flexible_server" "postgres" {{
+  name                   = "{project_slug}-psql"
+  resource_group_name    = azurerm_resource_group.rg.name
+  location               = azurerm_resource_group.rg.location
+  version                = "16"
+  delegated_subnet_id    = azurerm_subnet.db_subnet.id
+  private_dns_zone_id    = azurerm_private_dns_zone.dns.id
+  administrator_login    = "pgadmin"
+  administrator_password = var.db_admin_password
+  zone                   = "1"
+
+  storage_mb            = 32768
+  sku_name              = "B_Standard_B1ms"
+  backup_retention_days = 7
+
+  depends_on = [azurerm_private_dns_zone_virtual_network_link.dns_link]
+}}
+
+resource "azurerm_private_dns_zone" "dns" {{
+  name                = "{project_slug}.postgres.database.azure.com"
+  resource_group_name = azurerm_resource_group.rg.name
+}}
+
+resource "azurerm_private_dns_zone_virtual_network_link" "dns_link" {{
+  name                  = "{project_slug}-dns-link"
+  private_dns_zone_name = azurerm_private_dns_zone.dns.name
+  virtual_network_id    = azurerm_virtual_network.vnet.id
+  resource_group_name   = azurerm_resource_group.rg.name
+}}
+
+# Azure Kubernetes Service (AKS) Managed Cluster
+resource "azurerm_kubernetes_cluster" "aks" {{
+  name                = "{project_slug}-aks"
+  location            = azurerm_resource_group.rg.location
+  resource_group_name = azurerm_resource_group.rg.name
+  dns_prefix          = "{project_slug}-k8s"
+
+  default_node_pool {{
+    name           = "default"
+    node_count     = var.node_count
+    vm_size        = "Standard_D2s_v3"
+    vnet_subnet_id = azurerm_subnet.aks_subnet.id
+  }}
+
+  identity {{
+    type = "SystemAssigned"
+  }}
+
+  network_profile {{
+    network_plugin    = "azure"
+    load_balancer_sku = "standard"
+  }}
+}}
+"""
+
+    variables_tf = f"""variable "location" {{
+  description = "Azure region for all resources"
+  type        = string
+  default     = "eastus"
+}}
+
+variable "environment" {{
+  description = "Deployment target environment (production, staging)"
+  type        = string
+  default     = "production"
+}}
+
+variable "db_admin_password" {{
+  description = "Administrator password for PostgreSQL Flexible Server"
+  type        = string
+  sensitive   = true
+}}
+
+variable "node_count" {{
+  description = "Number of worker nodes in the AKS default node pool"
+  type        = number
+  default     = 2
+}}
+"""
+
+    outputs_tf = f"""output "resource_group_name" {{
+  value       = azurerm_resource_group.rg.name
+  description = "Azure Resource Group hosting the application stack"
+}}
+
+output "aks_cluster_name" {{
+  value       = azurerm_kubernetes_cluster.aks.name
+  description = "AKS Managed Cluster Name"
+}}
+
+output "postgres_fqdn" {{
+  value       = azurerm_postgresql_flexible_server.postgres.fqdn
+  description = "Private FQDN endpoint for PostgreSQL database"
+}}
+
+output "kube_config_command" {{
+  value       = "az aks get-credentials --resource-group ${{azurerm_resource_group.rg.name}} --name ${{azurerm_kubernetes_cluster.aks.name}}"
+  description = "CLI command to fetch kubeconfig credentials"
+}}
+"""
+
+    return [
+        IacFile(path="terraform/azure/main.tf", content=main_tf, provider="azure", description="Azure Resource Group, AKS, VNet, and PostgreSQL Flexible Server"),
+        IacFile(path="terraform/azure/variables.tf", content=variables_tf, provider="azure", description="Configurable Azure parameters and secrets"),
+        IacFile(path="terraform/azure/outputs.tf", content=outputs_tf, provider="azure", description="Exported Azure endpoints, FQDNs, and kubeconfig credentials"),
+    ]
+
+
+def _generate_docker_compose_production(project_slug: str, app_name: str) -> List[IacFile]:
+    compose_yml = f"""version: '3.8'
+
+services:
+  # ===========================================================================
+  # Application Gateway & FastAPI/Node Backend Runtime
+  # ===========================================================================
+  app:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.prod
+    image: {project_slug}:latest
+    container_name: {project_slug}_app
+    restart: always
+    environment:
+      - ENVIRONMENT=production
+      - DATABASE_URL=postgresql://appuser:secure_pg_password@db:5432/{project_slug.replace('-', '_')}
+      - REDIS_URL=redis://:secure_redis_pass@redis:6379/0
+      - PROMETHEUS_METRICS=true
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - frontend_net
+      - backend_net
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 2048M
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8000/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+
+  # ===========================================================================
+  # Primary PostgreSQL 16 Database
+  # ===========================================================================
+  db:
+    image: postgres:16-alpine
+    container_name: {project_slug}_db
+    restart: always
+    environment:
+      POSTGRES_USER: appuser
+      POSTGRES_PASSWORD: secure_pg_password
+      POSTGRES_DB: {project_slug.replace('-', '_')}
+      PGDATA: /var/lib/postgresql/data/pgdata
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - backend_net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U appuser -d {project_slug.replace('-', '_')}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ===========================================================================
+  # Redis 7 In-Memory Cache & Session Store
+  # ===========================================================================
+  redis:
+    image: redis:7-alpine
+    container_name: {project_slug}_redis
+    restart: always
+    command: redis-server --requirepass secure_redis_pass --appendonly yes
+    volumes:
+      - redisdata:/data
+    networks:
+      - backend_net
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "secure_redis_pass", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ===========================================================================
+  # Prometheus Telemetry Metrics Scraper
+  # ===========================================================================
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: {project_slug}_prometheus
+    restart: unless-stopped
+    volumes:
+      - ./docker/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - promdata:/prometheus
+    ports:
+      - "9090:9090"
+    networks:
+      - backend_net
+
+  # ===========================================================================
+  # Grafana APM & Realtime Observability Dashboards
+  # ===========================================================================
+  grafana:
+    image: grafana/grafana:latest
+    container_name: {project_slug}_grafana
+    restart: unless-stopped
+    ports:
+      - "3001:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin_flow_secret
+      - GF_USERS_ALLOW_SIGN_UP=false
+    volumes:
+      - grafanadata:/var/lib/grafana
+    networks:
+      - frontend_net
+      - backend_net
+
+volumes:
+  pgdata:
+  redisdata:
+  promdata:
+  grafanadata:
+
+networks:
+  frontend_net:
+    driver: bridge
+  backend_net:
+    driver: bridge
+"""
+
+    dockerfile_prod = f"""# Multi-stage production build for {app_name}
+FROM python:3.11-slim as builder
+WORKDIR /app
+RUN apt-get update && apt-get install -y --no-install-recommends gcc libpq-dev && rm -rf /var/lib/apt/lists/*
+COPY requirements.txt .
+RUN pip install --no-cache-dir --user -r requirements.txt
+
+FROM python:3.11-slim as runner
+WORKDIR /app
+RUN groupadd -r appgroup && useradd -r -g appgroup appuser
+COPY --from=builder /root/.local /home/appuser/.local
+COPY . /app
+ENV PATH=/home/appuser/.local/bin:$PATH
+USER appuser
+EXPOSE 8000
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "4"]
+"""
+
+    prometheus_yml = f"""global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: '{project_slug}-service'
+    metrics_path: '/metrics'
+    static_configs:
+      - targets: ['app:8000']
+"""
+
+    return [
+        IacFile(path="docker-compose.prod.yml", content=compose_yml, provider="docker-compose", description="Multi-container production stack with PostgreSQL, Redis, Prometheus, and Grafana"),
+        IacFile(path="docker/Dockerfile.prod", content=dockerfile_prod, provider="docker-compose", description="Multi-stage, security-hardened non-root production Dockerfile"),
+        IacFile(path="docker/prometheus.yml", content=prometheus_yml, provider="docker-compose", description="Prometheus scraper configuration for application runtime metrics"),
+    ]
+
+
 def generate_project_iac_bundle(project_id: str, provider: str, db: Session) -> IacBundleOut:
     target_id = UUID(project_id) if isinstance(project_id, str) else project_id
     project = db.query(Project).filter(Project.id == target_id).first()
@@ -625,6 +961,15 @@ def generate_project_iac_bundle(project_id: str, provider: str, db: Session) -> 
             "4. Run `terraform init` to download Google provider plugins.",
             "5. Run `terraform apply -var='project_id=YOUR_PROJECT_ID' -var='db_password=YOUR_PASSWORD'`."
         ]
+    elif norm_provider == "azure":
+        files = _generate_terraform_azure(project_slug, app_name)
+        steps = [
+            "1. Authenticate with Azure CLI: `az login`.",
+            "2. Set subscription: `az account set --subscription 'YOUR_SUBSCRIPTION_ID'`.",
+            "3. Navigate to `terraform/azure` directory.",
+            "4. Run `terraform init` to download azurerm provider plugins.",
+            "5. Run `terraform apply -var='db_admin_password=YOUR_PASSWORD'` to provision AKS and PostgreSQL."
+        ]
     elif norm_provider in ("k8s", "kubernetes"):
         files = _generate_kubernetes_manifests(project_slug, app_name)
         norm_provider = "kubernetes"
@@ -635,6 +980,16 @@ def generate_project_iac_bundle(project_id: str, provider: str, db: Session) -> 
             "4. Apply manifests: `kubectl apply -f k8s/ -n " + project_slug + "`.",
             "5. Verify rollout: `kubectl rollout status deployment/" + project_slug + "-deployment -n " + project_slug + "`."
         ]
+    elif norm_provider in ("docker-compose", "docker", "compose"):
+        files = _generate_docker_compose_production(project_slug, app_name)
+        norm_provider = "docker-compose"
+        steps = [
+            "1. Review `docker-compose.prod.yml` and inject production environment variables.",
+            "2. Build the multi-stage image: `docker compose -f docker-compose.prod.yml build`.",
+            "3. Spin up full stack: `docker compose -f docker-compose.prod.yml up -d`.",
+            "4. Verify health checks: `docker compose -f docker-compose.prod.yml ps`.",
+            "5. Inspect services: API on :8000, Prometheus on :9090, Grafana APM on :3001."
+        ]
     elif norm_provider == "env":
         files = _generate_env_matrix(project_slug, app_name)
         steps = [
@@ -643,7 +998,7 @@ def generate_project_iac_bundle(project_id: str, provider: str, db: Session) -> 
             "3. Inject into your container runtime or orchestration secret manager."
         ]
     else:
-        raise ValueError(f"Unsupported IaC provider: '{provider}'. Must be 'aws', 'gcp', 'kubernetes', or 'env'")
+        raise ValueError(f"Unsupported IaC provider: '{provider}'. Must be 'aws', 'gcp', 'azure', 'kubernetes', 'docker-compose', or 'env'")
 
     return IacBundleOut(
         project_id=project.id,
@@ -660,7 +1015,7 @@ def generate_all_iac_packages(project_id: str, db: Session) -> IacCatalogOut:
     if not project:
         raise ValueError(f"Project with ID '{project_id}' not found")
 
-    providers = ["aws", "gcp", "kubernetes", "env"]
+    providers = ["aws", "gcp", "azure", "kubernetes", "docker-compose", "env"]
     packages: Dict[str, IacBundleOut] = {}
 
     for prov in providers:

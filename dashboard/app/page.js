@@ -8768,7 +8768,9 @@ export default function Home() {
                             {[
                               { id: "aws", name: "AWS (ECS Fargate + RDS)" },
                               { id: "gcp", name: "Google Cloud (Cloud Run)" },
+                              { id: "azure", name: "Azure (AKS + Postgres)" },
                               { id: "kubernetes", name: "Kubernetes Manifests" },
+                              { id: "docker-compose", name: "Docker Compose (Prod Stack)" },
                               { id: "env", name: "Environment Matrix" },
                             ].map((prov) => {
                               const isSelected = selectedIacProvider === prov.id;
@@ -8804,7 +8806,25 @@ export default function Home() {
                             })}
                           </div>
 
-                          <div style={{ display: "flex", gap: 8 }}>
+                          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                            {iacCatalog && (
+                              <button
+                                className="btn btn-secondary btn-sm"
+                                onClick={() => {
+                                  const blob = new Blob([JSON.stringify(iacCatalog, null, 2)], { type: "application/json" });
+                                  const url = URL.createObjectURL(blob);
+                                  const a = document.createElement("a");
+                                  a.href = url;
+                                  a.download = `iac_bundle_${currentProject.name || "cloudops"}.json`;
+                                  a.click();
+                                  URL.revokeObjectURL(url);
+                                  showToast("Exported multi-cloud IaC catalog bundle", "success");
+                                }}
+                                title="Export complete multi-cloud infrastructure bundle"
+                              >
+                                📥 Export IaC (.json)
+                              </button>
+                            )}
                             <button
                               className="btn btn-primary btn-sm"
                               disabled={iacLoading}
@@ -8841,8 +8861,21 @@ export default function Home() {
                               marginBottom: 20,
                             }}
                           >
-                            <div style={{ fontSize: 11, textTransform: "uppercase", color: "var(--terminal-green)", fontWeight: 700, marginBottom: 6 }}>
-                              Production Deployment Execution Plan
+                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+                              <div style={{ fontSize: 11, textTransform: "uppercase", color: "var(--terminal-green)", fontWeight: 700 }}>
+                                Production Deployment Execution Plan ({selectedIacProvider.toUpperCase()})
+                              </div>
+                              <button
+                                className="btn btn-secondary btn-sm"
+                                style={{ fontSize: 11, padding: "2px 8px" }}
+                                onClick={() => {
+                                  const text = iacCatalog.packages[selectedIacProvider].deployment_steps.join("\n");
+                                  navigator.clipboard.writeText(text);
+                                  showToast("Copied deployment execution plan!", "success");
+                                }}
+                              >
+                                📋 Copy Steps
+                              </button>
                             </div>
                             <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
                               {iacCatalog.packages[selectedIacProvider].deployment_steps.map((step, sIdx) => (
