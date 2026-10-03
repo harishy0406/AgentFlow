@@ -268,6 +268,249 @@ async def receive_webhook(
 '''
 
 
+def _generate_webhook_consumer_node(project_slug: str, events: List[Dict[str, Any]]) -> str:
+    """Generates Node.js Express webhook consumer with timingSafeEqual and replay protection."""
+    return f'''/**
+ * {project_slug.upper()} Inbound Webhook Consumer Handler (Node.js / Express)
+ * Implements crypto.timingSafeEqual HMAC-SHA256 validation, replay-attack prevention,
+ * and memory-safe idempotency tracking.
+ */
+
+const express = require('express');
+const crypto = require('crypto');
+
+const app = express();
+const WEBHOOK_SECRET = process.env.WEBHOOK_SECRET || "whsec_agentflow_default_secret_key";
+const PROCESSED_DELIVERIES = new Set(); // In production, back with Redis (SET key 1 EX 86400)
+
+// Capture raw body buffer for authentic cryptographic HMAC verification
+app.use(express.json({{
+  verify: (req, res, buf) => {{
+    req.rawBody = buf;
+  }}
+}}));
+
+function verifyWebhookSignature(rawBody, signatureHeader, timestampHeader) {{
+  if (!rawBody || !signatureHeader || !timestampHeader) return false;
+
+  // 1. Replay attack window check (5 minutes = 300s)
+  const timestamp = parseInt(timestampHeader, 10);
+  const now = Math.floor(Date.now() / 1000);
+  if (isNaN(timestamp) || Math.abs(now - timestamp) > 300) {{
+    return false;
+  }}
+
+  if (!signatureHeader.startsWith('sha256=')) return false;
+  const providedSignature = signatureHeader.slice(7);
+
+  // 2. Compute expected HMAC-SHA256
+  const computedSignature = crypto
+    .createHmac('sha256', WEBHOOK_SECRET)
+    .update(rawBody)
+    .digest('hex');
+
+  // 3. Timing-safe comparison to prevent side-channel timing attacks
+  const expectedBuf = Buffer.from(providedSignature, 'hex');
+  const computedBuf = Buffer.from(computedSignature, 'hex');
+  if (expectedBuf.length !== computedBuf.length) return false;
+
+  return crypto.timingSafeEqual(expectedBuf, computedBuf);
+}}
+
+app.post('/webhooks/listener', (req, res) => {{
+  const deliveryId = req.header('X-AgentFlow-Delivery');
+  const eventType = req.header('X-AgentFlow-Event');
+  const timestamp = req.header('X-AgentFlow-Timestamp');
+  const signature = req.header('X-AgentFlow-Signature-256');
+
+  // Verify HMAC signature
+  if (!verifyWebhookSignature(req.rawBody, signature, timestamp)) {{
+    return res.status(401).json({{
+      error: 'Invalid signature or expired timestamp',
+      status: 401
+    }});
+  }}
+
+  // Idempotency de-duplication
+  if (deliveryId && PROCESSED_DELIVERIES.has(deliveryId)) {{
+    return res.status(200).json({{
+      status: 'duplicate_ignored',
+      delivery_id: deliveryId
+    }});
+  }}
+  if (deliveryId) PROCESSED_DELIVERIES.add(deliveryId);
+
+  // Dispatch domain event handling
+  console.log(`[Webhook Received] Event: ${{eventType}}, Delivery: ${{deliveryId}}`);
+  return res.status(200).json({{
+    status: 'processed',
+    event: eventType,
+    delivery_id: deliveryId
+  }});
+}});
+
+const PORT = process.env.PORT || 8000;
+app.listen(PORT, () => {{
+  console.log(`{project_slug.capitalize()} webhook listener running on port ${{PORT}}`);
+}});
+'''
+
+
+def _generate_webhook_consumer_go(project_slug: str, events: List[Dict[str, Any]]) -> str:
+    """Generates Go net/http webhook consumer with hmac.Equal and replay prevention."""
+    return f'''package main
+
+import (
+	"crypto/hmac"
+	"crypto/sha256"
+	"encoding/hex"
+	"encoding/json"
+	"fmt"
+	"io"
+	"log"
+	"math"
+	"net/http"
+	"strconv"
+	"strings"
+	"sync"
+	"time"
+)
+
+const (
+	WebhookSecret = "whsec_agentflow_default_secret_key"
+	ReplayWindow  = 300 // seconds
+)
+
+var (
+	processedDeliveries = make(map[string]bool)
+	mu                  sync.Mutex
+)
+
+func verifyWebhookSignature(payload []byte, sigHeader, tsHeader string) bool {{
+	ts, err := strconv.ParseInt(tsHeader, 10, 64)
+	if err != nil {{
+		return false
+	}}
+	if math.Abs(float64(time.Now().Unix()-ts)) > ReplayWindow {{
+		return false // Expired timestamp / replay attack
+	}}
+
+	if !strings.HasPrefix(sigHeader, "sha256=") {{
+		return false
+	}}
+	providedSig := strings.TrimPrefix(sigHeader, "sha256=")
+	providedBytes, err := hex.DecodeString(providedSig)
+	if err != nil {{
+		return false
+	}}
+
+	mac := hmac.New(sha256.New, []byte(WebhookSecret))
+	mac.Write(payload)
+	computedBytes := mac.Sum(nil)
+
+	// Constant-time comparison
+	return hmac.Equal(providedBytes, computedBytes)
+}}
+
+func webhookHandler(w http.ResponseWriter, r *http.Request) {{
+	if r.Method != http.MethodPost {{
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}}
+
+	deliveryID := r.Header.Get("X-AgentFlow-Delivery")
+	eventType := r.Header.Get("X-AgentFlow-Event")
+	timestamp := r.Header.Get("X-AgentFlow-Timestamp")
+	signature := r.Header.Get("X-AgentFlow-Signature-256")
+
+	body, err := io.ReadAll(r.Body)
+	if err != nil {{
+		http.Error(w, "Cannot read body", http.StatusBadRequest)
+		return
+	}}
+
+	if !verifyWebhookSignature(body, signature, timestamp) {{
+		http.Error(w, "Invalid HMAC signature or expired timestamp", http.StatusUnauthorized)
+		return
+	}}
+
+	mu.Lock()
+	if processedDeliveries[deliveryID] {{
+		mu.Unlock()
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(map[string]string{{"status": "duplicate_ignored", "delivery_id": deliveryID}})
+		return
+	}}
+	processedDeliveries[deliveryID] = true
+	mu.Unlock()
+
+	log.Printf("[Webhook OK] %s event=%s id=%s\\n", "{project_slug}", eventType, deliveryID)
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(map[string]string{{"status": "processed", "event": eventType, "delivery_id": deliveryID}})
+}}
+
+func main() {{
+	http.HandleFunc("/webhooks/listener", webhookHandler)
+	fmt.Println("{project_slug.capitalize()} Go Webhook Receiver listening on :8000")
+	log.Fatal(http.ListenAndServe(":8000", nil))
+}}
+'''
+
+
+def _generate_webhook_test_curl(project_slug: str, events: List[Dict[str, Any]]) -> str:
+    """Generates ready-to-execute cURL testing snippet with HMAC-SHA256 signature generation."""
+    sample_event = events[0]["event_type"] if events else "order.created"
+    return f'''#!/usr/bin/env bash
+# ==============================================================================
+# {project_slug.upper()} Cryptographic Webhook Test Script (HMAC-SHA256)
+# Computes UNIX epoch timestamp & authentic hex digest matching AgentFlow spec
+# ==============================================================================
+
+WEBHOOK_URL="http://localhost:8000/webhooks/listener"
+SECRET="whsec_agentflow_default_secret_key"
+EVENT_TYPE="{sample_event}"
+DELIVERY_ID=$(uuidgen 2>/dev/null || cat /proc/sys/kernel/random/uuid 2>/dev/null || echo "del_test_1001")
+TIMESTAMP=$(date +%s)
+
+PAYLOAD=$(cat <<EOF
+{{
+  "specversion": "1.0",
+  "id": "$DELIVERY_ID",
+  "type": "com.{project_slug}.$EVENT_TYPE",
+  "source": "/api/v1/events",
+  "time": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+  "datacontenttype": "application/json",
+  "data": {{
+    "test": true,
+    "event": "$EVENT_TYPE",
+    "dispatched_by": "AgentFlow CLI Tester"
+  }}
+}}
+EOF
+)
+
+# Compute HMAC-SHA256 hex digest
+SIGNATURE_HEX=$(echo -n "$PAYLOAD" | openssl dgst -sha256 -hmac "$SECRET" | sed 's/^.* //')
+SIGNATURE_HEADER="sha256=$SIGNATURE_HEX"
+
+echo "Dispatched delivery ID: $DELIVERY_ID"
+echo "Timestamp: $TIMESTAMP"
+echo "Computed Signature: $SIGNATURE_HEADER"
+
+curl -i -X POST "$WEBHOOK_URL" \\
+  -H "Content-Type: application/json" \\
+  -H "User-Agent: AgentFlow-WebhookTester/1.0" \\
+  -H "X-AgentFlow-Delivery: $DELIVERY_ID" \\
+  -H "X-AgentFlow-Event: $EVENT_TYPE" \\
+  -H "X-AgentFlow-Timestamp: $TIMESTAMP" \\
+  -H "X-AgentFlow-Signature-256: $SIGNATURE_HEADER" \\
+  -H "Idempotency-Key: $(uuidgen 2>/dev/null || echo "idem_1001")" \\
+  -d "$PAYLOAD"
+'''
+
+
 def _generate_broker_docker_compose(project_slug: str) -> str:
     """Generates ready-to-run Docker Compose for Redis & RabbitMQ event message brokers."""
     return f"""version: '3.8'
@@ -327,15 +570,26 @@ def generate_project_event_catalog(
     slug = sanitize_project_slug(project.name)
     events = _extract_domain_events(project)
     dispatcher_code = _generate_webhook_dispatcher_code(slug, events)
-    consumer_code = _generate_webhook_consumer_code(slug, events)
+    consumer_code_python = _generate_webhook_consumer_code(slug, events)
+    consumer_code_node = _generate_webhook_consumer_node(slug, events)
+    consumer_code_go = _generate_webhook_consumer_go(slug, events)
+    consumer_code_curl = _generate_webhook_test_curl(slug, events)
     broker_compose = _generate_broker_docker_compose(slug)
+
+    consumer_code_by_lang = {
+        "python": consumer_code_python,
+        "nodejs": consumer_code_node,
+        "go": consumer_code_go,
+        "curl": consumer_code_curl,
+    }
 
     return {
         "project_id": project.id,
         "project_name": project.name,
         "events": events,
         "dispatcher_code": dispatcher_code,
-        "consumer_code": consumer_code,
+        "consumer_code": consumer_code_python,
+        "consumer_code_by_lang": consumer_code_by_lang,
         "broker_docker_compose": broker_compose,
     }
 

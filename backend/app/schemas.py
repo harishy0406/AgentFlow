@@ -666,6 +666,7 @@ class EventCatalogOut(BaseModel):
     events: List[EventDefinition] = []
     dispatcher_code: str
     consumer_code: str
+    consumer_code_by_lang: Optional[Dict[str, str]] = None
     broker_docker_compose: str
 
 

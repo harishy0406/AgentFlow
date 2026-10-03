@@ -227,6 +227,7 @@ export default function Home() {
   const [webhookDispatching, setWebhookDispatching] = useState(false);
   const [webhookDeliveryResult, setWebhookDeliveryResult] = useState(null);
   const [webhookSubTab, setWebhookSubTab] = useState("events");
+  const [selectedConsumerLang, setSelectedConsumerLang] = useState("python");
 
   // OpenTelemetry & APM Observability state
   const [telemetryBundle, setTelemetryBundle] = useState(null);
@@ -8163,31 +8164,51 @@ export default function Home() {
                         </div>
 
                         {/* Sub-tabs for Code Architecture: Events / Dispatcher / Consumer / Broker */}
-                        <div style={{ display: "flex", gap: 8, borderBottom: "1px solid var(--border)", paddingBottom: 10, marginBottom: 16 }}>
-                          {[
-                            { id: "events", label: "Catalog & Schema" },
-                            { id: "dispatcher", label: "Outbound Dispatcher (Python)" },
-                            { id: "consumer", label: "Inbound Receiver (FastAPI)" },
-                            { id: "compose", label: "Message Broker (Docker Compose)" },
-                          ].map((sub) => (
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid var(--border)", paddingBottom: 10, marginBottom: 16, flexWrap: "wrap", gap: 10 }}>
+                          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                            {[
+                              { id: "events", label: "Catalog & Schema" },
+                              { id: "dispatcher", label: "Outbound Dispatcher (Python)" },
+                              { id: "consumer", label: "Inbound Handlers (Multi-Lang)" },
+                              { id: "compose", label: "Message Broker (Docker Compose)" },
+                            ].map((sub) => (
+                              <button
+                                key={sub.id}
+                                onClick={() => setWebhookSubTab(sub.id)}
+                                style={{
+                                  padding: "6px 12px",
+                                  borderRadius: 4,
+                                  fontSize: 12,
+                                  cursor: "pointer",
+                                  background: webhookSubTab === sub.id ? "var(--text-primary)" : "transparent",
+                                  color: webhookSubTab === sub.id ? "var(--bg-primary)" : "var(--text-secondary)",
+                                  border: "1px solid var(--border)",
+                                  fontFamily: "var(--font-mono)",
+                                  transition: "all 0.15s ease",
+                                }}
+                              >
+                                <span>{sub.label}</span>
+                              </button>
+                            ))}
+                          </div>
+                          {eventCatalog && (
                             <button
-                              key={sub.id}
-                              onClick={() => setWebhookSubTab(sub.id)}
-                              style={{
-                                padding: "6px 12px",
-                                borderRadius: 4,
-                                fontSize: 12,
-                                cursor: "pointer",
-                                background: webhookSubTab === sub.id ? "var(--text-primary)" : "transparent",
-                                color: webhookSubTab === sub.id ? "var(--bg-primary)" : "var(--text-secondary)",
-                                border: "1px solid var(--border)",
-                                fontFamily: "var(--font-mono)",
-                                transition: "all 0.15s ease",
+                              className="btn btn-secondary btn-sm"
+                              style={{ fontSize: 11, display: "flex", alignItems: "center", gap: 6 }}
+                              onClick={() => {
+                                const blob = new Blob([JSON.stringify(eventCatalog, null, 2)], { type: "application/json" });
+                                const url = URL.createObjectURL(blob);
+                                const a = document.createElement("a");
+                                a.href = url;
+                                a.download = `${currentProject?.name?.toLowerCase().replace(/[^a-z0-9]/g, "_") || "events"}_catalog.json`;
+                                a.click();
+                                URL.revokeObjectURL(url);
+                                showToast("Downloaded Event Catalog JSON bundle!", "success");
                               }}
                             >
-                              <span>{sub.label}</span>
+                              <span>📥 Export Events (.json)</span>
                             </button>
-                          ))}
+                          )}
                         </div>
 
                         {webhookSubTab === "events" && (
@@ -8249,23 +8270,79 @@ export default function Home() {
 
                         {webhookSubTab === "consumer" && eventCatalog && (
                           <div>
-                            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
-                              <span style={{ fontSize: 12, color: "var(--text-muted)" }}>
-                                FastAPI Webhook Listener with Replay Attack &amp; Idempotency Mitigation
+                            {/* Multi-language Selector Bar */}
+                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12, flexWrap: "wrap", gap: 8 }}>
+                              <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                                {[
+                                  { id: "python", label: "🐍 Python (FastAPI)" },
+                                  { id: "nodejs", label: "🟢 Node.js (Express)" },
+                                  { id: "go", label: "🔷 Go (HTTP)" },
+                                  { id: "curl", label: "⚡ cURL Test Script" },
+                                ].map((lang) => (
+                                  <button
+                                    key={lang.id}
+                                    onClick={() => setSelectedConsumerLang(lang.id)}
+                                    style={{
+                                      padding: "5px 12px",
+                                      borderRadius: 4,
+                                      fontSize: 11,
+                                      cursor: "pointer",
+                                      background: selectedConsumerLang === lang.id ? "var(--text-primary)" : "var(--bg-secondary)",
+                                      color: selectedConsumerLang === lang.id ? "var(--bg-primary)" : "var(--text-secondary)",
+                                      border: `1px solid ${selectedConsumerLang === lang.id ? "var(--text-primary)" : "var(--border)"}`,
+                                      fontFamily: "var(--font-mono)",
+                                      fontWeight: selectedConsumerLang === lang.id ? "600" : "400",
+                                      transition: "all 0.15s ease",
+                                    }}
+                                  >
+                                    {lang.label}
+                                  </button>
+                                ))}
+                              </div>
+                              <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                                <button
+                                  className="btn btn-secondary btn-sm"
+                                  style={{ fontSize: 11 }}
+                                  onClick={() => {
+                                    const activeCode = eventCatalog.consumer_code_by_lang?.[selectedConsumerLang] || eventCatalog.consumer_code;
+                                    navigator.clipboard.writeText(activeCode);
+                                    showToast(`Copied ${selectedConsumerLang.toUpperCase()} code!`, "success");
+                                  }}
+                                >
+                                  Copy Code
+                                </button>
+                                <button
+                                  className="btn btn-secondary btn-sm"
+                                  style={{ fontSize: 11 }}
+                                  onClick={() => {
+                                    const activeCode = eventCatalog.consumer_code_by_lang?.[selectedConsumerLang] || eventCatalog.consumer_code;
+                                    const extMap = { python: "py", nodejs: "js", go: "go", curl: "sh" };
+                                    const ext = extMap[selectedConsumerLang] || "txt";
+                                    const blob = new Blob([activeCode], { type: "text/plain" });
+                                    const url = URL.createObjectURL(blob);
+                                    const a = document.createElement("a");
+                                    a.href = url;
+                                    a.download = `webhook_consumer_${selectedConsumerLang}.${ext}`;
+                                    a.click();
+                                    URL.revokeObjectURL(url);
+                                    showToast(`Downloaded webhook_consumer_${selectedConsumerLang}.${ext}`, "success");
+                                  }}
+                                >
+                                  📥 Download .{selectedConsumerLang === "python" ? "py" : selectedConsumerLang === "nodejs" ? "js" : selectedConsumerLang === "go" ? "go" : "sh"}
+                                </button>
+                              </div>
+                            </div>
+                            <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 8, display: "flex", alignItems: "center", gap: 6 }}>
+                              <span style={{ color: "var(--terminal-green)" }}>●</span>
+                              <span>
+                                {selectedConsumerLang === "python" && "FastAPI Webhook Listener with Replay Attack (300s) & Idempotency Mitigation"}
+                                {selectedConsumerLang === "nodejs" && "Node.js Express Listener with crypto.timingSafeEqual & Replay Attack Mitigation"}
+                                {selectedConsumerLang === "go" && "Go net/http Listener with hmac.Equal Verification & Mutex De-duplication"}
+                                {selectedConsumerLang === "curl" && "Automated Bash & OpenSSL HMAC-SHA256 signature generator & cURL test runner"}
                               </span>
-                              <button
-                                className="btn btn-secondary btn-sm"
-                                style={{ fontSize: 11 }}
-                                onClick={() => {
-                                  navigator.clipboard.writeText(eventCatalog.consumer_code);
-                                  showToast("Copied listener code!", "success");
-                                }}
-                              >
-                                Copy Code
-                              </button>
                             </div>
                             <pre style={{ margin: 0, padding: 16, background: "var(--bg-primary)", border: "1px solid var(--border)", borderRadius: 8, color: "var(--terminal-green)", fontFamily: "var(--font-mono)", fontSize: 11, lineHeight: 1.5, maxHeight: 420, overflowY: "auto", whiteSpace: "pre" }}>
-                              {eventCatalog.consumer_code}
+                              {eventCatalog.consumer_code_by_lang?.[selectedConsumerLang] || eventCatalog.consumer_code}
                             </pre>
                           </div>
                         )}

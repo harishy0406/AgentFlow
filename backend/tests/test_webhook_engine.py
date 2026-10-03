@@ -69,6 +69,14 @@ def test_webhook_api_endpoints():
     assert "rabbitmq" in data["broker_docker_compose"]
     assert "redis" in data["broker_docker_compose"]
 
+    # Verify multi-language consumers
+    assert "consumer_code_by_lang" in data
+    by_lang = data["consumer_code_by_lang"]
+    assert "python" in by_lang and "FastAPI" in by_lang["python"]
+    assert "nodejs" in by_lang and "crypto.timingSafeEqual" in by_lang["nodejs"]
+    assert "go" in by_lang and "hmac.Equal" in by_lang["go"]
+    assert "curl" in by_lang and "openssl dgst -sha256 -hmac" in by_lang["curl"]
+
     # 3. Test Webhook dispatch simulation endpoint
     dispatch_res = client.post(f"/projects/{p_id}/test-webhook", json={
         "event_type": first_event["event_type"],
