@@ -238,6 +238,17 @@ export async function askProjectAssistant(projectId, message, history = []) {
   });
 }
 
+export async function chatModifyProject(projectId, instruction, targetArtifact = null, targetSectionKey = null) {
+  return request(`/projects/${projectId}/chat-modify`, {
+    method: "POST",
+    body: JSON.stringify({
+      instruction,
+      target_artifact: targetArtifact,
+      target_section_key: targetSectionKey,
+    }),
+  });
+}
+
 // ---------------------------------------------------------------------------
 // Token Usage & Cost Analytics
 // ---------------------------------------------------------------------------

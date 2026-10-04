@@ -375,6 +375,25 @@ class ProjectChatOut(BaseModel):
     referenced_artifacts: List[str] = []
 
 
+class ProjectChatModifyInput(BaseModel):
+    instruction: str
+    target_artifact: Optional[str] = None  # e.g., "DB_SCHEMA", "API_SPEC", "PRD", "SDD", "USER_STORIES", "TASKS", "CODE_GENERATION"
+    target_section_key: Optional[str] = None
+
+
+class ProjectChatModifyOut(BaseModel):
+    project_id: UUID
+    status: str  # success, no_change, error
+    target_artifact: str
+    target_section_id: str
+    target_section_key: str
+    diff_summary: str
+    explanation: str
+    regenerated_artifacts: List[str] = []
+    routing_decisions: List[Dict[str, Any]] = []
+    rescaffolded_files_count: int = 0
+
+
 # ---------------------------------------------------------------------------
 # Project Cloning & Templates
 # ---------------------------------------------------------------------------
@@ -855,6 +874,33 @@ class SeedDataCatalogOut(BaseModel):
     json_fixture: str
     python_factory_code: str
     typescript_seed_code: str
+
+
+# ---------------------------------------------------------------------------
+# AI Chat-to-Modify / Copilot Edit Schemas
+# ---------------------------------------------------------------------------
+
+class ProjectChatModifyInput(BaseModel):
+    instruction: str
+    target_artifact: Optional[str] = "AUTO"
+    target_section_key: Optional[str] = None
+
+
+class ProjectChatModifyOut(BaseModel):
+    project_id: str
+    status: str = "success"
+    target_artifact: str
+    target_section_id: str
+    target_section_key: str
+    diff_summary: str
+    explanation: str
+    message: str
+    updated_section_content: Optional[str] = None
+    cascaded_downstream_artifacts: List[str] = []
+    regenerated_artifacts: List[str] = []
+    routing_decisions: List[Dict[str, Any]] = []
+    rescaffolded_files_count: int = 0
+
 
 
 

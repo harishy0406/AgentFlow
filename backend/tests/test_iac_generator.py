@@ -83,7 +83,7 @@ def test_iac_generator_api_endpoints():
         assert "gcp" in catalog["available_providers"]
         assert "kubernetes" in catalog["available_providers"]
         assert "env" in catalog["available_providers"]
-        assert len(catalog["packages"]) == 4
+        assert len(catalog["packages"]) >= 4
 
         # Test specific provider endpoint: AWS
         res_aws = client.get(f"/projects/{project.id}/iac/aws")

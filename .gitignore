@@ -78,5 +78,7 @@ Thumbs.db
 # Generated Projects Output
 generated_projects/
 *.db
+*.db-shm
+*.db-wal
 *.sqlite
 *.sqlite3

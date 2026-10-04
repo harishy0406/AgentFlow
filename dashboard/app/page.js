@@ -28,6 +28,7 @@ import {
   verifyProjectCode,
   getProjectTimeline,
   askProjectAssistant,
+  chatModifyProject,
   listTemplates,
   cloneProject,
   getProjectAnalytics,
@@ -313,6 +314,8 @@ export default function Home() {
   const [chatMessages, setChatMessages] = useState([]);
   const [chatInput, setChatInput] = useState("");
   const [chatLoading, setChatLoading] = useState(false);
+  const [copilotMode, setCopilotMode] = useState("qa"); // 'qa' | 'modify'
+  const [modifyTargetArtifact, setModifyTargetArtifact] = useState("AUTO");
   const [apiTestResults, setApiTestResults] = useState({});
 
   // SaaS Navigation & Theme state
@@ -3864,14 +3867,37 @@ export default function Home() {
                                 {currentArt.status}
                               </span>
                             </div>
-                            <div style={{ fontSize: 12, color: "var(--text-secondary)" }}>
-                              Version: <strong>v{currentArt.version}</strong> • Quality:{" "}
-                              <strong>
-                                {currentArt.quality_signal_score != null
-                                  ? `${(currentArt.quality_signal_score * 100).toFixed(0)}%`
-                                  : "N/A"}
-                              </strong>{" "}
-                              • Model: <span style={{ color: "var(--text-primary)", fontWeight: 600 }}>{currentArt.generated_by_model || "claude-3-haiku"}</span>
+                            <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+                              <button
+                                className="btn btn-primary btn-sm"
+                                style={{
+                                  fontSize: 11,
+                                  background: "linear-gradient(135deg, rgba(0, 255, 102, 0.2), rgba(56, 189, 248, 0.2))",
+                                  border: "1px solid var(--accent-green)",
+                                  color: "var(--accent-green)",
+                                  fontWeight: 600,
+                                  display: "inline-flex",
+                                  alignItems: "center",
+                                  gap: 6,
+                                }}
+                                onClick={() => {
+                                  setShowChat(true);
+                                  setCopilotMode("modify");
+                                  setModifyTargetArtifact(currentArt.artifact_type);
+                                }}
+                                title="Chat with AI model to modify this spec and propagate changes downstream"
+                              >
+                                ⚡ AI Change Request
+                              </button>
+                              <div style={{ fontSize: 12, color: "var(--text-secondary)" }}>
+                                Version: <strong>v{currentArt.version}</strong> • Quality:{" "}
+                                <strong>
+                                  {currentArt.quality_signal_score != null
+                                    ? `${(currentArt.quality_signal_score * 100).toFixed(0)}%`
+                                    : "N/A"}
+                                </strong>{" "}
+                                • Model: <span style={{ color: "var(--text-primary)", fontWeight: 600 }}>{currentArt.generated_by_model || "claude-3-haiku"}</span>
+                              </div>
                             </div>
                           </div>
 
@@ -9466,8 +9492,8 @@ export default function Home() {
           >
             <div>
               <strong style={{ fontSize: 13, display: "flex", alignItems: "center", gap: 8, fontFamily: "var(--font-mono)", letterSpacing: "0.02em" }}>
-                <span style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--terminal-green)", display: "inline-block" }} />
-                Project Copilot
+                <span style={{ width: 6, height: 6, borderRadius: "50%", background: copilotMode === "modify" ? "var(--accent-green)" : "var(--terminal-green)", display: "inline-block" }} />
+                {copilotMode === "modify" ? "⚡ AI Copilot: Change & Regenerate" : "💬 Project Copilot: Q&A"}
               </strong>
               <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 2 }}>
                 Grounded in {currentProject.name} specs
@@ -9488,6 +9514,99 @@ export default function Home() {
             </button>
           </div>
 
+          {/* Mode Switcher Tabs */}
+          <div
+            style={{
+              display: "flex",
+              borderBottom: "1px solid var(--border)",
+              background: "var(--bg-primary)",
+            }}
+          >
+            <button
+              style={{
+                flex: 1,
+                padding: "8px 12px",
+                fontSize: 11,
+                fontWeight: 600,
+                border: "none",
+                borderBottom: copilotMode === "qa" ? "2px solid var(--accent-blue)" : "2px solid transparent",
+                background: copilotMode === "qa" ? "var(--bg-secondary)" : "transparent",
+                color: copilotMode === "qa" ? "var(--text-primary)" : "var(--text-muted)",
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 6,
+              }}
+              onClick={() => setCopilotMode("qa")}
+            >
+              <span>💬</span> Ask Questions
+            </button>
+            <button
+              style={{
+                flex: 1,
+                padding: "8px 12px",
+                fontSize: 11,
+                fontWeight: 600,
+                border: "none",
+                borderBottom: copilotMode === "modify" ? "2px solid var(--accent-green)" : "2px solid transparent",
+                background: copilotMode === "modify" ? "rgba(0, 255, 102, 0.08)" : "transparent",
+                color: copilotMode === "modify" ? "var(--accent-green)" : "var(--text-muted)",
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 6,
+              }}
+              onClick={() => setCopilotMode("modify")}
+            >
+              <span>⚡</span> AI Change Request
+            </button>
+          </div>
+
+          {/* Target Artifact Bar (Only in Modify Mode) */}
+          {copilotMode === "modify" && (
+            <div
+              style={{
+                padding: "8px 12px",
+                background: "linear-gradient(90deg, rgba(0, 255, 102, 0.05), rgba(56, 189, 248, 0.05))",
+                borderBottom: "1px solid var(--border)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                gap: 8,
+                fontSize: 11,
+              }}
+            >
+              <span style={{ color: "var(--text-secondary)", fontWeight: 600, whiteSpace: "nowrap" }}>
+                Target Spec:
+              </span>
+              <select
+                value={modifyTargetArtifact}
+                onChange={(e) => setModifyTargetArtifact(e.target.value)}
+                style={{
+                  flex: 1,
+                  fontSize: 11,
+                  background: "var(--bg-secondary)",
+                  color: "var(--text-primary)",
+                  border: "1px solid var(--border)",
+                  borderRadius: 4,
+                  padding: "3px 6px",
+                  cursor: "pointer",
+                }}
+              >
+                <option value="AUTO">✨ Auto-Detect from Prompt</option>
+                <option value="PRD">PRD (Requirements)</option>
+                <option value="SDD">SDD (Architecture &amp; Design)</option>
+                <option value="DB_SCHEMA">DB_SCHEMA (SQL Tables &amp; DDL)</option>
+                <option value="API_SPEC">API_SPEC (REST Endpoints)</option>
+                <option value="USER_STORIES">USER_STORIES (Agile Stories)</option>
+                <option value="TASKS">TASKS (Engineering Plan)</option>
+                <option value="CODE_GENERATION">CODE_GENERATION (Source Code)</option>
+              </select>
+            </div>
+          )}
+
           {/* Messages Stream */}
           <div
             style={{
@@ -9500,33 +9619,78 @@ export default function Home() {
             }}
           >
             {chatMessages.length === 0 ? (
-              <div style={{ textAlign: "center", color: "var(--text-muted)", fontSize: 12, marginTop: 40 }}>
-                <div style={{ width: 36, height: 36, borderRadius: "50%", border: "1px solid var(--border)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 12px", color: "var(--text-muted)", fontFamily: "var(--font-mono)", fontSize: 14 }}>
-                  ?
+              <div style={{ textAlign: "center", color: "var(--text-muted)", fontSize: 12, marginTop: 24 }}>
+                <div style={{ width: 36, height: 36, borderRadius: "50%", border: "1px solid var(--border)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 12px", color: copilotMode === "modify" ? "var(--accent-green)" : "var(--text-muted)", fontFamily: "var(--font-mono)", fontSize: 14 }}>
+                  {copilotMode === "modify" ? "⚡" : "?"}
                 </div>
-                <p>Ask anything about this project&apos;s architecture, APIs, DB schema, or implementation tasks.</p>
+                {copilotMode === "modify" ? (
+                  <>
+                    <p style={{ margin: "0 0 4px", fontWeight: 600, color: "var(--text-primary)" }}>
+                      AI Change-to-Modify Engine
+                    </p>
+                    <p style={{ fontSize: 11, color: "var(--text-secondary)", lineHeight: 1.4, margin: "0 0 14px" }}>
+                      Describe any requirement, schema, API, or architecture change. AgentFlow applies it to the target spec and automatically cascades selective regeneration through the DAG!
+                    </p>
+                  </>
+                ) : (
+                  <p>Ask anything about this project&apos;s architecture, APIs, DB schema, or implementation tasks.</p>
+                )}
 
                 {/* Suggestion Chips */}
-                <div style={{ display: "flex", flexDirection: "column", gap: 6, marginTop: 16 }}>
-                  {[
+                <div style={{ display: "flex", flexDirection: "column", gap: 6, marginTop: 10 }}>
+                  {(copilotMode === "modify" ? [
+                    "Add an audit_logs table to the DB Schema with user_id, action, timestamp",
+                    "Add OAuth Google Login endpoint /api/v1/auth/google to API Spec",
+                    "Add 2FA Two-Factor Authentication requirement to PRD",
+                    "Update SDD architecture to use Redis session caching",
+                  ] : [
                     "Explain the system architecture",
                     "List all database tables and keys",
                     "What are the main API endpoints?",
-                  ].map((s) => (
+                  ]).map((s) => (
                     <button
                       key={s}
                       className="btn btn-secondary btn-sm"
-                      style={{ fontSize: 11, textAlign: "left", padding: "6px 10px" }}
+                      style={{ fontSize: 11, textAlign: "left", padding: "6px 10px", lineHeight: 1.3 }}
                       onClick={async () => {
                         setChatInput(s);
                         setChatLoading(true);
-                        setChatMessages((prev) => [...prev, { role: "user", text: s }]);
+                        setChatMessages((prev) => [...prev, { role: "user", text: s, isModify: copilotMode === "modify" }]);
                         try {
-                          const res = await askProjectAssistant(currentProject.id, s, []);
-                          setChatMessages((prev) => [
-                            ...prev,
-                            { role: "assistant", text: res.reply, references: res.referenced_artifacts },
-                          ]);
+                          if (copilotMode === "modify") {
+                            const res = await chatModifyProject(
+                              currentProject.id,
+                              s,
+                              modifyTargetArtifact === "AUTO" ? null : modifyTargetArtifact
+                            );
+                            setChatMessages((prev) => [
+                              ...prev,
+                              {
+                                role: "assistant",
+                                isModify: true,
+                                text: res.explanation,
+                                target_artifact: res.target_artifact,
+                                target_section_key: res.target_section_key,
+                                regenerated_artifacts: res.regenerated_artifacts,
+                                rescaffolded_files_count: res.rescaffolded_files_count,
+                                diff_summary: res.diff_summary,
+                              },
+                            ]);
+                            // Refresh project artifacts and code files
+                            const updatedArts = await getArtifacts(currentProject.id);
+                            setArtifacts(updatedArts);
+                            try {
+                              const updatedCode = await getCodeFiles(currentProject.id);
+                              setCodeData(updatedCode);
+                            } catch (e) {}
+                            showToast(`⚡ Downstream regeneration complete! Target: ${res.target_artifact}`, "success");
+                          } else {
+                            const res = await askProjectAssistant(currentProject.id, s, []);
+                            setChatMessages((prev) => [
+                              ...prev,
+                              { role: "assistant", text: res.reply, references: res.referenced_artifacts },
+                            ]);
+                          }
                         } catch (err) {
                           setChatMessages((prev) => [
                             ...prev,
@@ -9548,18 +9712,48 @@ export default function Home() {
                   key={idx}
                   style={{
                     alignSelf: msg.role === "user" ? "flex-end" : "flex-start",
-                    maxWidth: "85%",
+                    maxWidth: "88%",
                     background: msg.role === "user" ? "#ffffff" : "var(--bg-secondary)",
                     color: msg.role === "user" ? "#000000" : "var(--text-primary)",
-                    border: msg.role === "user" ? "none" : "1px solid var(--border)",
-                    padding: "8px 12px",
+                    border: msg.role === "user" ? "none" : (msg.isModify ? "1px solid rgba(0, 255, 102, 0.4)" : "1px solid var(--border)"),
+                    padding: "10px 12px",
                     borderRadius: msg.role === "user" ? "8px 8px 2px 8px" : "8px 8px 8px 2px",
                     fontSize: 12,
-                    lineHeight: 1.4,
+                    lineHeight: 1.45,
                     whiteSpace: "pre-wrap",
                   }}
                 >
+                  {msg.isModify && msg.role === "assistant" && (
+                    <div style={{ marginBottom: 8, paddingBottom: 6, borderBottom: "1px solid var(--border)" }}>
+                      <span
+                        style={{
+                          fontSize: 10,
+                          fontWeight: 700,
+                          background: "rgba(0, 255, 102, 0.15)",
+                          color: "var(--accent-green)",
+                          padding: "2px 6px",
+                          borderRadius: 4,
+                          display: "inline-block",
+                          marginBottom: 4,
+                        }}
+                      >
+                        ⚡ SPEC MODIFIED &amp; REGENERATED
+                      </span>
+                      {msg.target_artifact && (
+                        <div style={{ fontSize: 11, color: "var(--text-secondary)" }}>
+                          Modified: <strong>{msg.target_artifact}</strong> ({msg.target_section_key})
+                        </div>
+                      )}
+                      {msg.regenerated_artifacts && msg.regenerated_artifacts.length > 0 && (
+                        <div style={{ fontSize: 11, color: "var(--accent-blue)", marginTop: 2 }}>
+                          Downstream Cascaded: {msg.regenerated_artifacts.map((a) => `#${a}`).join(" ➔ ")}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
                   {msg.text}
+
                   {msg.references && msg.references.length > 0 && (
                     <div style={{ marginTop: 6, display: "flex", gap: 4, flexWrap: "wrap" }}>
                       {msg.references.map((r) => (
@@ -9585,8 +9779,8 @@ export default function Home() {
               ))
             )}
             {chatLoading && (
-              <div style={{ alignSelf: "flex-start", fontSize: 11, color: "var(--terminal-green)", fontFamily: "var(--font-mono)" }}>
-                › Copilot is thinking...
+              <div style={{ alignSelf: "flex-start", fontSize: 11, color: copilotMode === "modify" ? "var(--accent-green)" : "var(--terminal-green)", fontFamily: "var(--font-mono)" }}>
+                › {copilotMode === "modify" ? "⚡ Applying change & propagating DAG downstream..." : "Copilot is thinking..."}
               </div>
             )}
           </div>
@@ -9599,13 +9793,42 @@ export default function Home() {
               const text = chatInput.trim();
               setChatInput("");
               setChatLoading(true);
-              setChatMessages((prev) => [...prev, { role: "user", text }]);
+              setChatMessages((prev) => [...prev, { role: "user", text, isModify: copilotMode === "modify" }]);
               try {
-                const res = await askProjectAssistant(currentProject.id, text, []);
-                setChatMessages((prev) => [
-                  ...prev,
-                  { role: "assistant", text: res.reply, references: res.referenced_artifacts },
-                ]);
+                if (copilotMode === "modify") {
+                  const res = await chatModifyProject(
+                    currentProject.id,
+                    text,
+                    modifyTargetArtifact === "AUTO" ? null : modifyTargetArtifact
+                  );
+                  setChatMessages((prev) => [
+                    ...prev,
+                    {
+                      role: "assistant",
+                      isModify: true,
+                      text: res.explanation,
+                      target_artifact: res.target_artifact,
+                      target_section_key: res.target_section_key,
+                      regenerated_artifacts: res.regenerated_artifacts,
+                      rescaffolded_files_count: res.rescaffolded_files_count,
+                      diff_summary: res.diff_summary,
+                    },
+                  ]);
+                  // Refresh project artifacts and code files
+                  const updatedArts = await getArtifacts(currentProject.id);
+                  setArtifacts(updatedArts);
+                  try {
+                    const updatedCode = await getCodeFiles(currentProject.id);
+                    setCodeData(updatedCode);
+                  } catch (e) {}
+                  showToast(`⚡ Downstream regeneration complete! Target: ${res.target_artifact}`, "success");
+                } else {
+                  const res = await askProjectAssistant(currentProject.id, text, []);
+                  setChatMessages((prev) => [
+                    ...prev,
+                    { role: "assistant", text: res.reply, references: res.referenced_artifacts },
+                  ]);
+                }
               } catch (err) {
                 setChatMessages((prev) => [
                   ...prev,
@@ -9628,16 +9851,22 @@ export default function Home() {
               className="input"
               value={chatInput}
               onChange={(e) => setChatInput(e.target.value)}
-              placeholder="Ask Copilot about specs or code..."
+              placeholder={copilotMode === "modify" ? "Describe changes to make & cascade downstream..." : "Ask Copilot about specs or code..."}
               style={{ flex: 1, fontSize: 12, padding: "6px 10px" }}
             />
             <button
               type="submit"
               className="btn btn-primary btn-sm"
               disabled={chatLoading || !chatInput.trim()}
-              style={{ fontSize: 12, padding: "0 12px" }}
+              style={{
+                fontSize: 12,
+                padding: "0 12px",
+                background: copilotMode === "modify" ? "var(--accent-green)" : undefined,
+                color: copilotMode === "modify" ? "#000000" : undefined,
+                fontWeight: copilotMode === "modify" ? 700 : undefined,
+              }}
             >
-              ➤
+              {copilotMode === "modify" ? "⚡ Apply" : "➤"}
             </button>
           </form>
         </div>

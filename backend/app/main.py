@@ -23,7 +23,7 @@ from .agents.auditor import run_audit, list_open_drifts, resolve_drift_record
 from .agents.micro_regen import fix_drift
 from .agents.scaffolder import parse_code_files, sanitize_project_slug
 from .agents.tester import verify_project_codebase
-from .agents.assistant import answer_project_query
+from .agents.assistant import answer_project_query, modify_project_via_chat
 from .agents.migrator import generate_and_save_migrations
 from .agents.workspace import validate_workspace_cross_service_contracts, get_workspace_topology
 from .agents.openapi_generator import generate_openapi_spec
@@ -1065,6 +1065,31 @@ def chat_with_project_assistant(
         return schemas.ProjectChatOut(**res)
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
+
+
+@app.post("/projects/{project_id}/chat-modify", response_model=schemas.ProjectChatModifyOut)
+def modify_project_by_chat_instruction(
+    project_id: UUID,
+    payload: schemas.ProjectChatModifyInput,
+    db: Session = Depends(get_db)
+):
+    """
+    Applies natural language instructions to a project artifact section
+    and automatically executes selective downstream DAG recomputation.
+    """
+    try:
+        res = modify_project_via_chat(
+            project_id=project_id,
+            instruction=payload.instruction,
+            target_artifact=payload.target_artifact,
+            target_section_key=payload.target_section_key,
+            db=db
+        )
+        return schemas.ProjectChatModifyOut(**res)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Modification failed: {str(e)}")
 
 
 @app.post("/projects/{project_id}/generate-migrations", response_model=schemas.ProjectMigrationOut)

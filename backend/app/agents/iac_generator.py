@@ -3,8 +3,12 @@ from typing import Dict, List, Optional
 from uuid import UUID
 from sqlalchemy.orm import Session
 
-from app.models import Project, ArtifactNode
-from app.schemas import IacFile, IacBundleOut, IacCatalogOut
+try:
+    from ..models import Project, ArtifactNode
+    from ..schemas import IacFile, IacBundleOut, IacCatalogOut
+except ImportError:
+    from app.models import Project, ArtifactNode
+    from app.schemas import IacFile, IacBundleOut, IacCatalogOut
 
 
 def _slugify(text: str) -> str:

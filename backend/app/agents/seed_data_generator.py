@@ -5,8 +5,12 @@ from typing import Any, Dict, List, Tuple
 from uuid import UUID, uuid4
 from sqlalchemy.orm import Session
 
-from app.models import Project, ArtifactNode, ArtifactSection
-from app.schemas import SeedEntityData, SeedDataCatalogOut
+try:
+    from ..models import Project, ArtifactNode, ArtifactSection
+    from ..schemas import SeedEntityData, SeedDataCatalogOut
+except ImportError:
+    from app.models import Project, ArtifactNode, ArtifactSection
+    from app.schemas import SeedEntityData, SeedDataCatalogOut
 
 
 def _extract_tables_from_ddl(ddl: str) -> List[Tuple[str, List[Tuple[str, str]]]]:

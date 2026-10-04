@@ -3,8 +3,12 @@ from typing import Dict, List, Optional
 from uuid import UUID
 from sqlalchemy.orm import Session
 
-from app.models import Project, ArtifactNode, ArtifactSection
-from app.schemas import GatewayConfigFile, GatewayCatalogOut
+try:
+    from ..models import Project, ArtifactNode, ArtifactSection
+    from ..schemas import GatewayConfigFile, GatewayCatalogOut
+except ImportError:
+    from app.models import Project, ArtifactNode, ArtifactSection
+    from app.schemas import GatewayConfigFile, GatewayCatalogOut
 
 
 def _slugify(text: str) -> str:

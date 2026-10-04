@@ -3,8 +3,12 @@ from typing import Dict, List, Optional, Tuple
 from uuid import UUID
 from sqlalchemy.orm import Session
 
-from app.models import Project, ArtifactNode, ArtifactSection
-from app.schemas import GraphQLFieldMeta, GraphQLTypeMeta, GraphQLSchemaOut
+try:
+    from ..models import Project, ArtifactNode, ArtifactSection
+    from ..schemas import GraphQLFieldMeta, GraphQLTypeMeta, GraphQLSchemaOut
+except ImportError:
+    from app.models import Project, ArtifactNode, ArtifactSection
+    from app.schemas import GraphQLFieldMeta, GraphQLTypeMeta, GraphQLSchemaOut
 
 
 def _map_sql_type_to_graphql(sql_type: str) -> str:

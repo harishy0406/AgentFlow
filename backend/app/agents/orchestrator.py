@@ -330,6 +330,15 @@ def handle_section_edit(
             db,
         )
 
+        if artifact_type == "CODE_GENERATION":
+            try:
+                from .scaffolder import scaffold_project_files
+                proj = db.query(Project).get(dirty_node.project_id)
+                if proj:
+                    scaffold_project_files(proj.name, new_regen_content)
+            except Exception:
+                pass
+
         if artifact_type not in regenerated_artifacts:
             regenerated_artifacts.append(artifact_type)
 

@@ -4,8 +4,12 @@ from typing import Dict, List, Optional
 from uuid import UUID
 from sqlalchemy.orm import Session
 
-from app.models import Project, ArtifactNode, ArtifactSection
-from app.schemas import ArchitectureDecisionRecord, AdrCatalogOut
+try:
+    from ..models import Project, ArtifactNode, ArtifactSection
+    from ..schemas import ArchitectureDecisionRecord, AdrCatalogOut
+except ImportError:
+    from app.models import Project, ArtifactNode, ArtifactSection
+    from app.schemas import ArchitectureDecisionRecord, AdrCatalogOut
 
 
 def _extract_project_context(project_id: str, db: Session) -> Dict[str, str]:

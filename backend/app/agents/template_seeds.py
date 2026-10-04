@@ -19,6 +19,13 @@ from sqlalchemy.orm import Session
 from .. import models
 from .graph_engine import compute_content_hash, TOPOLOGICAL_ORDER
 from .scaffolder import scaffold_project_files, sanitize_project_slug
+from .seed_code_bundles import (
+    AI_CODE_REVIEWER_BUNDLE,
+    FINTECH_ESCROW_BUNDLE,
+    HEALTHCARE_TELEHEALTH_BUNDLE,
+    ECOMMERCE_MARKETPLACE_BUNDLE,
+    generate_custom_bundle,
+)
 
 
 # ---------------------------------------------------------------------------
@@ -280,116 +287,7 @@ TEMPLATE_DEFINITIONS: Dict[str, Dict[str, Any]] = {
                 )
             },
             "CODE_GENERATION": {
-                "code_bundle": (
-                    "### File: backend/main.py\n"
-                    "```python\n"
-                    "from fastapi import FastAPI, HTTPException, Request, Depends, status\n"
-                    "from fastapi.middleware.cors import CORSMiddleware\n"
-                    "from pydantic import BaseModel, Field\n"
-                    "from typing import List, Optional\n"
-                    "import hmac\n"
-                    "import hashlib\n"
-                    "import os\n\n"
-                    "app = FastAPI(\n"
-                    "    title='AI Code Reviewer Engine',\n"
-                    "    version='1.0.0',\n"
-                    "    description='Autonomous AST & OWASP Code Reviewer Service'\n"
-                    ")\n\n"
-                    "app.add_middleware(\n"
-                    "    CORSMiddleware,\n"
-                    "    allow_origins=['*'],\n"
-                    "    allow_credentials=True,\n"
-                    "    allow_methods=['*'],\n"
-                    "    allow_headers=['*'],\n"
-                    ")\n\n"
-                    "@app.get('/api/v1/health')\n"
-                    "def health_check():\n"
-                    "    return {\n"
-                    "        'status': 'healthy',\n"
-                    "        'service': 'ai-code-reviewer',\n"
-                    "        'version': '1.0.0',\n"
-                    "        'ast_engine': 'tree-sitter-ready'\n"
-                    "    }\n\n"
-                    "class ReviewRequest(BaseModel):\n"
-                    "    repository: str = Field(..., example='octocat/hello-world')\n"
-                    "    pr_number: int = Field(..., example=42)\n"
-                    "    commit_sha: str = Field(..., example='6dcb09b5b57875f334f61aebed695e2e4193db5e')\n\n"
-                    "class ReviewFinding(BaseModel):\n"
-                    "    file_path: str\n"
-                    "    line_number: int\n"
-                    "    severity: str\n"
-                    "    title: str\n"
-                    "    description: str\n"
-                    "    suggested_diff: Optional[str] = None\n\n"
-                    "@app.post('/api/v1/reviews', status_code=status.HTTP_202_ACCEPTED)\n"
-                    "def enqueue_review(req: ReviewRequest):\n"
-                    "    # Simulates asynchronous review queue\n"
-                    "    return {\n"
-                    "        'job_id': 'rev_job_9941a87',\n"
-                    "        'repository': req.repository,\n"
-                    "        'pr_number': req.pr_number,\n"
-                    "        'status': 'queued'\n"
-                    "    }\n"
-                    "```\n\n"
-                    "### File: backend/models.py\n"
-                    "```python\n"
-                    "from sqlalchemy import Column, String, Integer, Boolean, Numeric, DateTime, ForeignKey\n"
-                    "from sqlalchemy.dialects.postgresql import UUID\n"
-                    "from sqlalchemy.orm import declarative_base, relationship\n"
-                    "import uuid\n"
-                    "from datetime import datetime, timezone\n\n"
-                    "Base = declarative_base()\n\n"
-                    "class Repository(Base):\n"
-                    "    __tablename__ = 'repositories'\n"
-                    "    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)\n"
-                    "    full_name = Column(String(255), unique=True, nullable=False)\n"
-                    "    default_branch = Column(String(100), default='main')\n"
-                    "    is_active = Column(Boolean, default=True)\n"
-                    "    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))\n\n"
-                    "class ReviewRun(Base):\n"
-                    "    __tablename__ = 'review_runs'\n"
-                    "    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)\n"
-                    "    repo_id = Column(UUID(as_uuid=True), ForeignKey('repositories.id'))\n"
-                    "    pr_number = Column(Integer, nullable=False)\n"
-                    "    quality_score = Column(Numeric(5, 2), default=98.0)\n"
-                    "    findings_count = Column(Integer, default=0)\n"
-                    "```\n\n"
-                    "### File: backend/services/ast_analyzer.py\n"
-                    "```python\n"
-                    "import ast\n"
-                    "from typing import List, Dict, Any\n\n"
-                    "class ASTSecurityAnalyzer(ast.NodeVisitor):\n"
-                    "    def __init__(self):\n"
-                    "        self.findings: List[Dict[str, Any]] = []\n\n"
-                    "    def visit_Call(self, node):\n"
-                    "        # Detect raw cursor.execute string formats\n"
-                    "        if isinstance(node.func, ast.Attribute) and node.func.attr == 'execute':\n"
-                    "            if node.args and isinstance(node.args[0], (ast.BinOp, ast.JoinedStr)):\n"
-                    "                self.findings.append({\n"
-                    "                    'rule': 'OWASP_A03_INJECTION',\n"
-                    "                    'line': node.lineno,\n"
-                    "                    'severity': 'critical',\n"
-                    "                    'message': 'Potential SQL injection: unparameterized query execution detected.'\n"
-                    "                })\n"
-                    "        self.generic_visit(node)\n"
-                    "```\n\n"
-                    "### File: requirements.txt\n"
-                    "```text\n"
-                    "fastapi>=0.110.0\n"
-                    "uvicorn>=0.28.0\n"
-                    "pydantic>=2.6.0\n"
-                    "sqlalchemy>=2.0.28\n"
-                    "psycopg2-binary>=2.9.9\n"
-                    "redis>=5.0.2\n"
-                    "pytest>=8.0.0\n"
-                    "requests>=2.31.0\n"
-                    "```\n\n"
-                    "### File: README.md\n"
-                    "```markdown\n"
-                    "# AI Code Reviewer\n"
-                    "Autonomous GitHub pull request analysis bot with AST static scanning and OWASP security checks.\n"
-                    "```\n"
-                )
+                "code_bundle": AI_CODE_REVIEWER_BUNDLE
             }
         }
     },
@@ -529,37 +427,7 @@ TEMPLATE_DEFINITIONS: Dict[str, Dict[str, Any]] = {
                 )
             },
             "CODE_GENERATION": {
-                "code_bundle": (
-                    "### File: backend/main.py\n"
-                    "```python\n"
-                    "from fastapi import FastAPI, HTTPException, status\n"
-                    "from pydantic import BaseModel, Field\n"
-                    "import uuid\n\n"
-                    "app = FastAPI(title='FinTech Escrow API', version='1.0.0')\n\n"
-                    "@app.get('/api/v1/health')\n"
-                    "def health():\n"
-                    "    return {'status': 'healthy', 'ledger': 'balanced', 'currency': 'USD'}\n\n"
-                    "class MilestoneReleaseRequest(BaseModel):\n"
-                    "    milestone_id: str\n"
-                    "    approved_by: str\n\n"
-                    "@app.post('/api/v1/escrows/{contract_id}/release')\n"
-                    "def release_milestone(contract_id: str, payload: MilestoneReleaseRequest):\n"
-                    "    return {\n"
-                    "        'status': 'disbursed',\n"
-                    "        'contract_id': contract_id,\n"
-                    "        'milestone_id': payload.milestone_id,\n"
-                    "        'payout_transfer_id': f'tr_{uuid.uuid4().hex[:12]}'\n"
-                    "    }\n"
-                    "```\n\n"
-                    "### File: requirements.txt\n"
-                    "```text\n"
-                    "fastapi>=0.110.0\n"
-                    "uvicorn>=0.28.0\n"
-                    "pydantic>=2.6.0\n"
-                    "stripe>=8.0.0\n"
-                    "sqlalchemy>=2.0.28\n"
-                    "```\n"
-                )
+                "code_bundle": FINTECH_ESCROW_BUNDLE
             }
         }
     },
@@ -670,23 +538,7 @@ TEMPLATE_DEFINITIONS: Dict[str, Dict[str, Any]] = {
                 )
             },
             "CODE_GENERATION": {
-                "code_bundle": (
-                    "### File: backend/main.py\n"
-                    "```python\n"
-                    "from fastapi import FastAPI\n"
-                    "app = FastAPI(title='HIPAA Telehealth API', version='1.0.0')\n\n"
-                    "@app.get('/api/v1/health')\n"
-                    "def health():\n"
-                    "    return {'status': 'healthy', 'hipaa_audit': 'active', 'webrtc_signaling': 'online'}\n"
-                    "```\n\n"
-                    "### File: requirements.txt\n"
-                    "```text\n"
-                    "fastapi>=0.110.0\n"
-                    "uvicorn>=0.28.0\n"
-                    "pydantic>=2.6.0\n"
-                    "sqlalchemy>=2.0.28\n"
-                    "```\n"
-                )
+                "code_bundle": HEALTHCARE_TELEHEALTH_BUNDLE
             }
         }
     },
@@ -802,24 +654,7 @@ TEMPLATE_DEFINITIONS: Dict[str, Dict[str, Any]] = {
                 )
             },
             "CODE_GENERATION": {
-                "code_bundle": (
-                    "### File: backend/main.py\n"
-                    "```python\n"
-                    "from fastapi import FastAPI\n"
-                    "app = FastAPI(title='Multi-Vendor Marketplace API', version='1.0.0')\n\n"
-                    "@app.get('/api/v1/health')\n"
-                    "def health():\n"
-                    "    return {'status': 'healthy', 'catalog': 'online', 'cart_locks': 'redis_active'}\n"
-                    "```\n\n"
-                    "### File: requirements.txt\n"
-                    "```text\n"
-                    "fastapi>=0.110.0\n"
-                    "uvicorn>=0.28.0\n"
-                    "pydantic>=2.6.0\n"
-                    "redis>=5.0.2\n"
-                    "sqlalchemy>=2.0.28\n"
-                    "```\n"
-                )
+                "code_bundle": ECOMMERCE_MARKETPLACE_BUNDLE
             }
         }
     }
@@ -979,23 +814,7 @@ def synthesize_custom_project_seed(name: str, brief: str) -> Dict[str, Any]:
                 )
             },
             "CODE_GENERATION": {
-                "code_bundle": (
-                    f"### File: backend/main.py\n"
-                    f"```python\n"
-                    f"from fastapi import FastAPI\n"
-                    f"app = FastAPI(title='{clean_name} API', version='1.0.0')\n\n"
-                    f"@app.get('/api/v1/health')\n"
-                    f"def health():\n"
-                    f"    return {{'status': 'healthy', 'service': '{slug}'}}\n"
-                    f"```\n\n"
-                    f"### File: requirements.txt\n"
-                    f"```text\n"
-                    f"fastapi>=0.110.0\n"
-                    f"uvicorn>=0.28.0\n"
-                    f"pydantic>=2.6.0\n"
-                    f"sqlalchemy>=2.0.28\n"
-                    f"```\n"
-                )
+                "code_bundle": generate_custom_bundle(clean_name, slug)
             }
         }
     }

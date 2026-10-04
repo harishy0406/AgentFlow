@@ -27,9 +27,14 @@ from reportlab.platypus import (
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.pdfgen import canvas
 
-from app.models import Project, ArtifactNode, DriftRecord
-from app.agents.template_seeds import get_template_definition, synthesize_custom_project_seed
-from app.agents.scaffolder import sanitize_project_slug, parse_code_files
+try:
+    from ..models import Project, ArtifactNode, DriftRecord
+    from ..agents.template_seeds import get_template_definition, synthesize_custom_project_seed
+    from ..agents.scaffolder import sanitize_project_slug, parse_code_files
+except ImportError:
+    from app.models import Project, ArtifactNode, DriftRecord
+    from app.agents.template_seeds import get_template_definition, synthesize_custom_project_seed
+    from app.agents.scaffolder import sanitize_project_slug, parse_code_files
 
 
 class NumberedSlideCanvas(canvas.Canvas):
