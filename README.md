@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/logo.png" width="140" alt="AgentFlow Logo" />
+  <img width="400" height="150" alt="Neon AgentFlow Logo on Dark Grid" src="https://github.com/user-attachments/assets/2c8c5a8d-3dc9-457e-8239-6a8b633eceef" />
 </p>
 
 # AgentFlow: Dependency-Aware Multi-Agent Framework for Deterministic Software Engineering
