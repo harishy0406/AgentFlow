@@ -48,16 +48,21 @@ graph TD
 
 AgentFlow features a deterministic, high-fidelity slide deck generation engine built on ReportLab:
 
-- **Strict Landscape Format**: Rendered in Letter Landscape (`11 x 8.5 in` / `792 x 612 pt`), ready for executive walkthroughs and board pitches.
+- **Strict Landscape Format**: Rendered in Letter Landscape (`11 x 8.5 in` / `792 x 612 pt`), ready for executive walkthroughs and technical reviews.
 - **Zero AI / LLM Dependencies**: Generated entirely in pure code from live database records, OpenAPI route tables, and schema DDLs — ensuring 100% factual accuracy with zero hallucinations.
-- **Cyber Dark Theme**: Styled with a `#0A0E1A` background, `#00FF66` neon highlights, `#00B8D9` cyan accents, and automatic two-pass slide numbering (`Slide X of Y`).
-- **Standard 6-Slide Executive Deck**:
-  1. **Title & Mission Slide**: Project name, brief, generation timestamp, and system metadata.
-  2. **Executive Summary & Health Scorecard**: Real-time readiness gauge, artifact status breakdown, and drift indicators.
-  3. **Architecture & Database Schema**: DDL summary, primary entities, and relational layout.
-  4. **API Contracts Matrix**: REST endpoints, methods, response models, and security tags.
-  5. **Task Roadmap & Milestones**: Prioritized user stories, estimated hours, and critical path.
-  6. **Multi-Cloud IaC & Deployment**: Docker, Kubernetes, Terraform, and APM configurations.
+- **Executive Dark Midnight Theme**: Styled with a `#0B0F17` midnight canvas, crisp `#FFFFFF` headers, `#E2E8F0` body typography, `#38BDF8` sky blue accents, `#34D399` verified badges, and automatic two-pass slide numbering (`Slide X of Y`).
+- **Brand Identity Integration**: Incorporates the official white AgentFlow branding logo (`assets/PDF_Logo-white.png`) across running headers and cover slide hero banners.
+- **Complete 10-Slide Architectural Deck**:
+  1. **Title & Executive Mission Brief**: Project name, brief, lead architect attribution, generation timestamp, and topological readiness metrics.
+  2. **Table of Contents & Slide Agenda**: Interactive hyperlink navigation indexing all subsequent architectural sections.
+  3. **Executive Summary & Readiness Scorecard**: Multi-dimensional artifact health signals, score metrics, and architectural takeaways.
+  4. **System Design & Component Topology**: Decoupled microservices, ingestion queues, background worker daemons, and storage roles.
+  5. **Relational Data Models & Database Schema**: DDL summary, primary entities, foreign keys, and relational constraints.
+  6. **REST API Specifications & Service Contracts**: OpenAPI 3.0 route matrix, HTTP verbs, path parameter contracts, and auth scopes.
+  7. **Codebase Architecture & File Tree Explorer**: Verified file tree listing, AST syntax validation status, and local run command.
+  8. **Engineering Roadmap & Implementation Sprints**: Phased milestone deliverables, story points, and sprint gate criteria.
+  9. **CloudOps & Multi-Cloud Infrastructure (IaC)**: Terraform topologies (AWS ECS, GCP Cloud Run), Kubernetes manifests, and Docker Compose configs.
+  10. **Security Compliance, OWASP Audit & Signoff**: OWASP Top 10 mitigation verification, zero-trust RBAC checks, and cryptographic integrity seal.
 
 ### PDF Endpoints:
 - `GET /projects/{project_id}/presentation-pdf` — Download attachment (`.pdf`).
