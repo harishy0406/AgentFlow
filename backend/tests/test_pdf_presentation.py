@@ -151,3 +151,43 @@ def test_pdf_presentation_empty_project_with_links():
         db.delete(project)
         db.commit()
 
+
+def test_pdf_presentation_metadata_endpoint():
+    """Verify GET /projects/{id}/presentation-metadata returns 10-slide structural metadata and 404 on invalid ID."""
+    client = TestClient(app)
+    db = next(get_db())
+
+    project = Project(
+        id=uuid4(),
+        name="FinTech Analytics Deck",
+        brief="High-frequency transaction surveillance platform with anomaly detection.",
+    )
+    db.add(project)
+    db.commit()
+    db.refresh(project)
+
+    try:
+        res = client.get(f"/projects/{project.id}/presentation-metadata")
+        assert res.status_code == 200
+        data = res.json()
+
+        assert data["project_id"] == str(project.id)
+        assert data["project_name"] == "FinTech Analytics Deck"
+        assert data["total_slides"] == 10
+        assert data["format"] == "landscape"
+        assert "Executive Dark Midnight" in data["theme"]
+        assert data["branding"]["brand_name"] == "AgentFlow"
+        assert len(data["slides"]) == 10
+        assert data["slides"][0]["title"] == "Project Architecture & Executive Brief"
+        assert data["slides"][1]["title"] == "Table of Contents & Architectural Agenda"
+        assert data["slides"][9]["title"] == "Security Compliance, OWASP Audit & Signoff"
+        assert data["download_url"] == f"/projects/{project.id}/presentation-pdf"
+        assert data["preview_url"] == f"/projects/{project.id}/preview-presentation-pdf"
+
+        # Verify 404 behavior
+        res_404 = client.get(f"/projects/{uuid4()}/presentation-metadata")
+        assert res_404.status_code == 404
+    finally:
+        db.delete(project)
+        db.commit()
+

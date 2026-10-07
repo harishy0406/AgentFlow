@@ -502,6 +502,10 @@ export function getPresentationPdfUrl(projectId, inline = false) {
   return `${API_BASE}/projects/${projectId}/${endpoint}`;
 }
 
+export async function getPresentationMetadata(projectId) {
+  return request(`/projects/${projectId}/presentation-metadata`);
+}
+
 // ---------------------------------------------------------------------------
 // GraphQL Schema & Resolvers Engine
 // ---------------------------------------------------------------------------

@@ -902,5 +902,28 @@ class ProjectChatModifyOut(BaseModel):
     rescaffolded_files_count: int = 0
 
 
+# ---------------------------------------------------------------------------
+# Presentation Deck Metadata Schemas
+# ---------------------------------------------------------------------------
+
+class PresentationSlideMetadata(BaseModel):
+    slide_number: int
+    title: str
+    section_anchor: str
+    description: str
 
 
+class PresentationDeckMetadata(BaseModel):
+    project_id: UUID
+    project_name: str
+    format: str = "landscape"
+    page_size: str = "Letter (11 x 8.5 in / 792 x 612 pt)"
+    total_slides: int = 10
+    theme: str = "Executive Dark Midnight (#0B0F17)"
+    branding: Dict[str, Any]
+    slides: List[PresentationSlideMetadata]
+    artifact_nodes_count: int
+    readiness_status: str
+    download_url: str
+    preview_url: str
+    generated_at: str

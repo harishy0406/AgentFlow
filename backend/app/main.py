@@ -2220,6 +2220,112 @@ def preview_project_presentation_pdf(
         raise HTTPException(status_code=500, detail=f"Failed to render presentation PDF: {str(e)}")
 
 
+@app.get("/projects/{project_id}/presentation-metadata", response_model=schemas.PresentationDeckMetadata)
+def get_project_presentation_metadata(
+    project_id: UUID,
+    db: Session = Depends(get_db)
+):
+    """
+    Returns structural metadata for the 10-slide executive architectural presentation deck.
+    """
+    project = db.query(models.Project).filter(models.Project.id == project_id).first()
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    nodes_count = len(project.artifact_nodes) if project.artifact_nodes else 0
+    readiness = "PRODUCTION READY" if nodes_count >= 7 else f"{nodes_count}/7 ARTIFACTS GENERATED"
+
+    slides = [
+        schemas.PresentationSlideMetadata(
+            slide_number=1,
+            title="Project Architecture & Executive Brief",
+            section_anchor="cover",
+            description="Project mission, lead architect attribution, and topological readiness metrics."
+        ),
+        schemas.PresentationSlideMetadata(
+            slide_number=2,
+            title="Table of Contents & Architectural Agenda",
+            section_anchor="toc",
+            description="Interactive hyperlink navigation indexing all subsequent specification sections."
+        ),
+        schemas.PresentationSlideMetadata(
+            slide_number=3,
+            title="Executive Summary & Readiness Scorecard",
+            section_anchor="scorecard",
+            description="Engineering telemetry, artifact quality signals, and automated audit status."
+        ),
+        schemas.PresentationSlideMetadata(
+            slide_number=4,
+            title="System Design & Component Topology",
+            section_anchor="topology",
+            description="Microservice boundaries, queue orchestration, and decoupled ingestion patterns."
+        ),
+        schemas.PresentationSlideMetadata(
+            slide_number=5,
+            title="Relational Data Models & Database Schema",
+            section_anchor="schema",
+            description="PostgreSQL DDL tables, primary & foreign keys, constraints, and persistence roles."
+        ),
+        schemas.PresentationSlideMetadata(
+            slide_number=6,
+            title="REST API Specifications & Service Contracts",
+            section_anchor="api",
+            description="OpenAPI 3.0.3 endpoints, HTTP verbs, parameter schemas, and response contracts."
+        ),
+        schemas.PresentationSlideMetadata(
+            slide_number=7,
+            title="Codebase Architecture & File Tree Explorer",
+            section_anchor="codebase",
+            description="Generated project source code files, repository structure, and AST syntax checks."
+        ),
+        schemas.PresentationSlideMetadata(
+            slide_number=8,
+            title="Engineering Roadmap & Implementation Sprints",
+            section_anchor="roadmap",
+            description="Phased development breakdown, acceptance criteria, story points, and task sequencing."
+        ),
+        schemas.PresentationSlideMetadata(
+            slide_number=9,
+            title="CloudOps & Multi-Cloud Infrastructure (IaC)",
+            section_anchor="iac",
+            description="Terraform modules, AWS ECS, Google Cloud Run, Kubernetes manifests, and Docker Compose."
+        ),
+        schemas.PresentationSlideMetadata(
+            slide_number=10,
+            title="Security Compliance, OWASP Audit & Signoff",
+            section_anchor="security",
+            description="OWASP Top 10 mitigation verification, zero-trust RBAC, and cryptographic integrity seal."
+        ),
+    ]
+
+    return schemas.PresentationDeckMetadata(
+        project_id=project.id,
+        project_name=project.name,
+        format="landscape",
+        page_size="Letter (11 x 8.5 in / 792 x 612 pt)",
+        total_slides=10,
+        theme="Executive Dark Midnight (#0B0F17)",
+        branding={
+            "brand_name": "AgentFlow",
+            "logo_asset": "assets/PDF_Logo-white.png",
+            "color_palette": {
+                "background": "#0B0F17",
+                "text_primary": "#FFFFFF",
+                "text_body": "#E2E8F0",
+                "accent_blue": "#38BDF8",
+                "accent_green": "#34D399",
+                "border": "#26334D"
+            }
+        },
+        slides=slides,
+        artifact_nodes_count=nodes_count,
+        readiness_status=readiness,
+        download_url=f"/projects/{project.id}/presentation-pdf",
+        preview_url=f"/projects/{project.id}/preview-presentation-pdf",
+        generated_at=datetime.now(timezone.utc).isoformat()
+    )
+
+
 # ---------------------------------------------------------------------------
 # Phase 14: Architecture Decision Records (ADR) Engine
 # ---------------------------------------------------------------------------
