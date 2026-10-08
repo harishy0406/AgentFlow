@@ -176,6 +176,7 @@ def test_pdf_presentation_metadata_endpoint():
         assert data["total_slides"] == 10
         assert data["format"] == "landscape"
         assert "Executive Dark Midnight" in data["theme"]
+        assert data["supported_themes"] == ["dark", "light"]
         assert data["branding"]["brand_name"] == "AgentFlow"
         assert len(data["slides"]) == 10
         assert data["slides"][0]["title"] == "Project Architecture & Executive Brief"
@@ -187,6 +188,75 @@ def test_pdf_presentation_metadata_endpoint():
         # Verify 404 behavior
         res_404 = client.get(f"/projects/{uuid4()}/presentation-metadata")
         assert res_404.status_code == 404
+    finally:
+        db.delete(project)
+        db.commit()
+
+
+def test_pdf_presentation_theme_modes_direct():
+    """Verify both light and dark theme direct PDF generation produces valid binaries."""
+    db = next(get_db())
+
+    project = Project(
+        id=uuid4(),
+        name="OmniCloud Mesh Orchestrator",
+        brief="Zero-trust service mesh control plane with eBPF telemetry.",
+    )
+    db.add(project)
+    db.commit()
+    db.refresh(project)
+
+    try:
+        # Dark theme PDF
+        dark_pdf = generate_project_presentation_pdf(str(project.id), db, theme="dark")
+        assert isinstance(dark_pdf, bytes)
+        assert len(dark_pdf) > 5000
+        assert dark_pdf.startswith(b"%PDF-1.")
+        assert b"/Link" in dark_pdf
+
+        # Light theme PDF
+        light_pdf = generate_project_presentation_pdf(str(project.id), db, theme="light")
+        assert isinstance(light_pdf, bytes)
+        assert len(light_pdf) > 5000
+        assert light_pdf.startswith(b"%PDF-1.")
+        assert b"/Link" in light_pdf
+    finally:
+        db.delete(project)
+        db.commit()
+
+
+def test_pdf_presentation_theme_query_params():
+    """Verify HTTP endpoints accept ?theme=light and ?theme=dark query parameters."""
+    client = TestClient(app)
+    db = next(get_db())
+
+    project = Project(
+        id=uuid4(),
+        name="VectorDB Streaming Pipeline",
+        brief="Realtime vector embedding ingestion pipeline with hybrid search.",
+    )
+    db.add(project)
+    db.commit()
+    db.refresh(project)
+
+    try:
+        # 1. Download endpoint with ?theme=light
+        res_light = client.get(f"/projects/{project.id}/presentation-pdf?theme=light")
+        assert res_light.status_code == 200
+        assert res_light.headers["content-type"] == "application/pdf"
+        assert "_light_presentation.pdf" in res_light.headers["content-disposition"]
+        assert res_light.content.startswith(b"%PDF-1.")
+
+        # 2. Preview endpoint with ?theme=dark
+        res_dark = client.get(f"/projects/{project.id}/preview-presentation-pdf?theme=dark")
+        assert res_dark.status_code == 200
+        assert res_dark.headers["content-type"] == "application/pdf"
+        assert "inline;" in res_dark.headers["content-disposition"]
+        assert res_dark.content.startswith(b"%PDF-1.")
+
+        # 3. Invalid theme should return 422 Unprocessable Entity
+        res_invalid = client.get(f"/projects/{project.id}/presentation-pdf?theme=neon_rainbow")
+        assert res_invalid.status_code == 422
     finally:
         db.delete(project)
         db.commit()

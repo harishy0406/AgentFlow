@@ -2,6 +2,7 @@
 AgentFlow Landscape Slide Deck & Architectural Report Generator
 Enterprise presentation deck synthesizing project blueprints, system designs,
 relational database schemas, API route contracts, codebase manifests, and security audits.
+Supports Executive Dark Mode (#0B0F17) and Printable Slate Light Mode (#F8FAFC).
 """
 
 import io
@@ -27,6 +28,8 @@ from reportlab.platypus import (
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.pdfgen import canvas
 
+_ReportLabParagraph = Paragraph
+
 try:
     from ..models import Project, ArtifactNode, DriftRecord
     from ..agents.template_seeds import get_template_definition, synthesize_custom_project_seed
@@ -37,12 +40,124 @@ except ImportError:
     from app.agents.scaffolder import sanitize_project_slug, parse_code_files
 
 
+
+DARK_THEME: Dict[str, Any] = {
+    "name": "dark",
+    "canvas_bg": "#0B0F17",
+    "top_accent": "#38BDF8",
+    "header_sub": "#94A3B8",
+    "header_project": "#FFFFFF",
+    "divider": "#1E293B",
+    "footer_sub": "#94A3B8",
+    "footer_center": "#64748B",
+    "footer_page": "#38BDF8",
+    "title_color": "#FFFFFF",
+    "h2_color": "#94A3B8",
+    "body_color": "#E2E8F0",
+    "body_secondary": "#CBD5E1",
+    "body_heading": "#FFFFFF",
+    "accent_color": "#38BDF8",
+    "success_color": "#34D399",
+    "warning_color": "#FBBF24",
+    "danger_color": "#F87171",
+    "purple_color": "#A78BFA",
+    "table_head_bg": "#1A2438",
+    "table_row_bg1": "#111827",
+    "table_row_bg2": "#162032",
+    "table_box_border": "#26334D",
+    "table_inner_grid": "#1E293B",
+    "card_bg_primary": "#121826",
+    "card_bg_secondary": "#162032",
+    "callout_blue_bg": "#0F2338",
+    "callout_blue_border": "#0284C7",
+    "callout_green_bg": "#0D281E",
+    "callout_green_border": "#10B981",
+    "callout_purple_bg": "#1A1D36",
+    "callout_purple_border": "#6366F1",
+    "code_text": "#38BDF8",
+    "code_snippet_color": "#A5F3FC",
+    "prefer_white_logo": True,
+}
+
+LIGHT_THEME: Dict[str, Any] = {
+    "name": "light",
+    "canvas_bg": "#F8FAFC",
+    "top_accent": "#0284C7",
+    "header_sub": "#475569",
+    "header_project": "#0F172A",
+    "divider": "#CBD5E1",
+    "footer_sub": "#475569",
+    "footer_center": "#64748B",
+    "footer_page": "#0284C7",
+    "title_color": "#0F172A",
+    "h2_color": "#475569",
+    "body_color": "#1E293B",
+    "body_secondary": "#334155",
+    "body_heading": "#0F172A",
+    "accent_color": "#0284C7",
+    "success_color": "#059669",
+    "warning_color": "#D97706",
+    "danger_color": "#DC2626",
+    "purple_color": "#7C3AED",
+    "table_head_bg": "#E2E8F0",
+    "table_row_bg1": "#FFFFFF",
+    "table_row_bg2": "#F8FAFC",
+    "table_box_border": "#CBD5E1",
+    "table_inner_grid": "#E2E8F0",
+    "card_bg_primary": "#FFFFFF",
+    "card_bg_secondary": "#F1F5F9",
+    "callout_blue_bg": "#F0F9FF",
+    "callout_blue_border": "#0284C7",
+    "callout_green_bg": "#ECFDF5",
+    "callout_green_border": "#059669",
+    "callout_purple_bg": "#F5F3FF",
+    "callout_purple_border": "#7C3AED",
+    "code_text": "#0369A1",
+    "code_snippet_color": "#0369A1",
+    "prefer_white_logo": False,
+}
+
+THEMES: Dict[str, Dict[str, Any]] = {
+    "dark": DARK_THEME,
+    "light": LIGHT_THEME,
+}
+
+COLOR_MAP_LIGHT: Dict[str, str] = {
+    "#0B0F17": "#F8FAFC",
+    "#0284C7": "#0284C7",
+    "#0D281E": "#ECFDF5",
+    "#10B981": "#059669",
+    "#0F2338": "#F0F9FF",
+    "#111827": "#FFFFFF",
+    "#121826": "#FFFFFF",
+    "#162032": "#F8FAFC",
+    "#1A1D36": "#F5F3FF",
+    "#6366F1": "#7C3AED",
+    "#1A2438": "#E2E8F0",
+    "#1E293B": "#CBD5E1",
+    "#26334D": "#CBD5E1",
+    "#34D399": "#059669",
+    "#38BDF8": "#0284C7",
+    "#64748B": "#64748B",
+    "#818CF8": "#4F46E5",
+    "#94A3B8": "#475569",
+    "#A5F3FC": "#0369A1",
+    "#A78BFA": "#7C3AED",
+    "#CBD5E1": "#334155",
+    "#E2E8F0": "#1E293B",
+    "#F87171": "#DC2626",
+    "#FBBF24": "#D97706",
+    "#FFFFFF": "#0F172A",
+}
+
 class NumberedSlideCanvas(canvas.Canvas):
     """
     Two-pass canvas that draws branding headers, footer metadata,
     and accurate 'Slide X of Y' pagination in landscape mode.
+    Respects active theme colors and branding preference.
     """
     project_name: str = "AgentFlow Blueprint"
+    theme_mode: str = "dark"
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -63,66 +178,69 @@ class NumberedSlideCanvas(canvas.Canvas):
     def draw_page_decorations(self, page_count: int):
         self.saveState()
         width, height = self._pagesize
+        mode = getattr(self, "theme_mode", "dark")
+        is_light = (mode == "light")
+        tc = lambda h: COLOR_MAP_LIGHT.get(h, h) if is_light else h
 
-        # 1. Header Accent Top Band (Cyan / Sky accent)
-        self.setFillColor(colors.HexColor("#38BDF8"))
+        # 1. Header Accent Top Band
+        self.setFillColor(colors.HexColor(tc("#38BDF8")))
         self.rect(0, height - 3, width, 3, fill=1, stroke=0)
 
         # 2. Header Branding & Title
-        white_logo = _find_brand_logo_path(prefer_white=True)
-        if white_logo:
+        logo_path = _find_brand_logo_path(prefer_white=(not is_light))
+        if logo_path:
             try:
-                self.drawImage(white_logo, 36, height - 28, width=48, height=17, mask='auto', preserveAspectRatio=True)
+                self.drawImage(logo_path, 36, height - 28, width=48, height=17, mask='auto', preserveAspectRatio=True)
                 self.setFont("Helvetica-Bold", 8.5)
-                self.setFillColor(colors.HexColor("#38BDF8"))
+                self.setFillColor(colors.HexColor(tc("#38BDF8")))
                 self.drawString(90, height - 19, "•")
                 self.setFont("Helvetica", 8.5)
-                self.setFillColor(colors.HexColor("#94A3B8"))
+                self.setFillColor(colors.HexColor(tc("#94A3B8")))
                 self.drawString(98, height - 19, "Enterprise Software Architectural Deck & Codebase Blueprint")
             except Exception:
                 self.setFont("Helvetica-Bold", 9)
-                self.setFillColor(colors.HexColor("#38BDF8"))
+                self.setFillColor(colors.HexColor(tc("#38BDF8")))
                 self.drawString(36, height - 19, "AGENTFLOW")
                 self.setFont("Helvetica", 8.5)
-                self.setFillColor(colors.HexColor("#94A3B8"))
+                self.setFillColor(colors.HexColor(tc("#94A3B8")))
                 self.drawString(104, height - 19, "•  Enterprise Software Architectural Deck & Codebase Blueprint")
         else:
             self.setFont("Helvetica-Bold", 9)
-            self.setFillColor(colors.HexColor("#38BDF8"))
+            self.setFillColor(colors.HexColor(tc("#38BDF8")))
             self.drawString(36, height - 19, "AGENTFLOW")
             self.setFont("Helvetica", 8.5)
-            self.setFillColor(colors.HexColor("#94A3B8"))
+            self.setFillColor(colors.HexColor(tc("#94A3B8")))
             self.drawString(104, height - 19, "•  Enterprise Software Architectural Deck & Codebase Blueprint")
 
         # Header Right: Project Name
         self.setFont("Helvetica-Bold", 8.5)
-        self.setFillColor(colors.HexColor("#FFFFFF"))
+        self.setFillColor(colors.HexColor(tc("#FFFFFF")))
         clean_proj_name = getattr(self, "project_name", "AgentFlow Architecture")[:45]
         self.drawRightString(width - 36, height - 19, clean_proj_name)
 
         # Header divider
-        self.setStrokeColor(colors.HexColor("#1E293B"))
+        self.setStrokeColor(colors.HexColor(tc("#1E293B")))
         self.setLineWidth(1)
         self.line(36, height - 33, width - 36, height - 33)
 
         # 3. Footer Band
-        self.setStrokeColor(colors.HexColor("#1E293B"))
+        self.setStrokeColor(colors.HexColor(tc("#1E293B")))
         self.setLineWidth(1)
         self.line(36, 30, width - 36, 30)
 
         # Footer Left: Platform attribution (ends at ~175 pt)
         self.setFont("Helvetica-Bold", 7.5)
-        self.setFillColor(colors.HexColor("#94A3B8"))
+        self.setFillColor(colors.HexColor(tc("#94A3B8")))
         self.drawString(36, 17, "AGENTFLOW AUTONOMOUS ENGINE")
 
         # Footer Center: Confidentiality notice (centered at 396 pt, spans ~275 to ~515 pt)
         self.setFont("Helvetica-Oblique", 7.5)
-        self.setFillColor(colors.HexColor("#64748B"))
+        self.setFillColor(colors.HexColor(tc("#64748B")))
         self.drawCentredString(width / 2.0, 17, "CONFIDENTIAL  •  ENTERPRISE ARCHITECTURAL SPECIFICATION")
 
         # Footer Right: Slide Number (starts at ~705 pt)
         self.setFont("Helvetica-Bold", 8)
-        self.setFillColor(colors.HexColor("#38BDF8"))
+        self.setFillColor(colors.HexColor(tc("#38BDF8")))
         page_num_str = f"Slide {self._pageNumber} of {page_count}"
         self.drawRightString(width - 36, 17, page_num_str)
 
@@ -131,12 +249,14 @@ class NumberedSlideCanvas(canvas.Canvas):
 
 def draw_dark_background(c: canvas.Canvas, doc: SimpleDocTemplate):
     """
-    Paints the dark midnight slate canvas background (#0B0F17)
+    Paints the themed background (Midnight Slate #0B0F17 or Printable Slate #F8FAFC)
     at the start of every page before flowables are rendered.
     """
     c.saveState()
     width, height = doc.pagesize
-    c.setFillColor(colors.HexColor("#0B0F17"))
+    mode = getattr(doc, "theme_mode", "dark")
+    bg_hex = COLOR_MAP_LIGHT["#0B0F17"] if mode == "light" else "#0B0F17"
+    c.setFillColor(colors.HexColor(bg_hex))
     c.rect(0, 0, width, height, fill=1, stroke=0)
     c.restoreState()
 
@@ -145,18 +265,26 @@ def _find_brand_logo_path(prefer_white: bool = True) -> Optional[str]:
     candidates = []
     if prefer_white:
         candidates.extend([
+            Path(__file__).parents[3] / "assets" / "PDF_Logo-white.png",
             Path(__file__).parents[2] / "assets" / "PDF_Logo-white.png",
             Path("assets/PDF_Logo-white.png"),
-            Path(__file__).parents[3] / "assets" / "PDF_Logo-white.png",
             Path("PDF_Logo-white.png"),
+            Path(__file__).parents[3] / "PDF_Logo-white.png",
         ])
     candidates.extend([
+        Path(__file__).parents[3] / "assets" / "logo.png",
+        Path(__file__).parents[3] / "logo.png",
         Path(__file__).parents[2] / "assets" / "logo.png",
-        Path(__file__).parents[2] / "logo.png",
         Path("assets/logo.png"),
         Path("logo.png"),
+        Path(__file__).parents[3] / "dashboard" / "public" / "logo.png",
         Path("dashboard/public/logo.png"),
     ])
+    if not prefer_white:
+        candidates.extend([
+            Path(__file__).parents[3] / "assets" / "PDF_Logo-white.png",
+            Path("assets/PDF_Logo-white.png"),
+        ])
     for p in candidates:
         if p.exists():
             return str(p.resolve())
@@ -306,16 +434,20 @@ def _extract_codebase_files(project: Project, nodes: Dict[str, ArtifactNode]) ->
     return files_list[:6]
 
 
-def generate_project_presentation_pdf(project_id: str, db: Session) -> bytes:
+def generate_project_presentation_pdf(project_id: str, db: Session, theme: str = "dark") -> bytes:
     target_id = UUID(project_id) if isinstance(project_id, str) else project_id
-    project = db.query(Project).filter(Project.id == target_id).first()
+    project = db.get(Project, target_id)
     if not project:
         raise ValueError(f"Project with ID '{project_id}' not found")
 
-    # Set canvas project name
+    theme_mode = "light" if str(theme).lower() == "light" else "dark"
+    is_light = (theme_mode == "light")
+
+    # Set canvas project name & theme
     class DynamicSlideCanvas(NumberedSlideCanvas):
         pass
     DynamicSlideCanvas.project_name = project.name
+    DynamicSlideCanvas.theme_mode = theme_mode
 
     # Fetch artifacts
     nodes = {node.artifact_type: node for node in project.artifact_nodes}
@@ -409,13 +541,32 @@ def generate_project_presentation_pdf(project_id: str, db: Session) -> bytes:
 
     styles = getSampleStyleSheet()
 
+    def tc(hex_val: str) -> str:
+        return COLOR_MAP_LIGHT.get(hex_val, hex_val) if is_light else hex_val
+
+    def tcolor(hex_val: str):
+        return colors.HexColor(tc(hex_val))
+
+    def translate_markup(text_str: str) -> str:
+        if is_light:
+            for d_hex, l_hex in COLOR_MAP_LIGHT.items():
+                text_str = text_str.replace(d_hex, l_hex)
+                text_str = text_str.replace(d_hex.lower(), l_hex)
+        return text_str
+
+    # Theme-aware Paragraph wrapper
+    def Paragraph(text_content, *args, **kwargs):
+        if isinstance(text_content, str):
+            text_content = translate_markup(text_content)
+        return _ReportLabParagraph(text_content, *args, **kwargs)
+
     title_style = ParagraphStyle(
         "SlideTitle",
         parent=styles["Heading1"],
         fontName="Helvetica-Bold",
         fontSize=20,
         leading=24,
-        textColor=colors.HexColor("#FFFFFF"),
+        textColor=tcolor("#FFFFFF"),
         spaceAfter=4,
     )
 
@@ -425,7 +576,7 @@ def generate_project_presentation_pdf(project_id: str, db: Session) -> bytes:
         fontName="Helvetica",
         fontSize=10.5,
         leading=14.5,
-        textColor=colors.HexColor("#94A3B8"),
+        textColor=tcolor("#94A3B8"),
         spaceAfter=12,
     )
 
@@ -435,13 +586,13 @@ def generate_project_presentation_pdf(project_id: str, db: Session) -> bytes:
         fontName="Helvetica",
         fontSize=9,
         leading=13,
-        textColor=colors.HexColor("#E2E8F0"),
+        textColor=tcolor("#E2E8F0"),
     )
 
     accent_body = ParagraphStyle(
         "AccentBody",
         parent=body_style,
-        textColor=colors.HexColor("#38BDF8"),
+        textColor=tcolor("#38BDF8"),
         fontName="Helvetica-Bold",
         fontSize=9,
         leading=13,
@@ -453,7 +604,7 @@ def generate_project_presentation_pdf(project_id: str, db: Session) -> bytes:
         fontName="Courier",
         fontSize=8.5,
         leading=11,
-        textColor=colors.HexColor("#38BDF8"),
+        textColor=tcolor("#38BDF8"),
     )
 
     nav_link_style = ParagraphStyle(
@@ -462,7 +613,7 @@ def generate_project_presentation_pdf(project_id: str, db: Session) -> bytes:
         fontName="Helvetica-Bold",
         fontSize=8.5,
         leading=11,
-        textColor=colors.HexColor("#38BDF8"),
+        textColor=tcolor("#38BDF8"),
         alignment=2,  # Right aligned
     )
 
@@ -471,7 +622,7 @@ def generate_project_presentation_pdf(project_id: str, db: Session) -> bytes:
     # ==========================================
     # SLIDE 1: COVER / TITLE SLIDE
     # ==========================================
-    white_logo_path = _find_brand_logo_path(prefer_white=True)
+    white_logo_path = _find_brand_logo_path(prefer_white=(not is_light))
     if white_logo_path:
         try:
             logo_img = Image(white_logo_path, width=135, height=48)
@@ -509,8 +660,8 @@ def generate_project_presentation_pdf(project_id: str, db: Session) -> bytes:
     ]
     brief_table = Table(brief_data, colWidths=[720])
     brief_table.setStyle(TableStyle([
-        ("BACKGROUND", (0, 0), (-1, -1), colors.HexColor("#121826")),
-        ("BOX", (0, 0), (-1, -1), 1, colors.HexColor("#26334D")),
+        ("BACKGROUND", (0, 0), (-1, -1), tcolor("#121826")),
+        ("BOX", (0, 0), (-1, -1), 1, tcolor("#26334D")),
         ("PADDING", (0, 0), (-1, -1), 10),
         ("TOPPADDING", (0, 0), (-1, 0), 8),
         ("BOTTOMPADDING", (0, 0), (-1, 0), 4),
@@ -527,8 +678,8 @@ def generate_project_presentation_pdf(project_id: str, db: Session) -> bytes:
     ]
     dates_table = Table(dates_data, colWidths=[360, 360])
     dates_table.setStyle(TableStyle([
-        ("BACKGROUND", (0, 0), (-1, -1), colors.HexColor("#162032")),
-        ("BOX", (0, 0), (-1, -1), 1, colors.HexColor("#26334D")),
+        ("BACKGROUND", (0, 0), (-1, -1), tcolor("#162032")),
+        ("BOX", (0, 0), (-1, -1), 1, tcolor("#26334D")),
         ("PADDING", (0, 0), (-1, -1), 10),
     ]))
     story.append(dates_table)
@@ -554,9 +705,9 @@ def generate_project_presentation_pdf(project_id: str, db: Session) -> bytes:
     ]
     meta_table = Table(meta_data, colWidths=[240, 240, 240])
     meta_table.setStyle(TableStyle([
-        ("BACKGROUND", (0, 0), (-1, -1), colors.HexColor("#121826")),
-        ("BOX", (0, 0), (-1, -1), 1, colors.HexColor("#26334D")),
-        ("INNERGRID", (0, 0), (-1, -1), 0.5, colors.HexColor("#1E293B")),
+        ("BACKGROUND", (0, 0), (-1, -1), tcolor("#121826")),
+        ("BOX", (0, 0), (-1, -1), 1, tcolor("#26334D")),
+        ("INNERGRID", (0, 0), (-1, -1), 0.5, tcolor("#1E293B")),
         ("PADDING", (0, 0), (-1, -1), 10),
     ]))
     story.append(meta_table)
@@ -622,10 +773,10 @@ def generate_project_presentation_pdf(project_id: str, db: Session) -> bytes:
     ]
     agenda_table = Table(agenda_rows, colWidths=[70, 520, 130])
     agenda_table.setStyle(TableStyle([
-        ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#1A2438")),
-        ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.HexColor("#111827"), colors.HexColor("#162032")]),
-        ("BOX", (0, 0), (-1, -1), 1, colors.HexColor("#26334D")),
-        ("INNERGRID", (0, 0), (-1, -1), 0.5, colors.HexColor("#1E293B")),
+        ("BACKGROUND", (0, 0), (-1, 0), tcolor("#1A2438")),
+        ("ROWBACKGROUNDS", (0, 1), (-1, -1), [tcolor("#111827"), tcolor("#162032")]),
+        ("BOX", (0, 0), (-1, -1), 1, tcolor("#26334D")),
+        ("INNERGRID", (0, 0), (-1, -1), 0.5, tcolor("#1E293B")),
         ("PADDING", (0, 0), (-1, -1), 6.5),
         ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
     ]))
@@ -641,8 +792,8 @@ def generate_project_presentation_pdf(project_id: str, db: Session) -> bytes:
         ]
     ], colWidths=[720])
     agenda_callout.setStyle(TableStyle([
-        ("BACKGROUND", (0, 0), (-1, -1), colors.HexColor("#0F2338")),
-        ("BOX", (0, 0), (-1, -1), 1, colors.HexColor("#0284C7")),
+        ("BACKGROUND", (0, 0), (-1, -1), tcolor("#0F2338")),
+        ("BOX", (0, 0), (-1, -1), 1, tcolor("#0284C7")),
         ("PADDING", (0, 0), (-1, -1), 9),
     ]))
     story.append(agenda_callout)
@@ -710,10 +861,10 @@ def generate_project_presentation_pdf(project_id: str, db: Session) -> bytes:
     ]
     health_table = Table(health_rows, colWidths=[170, 70, 480])
     health_table.setStyle(TableStyle([
-        ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#1A2438")),
-        ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.HexColor("#111827"), colors.HexColor("#162032")]),
-        ("BOX", (0, 0), (-1, -1), 1, colors.HexColor("#26334D")),
-        ("INNERGRID", (0, 0), (-1, -1), 0.5, colors.HexColor("#1E293B")),
+        ("BACKGROUND", (0, 0), (-1, 0), tcolor("#1A2438")),
+        ("ROWBACKGROUNDS", (0, 1), (-1, -1), [tcolor("#111827"), tcolor("#162032")]),
+        ("BOX", (0, 0), (-1, -1), 1, tcolor("#26334D")),
+        ("INNERGRID", (0, 0), (-1, -1), 0.5, tcolor("#1E293B")),
         ("PADDING", (0, 0), (-1, -1), 5.5),
     ]))
     story.append(health_table)
@@ -727,8 +878,8 @@ def generate_project_presentation_pdf(project_id: str, db: Session) -> bytes:
     )
     summary_box = Table([[summary_p]], colWidths=[720])
     summary_box.setStyle(TableStyle([
-        ("BACKGROUND", (0, 0), (-1, -1), colors.HexColor("#0D281E")),
-        ("BOX", (0, 0), (-1, -1), 1, colors.HexColor("#10B981")),
+        ("BACKGROUND", (0, 0), (-1, -1), tcolor("#0D281E")),
+        ("BOX", (0, 0), (-1, -1), 1, tcolor("#10B981")),
         ("PADDING", (0, 0), (-1, -1), 10),
     ]))
     story.append(summary_box)
@@ -778,10 +929,10 @@ def generate_project_presentation_pdf(project_id: str, db: Session) -> bytes:
     ]
     comp_table = Table(comp_rows, colWidths=[160, 180, 380])
     comp_table.setStyle(TableStyle([
-        ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#1A2438")),
-        ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.HexColor("#111827"), colors.HexColor("#162032")]),
-        ("BOX", (0, 0), (-1, -1), 1, colors.HexColor("#26334D")),
-        ("INNERGRID", (0, 0), (-1, -1), 0.5, colors.HexColor("#1E293B")),
+        ("BACKGROUND", (0, 0), (-1, 0), tcolor("#1A2438")),
+        ("ROWBACKGROUNDS", (0, 1), (-1, -1), [tcolor("#111827"), tcolor("#162032")]),
+        ("BOX", (0, 0), (-1, -1), 1, tcolor("#26334D")),
+        ("INNERGRID", (0, 0), (-1, -1), 0.5, tcolor("#1E293B")),
         ("PADDING", (0, 0), (-1, -1), 7.5),
     ]))
     story.append(comp_table)
@@ -793,8 +944,8 @@ def generate_project_presentation_pdf(project_id: str, db: Session) -> bytes:
         [Paragraph(sdd_snippet, body_style)]
     ], colWidths=[720])
     arch_box.setStyle(TableStyle([
-        ("BACKGROUND", (0, 0), (-1, -1), colors.HexColor("#121826")),
-        ("BOX", (0, 0), (-1, -1), 1, colors.HexColor("#26334D")),
+        ("BACKGROUND", (0, 0), (-1, -1), tcolor("#121826")),
+        ("BOX", (0, 0), (-1, -1), 1, tcolor("#26334D")),
         ("PADDING", (0, 0), (-1, -1), 10),
     ]))
     story.append(arch_box)
@@ -825,10 +976,10 @@ def generate_project_presentation_pdf(project_id: str, db: Session) -> bytes:
         ])
     db_table = Table(db_rows, colWidths=[150, 410, 160])
     db_table.setStyle(TableStyle([
-        ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#1A2438")),
-        ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.HexColor("#111827"), colors.HexColor("#162032")]),
-        ("BOX", (0, 0), (-1, -1), 1, colors.HexColor("#26334D")),
-        ("INNERGRID", (0, 0), (-1, -1), 0.5, colors.HexColor("#1E293B")),
+        ("BACKGROUND", (0, 0), (-1, 0), tcolor("#1A2438")),
+        ("ROWBACKGROUNDS", (0, 1), (-1, -1), [tcolor("#111827"), tcolor("#162032")]),
+        ("BOX", (0, 0), (-1, -1), 1, tcolor("#26334D")),
+        ("INNERGRID", (0, 0), (-1, -1), 0.5, tcolor("#1E293B")),
         ("PADDING", (0, 0), (-1, -1), 7.5),
     ]))
     story.append(db_table)
@@ -844,8 +995,8 @@ def generate_project_presentation_pdf(project_id: str, db: Session) -> bytes:
         ]
     ], colWidths=[720])
     db_footer.setStyle(TableStyle([
-        ("BACKGROUND", (0, 0), (-1, -1), colors.HexColor("#1A1D36")),
-        ("BOX", (0, 0), (-1, -1), 1, colors.HexColor("#6366F1")),
+        ("BACKGROUND", (0, 0), (-1, -1), tcolor("#1A1D36")),
+        ("BOX", (0, 0), (-1, -1), 1, tcolor("#6366F1")),
         ("PADDING", (0, 0), (-1, -1), 10),
     ]))
     story.append(db_footer)
@@ -880,10 +1031,10 @@ def generate_project_presentation_pdf(project_id: str, db: Session) -> bytes:
         ])
     api_table = Table(api_rows, colWidths=[70, 250, 310, 90])
     api_table.setStyle(TableStyle([
-        ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#1A2438")),
-        ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.HexColor("#111827"), colors.HexColor("#162032")]),
-        ("BOX", (0, 0), (-1, -1), 1, colors.HexColor("#26334D")),
-        ("INNERGRID", (0, 0), (-1, -1), 0.5, colors.HexColor("#1E293B")),
+        ("BACKGROUND", (0, 0), (-1, 0), tcolor("#1A2438")),
+        ("ROWBACKGROUNDS", (0, 1), (-1, -1), [tcolor("#111827"), tcolor("#162032")]),
+        ("BOX", (0, 0), (-1, -1), 1, tcolor("#26334D")),
+        ("INNERGRID", (0, 0), (-1, -1), 0.5, tcolor("#1E293B")),
         ("PADDING", (0, 0), (-1, -1), 6.5),
     ]))
     story.append(api_table)
@@ -898,8 +1049,8 @@ def generate_project_presentation_pdf(project_id: str, db: Session) -> bytes:
         ]
     ], colWidths=[720])
     api_footer.setStyle(TableStyle([
-        ("BACKGROUND", (0, 0), (-1, -1), colors.HexColor("#0D281E")),
-        ("BOX", (0, 0), (-1, -1), 1, colors.HexColor("#10B981")),
+        ("BACKGROUND", (0, 0), (-1, -1), tcolor("#0D281E")),
+        ("BOX", (0, 0), (-1, -1), 1, tcolor("#10B981")),
         ("PADDING", (0, 0), (-1, -1), 10),
     ]))
     story.append(api_footer)
@@ -934,10 +1085,10 @@ def generate_project_presentation_pdf(project_id: str, db: Session) -> bytes:
         ])
     code_table = Table(code_rows, colWidths=[200, 280, 110, 130])
     code_table.setStyle(TableStyle([
-        ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#1A2438")),
-        ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.HexColor("#111827"), colors.HexColor("#162032")]),
-        ("BOX", (0, 0), (-1, -1), 1, colors.HexColor("#26334D")),
-        ("INNERGRID", (0, 0), (-1, -1), 0.5, colors.HexColor("#1E293B")),
+        ("BACKGROUND", (0, 0), (-1, 0), tcolor("#1A2438")),
+        ("ROWBACKGROUNDS", (0, 1), (-1, -1), [tcolor("#111827"), tcolor("#162032")]),
+        ("BOX", (0, 0), (-1, -1), 1, tcolor("#26334D")),
+        ("INNERGRID", (0, 0), (-1, -1), 0.5, tcolor("#1E293B")),
         ("PADDING", (0, 0), (-1, -1), 7.5),
     ]))
     story.append(code_table)
@@ -954,8 +1105,8 @@ def generate_project_presentation_pdf(project_id: str, db: Session) -> bytes:
         ]
     ], colWidths=[720])
     code_callout.setStyle(TableStyle([
-        ("BACKGROUND", (0, 0), (-1, -1), colors.HexColor("#0F2338")),
-        ("BOX", (0, 0), (-1, -1), 1, colors.HexColor("#0284C7")),
+        ("BACKGROUND", (0, 0), (-1, -1), tcolor("#0F2338")),
+        ("BOX", (0, 0), (-1, -1), 1, tcolor("#0284C7")),
         ("PADDING", (0, 0), (-1, -1), 10),
     ]))
     story.append(code_callout)
@@ -1014,10 +1165,10 @@ def generate_project_presentation_pdf(project_id: str, db: Session) -> bytes:
 
     task_table = Table(task_rows, colWidths=[110, 420, 80, 110])
     task_table.setStyle(TableStyle([
-        ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#1A2438")),
-        ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.HexColor("#111827"), colors.HexColor("#162032")]),
-        ("BOX", (0, 0), (-1, -1), 1, colors.HexColor("#26334D")),
-        ("INNERGRID", (0, 0), (-1, -1), 0.5, colors.HexColor("#1E293B")),
+        ("BACKGROUND", (0, 0), (-1, 0), tcolor("#1A2438")),
+        ("ROWBACKGROUNDS", (0, 1), (-1, -1), [tcolor("#111827"), tcolor("#162032")]),
+        ("BOX", (0, 0), (-1, -1), 1, tcolor("#26334D")),
+        ("INNERGRID", (0, 0), (-1, -1), 0.5, tcolor("#1E293B")),
         ("PADDING", (0, 0), (-1, -1), 7.5),
     ]))
     story.append(task_table)
@@ -1032,8 +1183,8 @@ def generate_project_presentation_pdf(project_id: str, db: Session) -> bytes:
         ]
     ], colWidths=[720])
     task_callout.setStyle(TableStyle([
-        ("BACKGROUND", (0, 0), (-1, -1), colors.HexColor("#1A1D36")),
-        ("BOX", (0, 0), (-1, -1), 1, colors.HexColor("#6366F1")),
+        ("BACKGROUND", (0, 0), (-1, -1), tcolor("#1A1D36")),
+        ("BOX", (0, 0), (-1, -1), 1, tcolor("#6366F1")),
         ("PADDING", (0, 0), (-1, -1), 10),
     ]))
     story.append(task_callout)
@@ -1083,10 +1234,10 @@ def generate_project_presentation_pdf(project_id: str, db: Session) -> bytes:
     ]
     iac_table = Table(iac_matrix, colWidths=[150, 195, 195, 180])
     iac_table.setStyle(TableStyle([
-        ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#1A2438")),
-        ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.HexColor("#111827"), colors.HexColor("#162032")]),
-        ("BOX", (0, 0), (-1, -1), 1, colors.HexColor("#26334D")),
-        ("INNERGRID", (0, 0), (-1, -1), 0.5, colors.HexColor("#1E293B")),
+        ("BACKGROUND", (0, 0), (-1, 0), tcolor("#1A2438")),
+        ("ROWBACKGROUNDS", (0, 1), (-1, -1), [tcolor("#111827"), tcolor("#162032")]),
+        ("BOX", (0, 0), (-1, -1), 1, tcolor("#26334D")),
+        ("INNERGRID", (0, 0), (-1, -1), 0.5, tcolor("#1E293B")),
         ("PADDING", (0, 0), (-1, -1), 7.5),
     ]))
     story.append(iac_table)
@@ -1101,8 +1252,8 @@ def generate_project_presentation_pdf(project_id: str, db: Session) -> bytes:
         ]
     ], colWidths=[720])
     iac_callout.setStyle(TableStyle([
-        ("BACKGROUND", (0, 0), (-1, -1), colors.HexColor("#0F2338")),
-        ("BOX", (0, 0), (-1, -1), 1, colors.HexColor("#0284C7")),
+        ("BACKGROUND", (0, 0), (-1, -1), tcolor("#0F2338")),
+        ("BOX", (0, 0), (-1, -1), 1, tcolor("#0284C7")),
         ("PADDING", (0, 0), (-1, -1), 10),
     ]))
     story.append(iac_callout)
@@ -1152,10 +1303,10 @@ def generate_project_presentation_pdf(project_id: str, db: Session) -> bytes:
     ]
     sec_table = Table(sec_rows, colWidths=[180, 420, 120])
     sec_table.setStyle(TableStyle([
-        ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#1A2438")),
-        ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.HexColor("#111827"), colors.HexColor("#162032")]),
-        ("BOX", (0, 0), (-1, -1), 1, colors.HexColor("#26334D")),
-        ("INNERGRID", (0, 0), (-1, -1), 0.5, colors.HexColor("#1E293B")),
+        ("BACKGROUND", (0, 0), (-1, 0), tcolor("#1A2438")),
+        ("ROWBACKGROUNDS", (0, 1), (-1, -1), [tcolor("#111827"), tcolor("#162032")]),
+        ("BOX", (0, 0), (-1, -1), 1, tcolor("#26334D")),
+        ("INNERGRID", (0, 0), (-1, -1), 0.5, tcolor("#1E293B")),
         ("PADDING", (0, 0), (-1, -1), 7.5),
     ]))
     story.append(sec_table)
@@ -1172,13 +1323,14 @@ def generate_project_presentation_pdf(project_id: str, db: Session) -> bytes:
         ]
     ], colWidths=[720])
     final_signoff.setStyle(TableStyle([
-        ("BACKGROUND", (0, 0), (-1, -1), colors.HexColor("#0D281E")),
-        ("BOX", (0, 0), (-1, -1), 1, colors.HexColor("#10B981")),
+        ("BACKGROUND", (0, 0), (-1, -1), tcolor("#0D281E")),
+        ("BOX", (0, 0), (-1, -1), 1, tcolor("#10B981")),
         ("PADDING", (0, 0), (-1, -1), 12),
     ]))
     story.append(final_signoff)
 
     # Build the document with dark background canvas hooks
+    doc.theme_mode = theme_mode
     doc.build(
         story,
         canvasmaker=DynamicSlideCanvas,

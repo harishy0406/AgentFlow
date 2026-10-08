@@ -432,7 +432,7 @@ def resolve_drift_record(
     Returns:
         The updated DriftRecord or None if not found.
     """
-    record = db.query(DriftRecord).get(drift_id)
+    record = db.get(DriftRecord, drift_id)
     if record is None:
         return None
 

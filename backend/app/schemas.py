@@ -920,6 +920,7 @@ class PresentationDeckMetadata(BaseModel):
     page_size: str = "Letter (11 x 8.5 in / 792 x 612 pt)"
     total_slides: int = 10
     theme: str = "Executive Dark Midnight (#0B0F17)"
+    supported_themes: List[str] = ["dark", "light"]
     branding: Dict[str, Any]
     slides: List[PresentationSlideMetadata]
     artifact_nodes_count: int

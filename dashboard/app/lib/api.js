@@ -496,10 +496,11 @@ export async function generateProjectIac(projectId) {
 // Landscape Presentation PDF (Deterministic ReportLab Generator)
 // ---------------------------------------------------------------------------
 
-export function getPresentationPdfUrl(projectId, inline = false) {
+export function getPresentationPdfUrl(projectId, inline = false, theme = "dark") {
   const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
   const endpoint = inline ? "preview-presentation-pdf" : "presentation-pdf";
-  return `${API_BASE}/projects/${projectId}/${endpoint}`;
+  const themeParam = theme ? `?theme=${encodeURIComponent(theme)}` : "";
+  return `${API_BASE}/projects/${projectId}/${endpoint}${themeParam}`;
 }
 
 export async function getPresentationMetadata(projectId) {

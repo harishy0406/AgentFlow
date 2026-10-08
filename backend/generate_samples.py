@@ -91,11 +91,22 @@ def main():
             db.commit()
             db.refresh(project)
 
-        pdf_bytes = generate_project_presentation_pdf(str(project.id), db)
-        pdf_path = output_dir / item["pdf_name"]
-        with open(pdf_path, "wb") as f:
-            f.write(pdf_bytes)
-        print(f"Generated PDF: {pdf_path} ({len(pdf_bytes):,} bytes)")
+        # Generate Dark Theme Deck
+        pdf_bytes_dark = generate_project_presentation_pdf(str(project.id), db, theme="dark")
+        pdf_path_dark = output_dir / item["pdf_name"]
+        with open(pdf_path_dark, "wb") as f:
+            f.write(pdf_bytes_dark)
+        print(f"Generated Dark PDF: {pdf_path_dark} ({len(pdf_bytes_dark):,} bytes)")
+
+        # Generate Printable Light Theme Deck
+        light_pdf_name = item["pdf_name"].replace(".pdf", "_light.pdf")
+        pdf_bytes_light = generate_project_presentation_pdf(str(project.id), db, theme="light")
+        pdf_path_light = output_dir / light_pdf_name
+        with open(pdf_path_light, "wb") as f:
+            f.write(pdf_bytes_light)
+        print(f"Generated Light PDF: {pdf_path_light} ({len(pdf_bytes_light):,} bytes)")
+
+        pdf_bytes = pdf_bytes_dark
 
         # Render slides to PNG
         doc = fitz.open(stream=pdf_bytes, filetype="pdf")

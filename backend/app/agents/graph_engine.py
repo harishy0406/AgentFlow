@@ -86,7 +86,7 @@ def find_downstream_sections(
     Find all sections whose traces_to relationship includes the given
     section_id (i.e. downstream sections that were derived from it).
     """
-    section = db.query(ArtifactSection).get(section_id)
+    section = db.get(ArtifactSection, section_id)
     if section is None:
         return []
     # traced_by is the backref defined on the ArtifactSection model
@@ -117,10 +117,10 @@ def recompute_subgraph(
 
     # Order dirty sections by their artifact type's topological rank
     def _topo_key(sid: UUID) -> int:
-        sec = db.query(ArtifactSection).get(sid)
+        sec = db.get(ArtifactSection, sid)
         if sec is None:
             return 999
-        node = db.query(ArtifactNode).get(sec.artifact_node_id)
+        node = db.get(ArtifactNode, sec.artifact_node_id)
         if node is None:
             return 999
         try:
@@ -141,10 +141,10 @@ def get_dirty_artifact_types(
     """
     types_seen: Set[str] = set()
     for sid in dirty_section_ids:
-        sec = db.query(ArtifactSection).get(sid)
+        sec = db.get(ArtifactSection, sid)
         if sec is None:
             continue
-        node = db.query(ArtifactNode).get(sec.artifact_node_id)
+        node = db.get(ArtifactNode, sec.artifact_node_id)
         if node is not None:
             types_seen.add(node.artifact_type)
 
@@ -158,10 +158,10 @@ def mark_sections_stale(
     """Mark the artifact nodes owning the given sections as 'stale'."""
     node_ids_seen: Set[UUID] = set()
     for sid in section_ids:
-        sec = db.query(ArtifactSection).get(sid)
+        sec = db.get(ArtifactSection, sid)
         if sec and sec.artifact_node_id not in node_ids_seen:
             node_ids_seen.add(sec.artifact_node_id)
-            node = db.query(ArtifactNode).get(sec.artifact_node_id)
+            node = db.get(ArtifactNode, sec.artifact_node_id)
             if node:
                 node.status = "stale"
     db.commit()
@@ -169,7 +169,7 @@ def mark_sections_stale(
 
 def mark_node_fresh(node_id: UUID, db: Session) -> None:
     """Mark an artifact node as 'fresh' after successful regeneration."""
-    node = db.query(ArtifactNode).get(node_id)
+    node = db.get(ArtifactNode, node_id)
     if node:
         node.status = "fresh"
         db.commit()

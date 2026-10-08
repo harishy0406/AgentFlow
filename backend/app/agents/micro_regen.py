@@ -35,7 +35,7 @@ from .auditor import (
 
 def _save_version_snapshot(section: ArtifactSection, db: Session) -> None:
     """Persist a snapshot of the section before micro-regeneration."""
-    node = db.query(ArtifactNode).get(section.artifact_node_id)
+    node = db.get(ArtifactNode, section.artifact_node_id)
     version = ArtifactVersion(
         artifact_node_id=section.artifact_node_id,
         section_id=section.id,
@@ -128,7 +128,7 @@ def fix_drift(
 
     Returns a result dict with fix details.
     """
-    drift = db.query(DriftRecord).get(drift_id)
+    drift = db.get(DriftRecord, drift_id)
     if drift is None:
         raise ValueError(f"Drift record {drift_id} not found")
 
@@ -170,7 +170,7 @@ def fix_drift(
     # Use the specific section if available, otherwise the first section
     if drift.section_a_id or drift.section_b_id:
         target_section_id = drift.section_a_id if rule.artifact_type_a == target_type else drift.section_b_id
-        target_section = db.query(ArtifactSection).get(target_section_id) if target_section_id else target_sections[0]
+        target_section = db.get(ArtifactSection, target_section_id) if target_section_id else target_sections[0]
         if target_section is None:
             target_section = target_sections[0]
     else:

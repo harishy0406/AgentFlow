@@ -90,7 +90,7 @@ def _save_version_snapshot(
     db: Session,
 ) -> None:
     """Persist a snapshot of the section before it is overwritten."""
-    node = db.query(ArtifactNode).get(section.artifact_node_id)
+    node = db.get(ArtifactNode, section.artifact_node_id)
     version = ArtifactVersion(
         artifact_node_id=section.artifact_node_id,
         section_id=section.id,
@@ -117,7 +117,7 @@ def _build_regen_context(
 
     # Each prompt needs different upstream artifacts for reference
     if artifact_type == "PRD":
-        project = db.query(Project).get(project_id)
+        project = db.get(Project, project_id)
         ctx["project_brief"] = project.brief if project else ""
     elif artifact_type == "SDD":
         ctx["prd"] = _get_full_artifact_content(project_id, "PRD", db)
@@ -200,7 +200,7 @@ def handle_section_edit(
       - regenerated_artifacts: list of artifact types that were touched
       - routing_decisions: list of routing decision dicts (Phase 3)
     """
-    section = db.query(ArtifactSection).get(section_id)
+    section = db.get(ArtifactSection, section_id)
     if section is None:
         raise ValueError(f"Section {section_id} not found")
 
@@ -232,7 +232,7 @@ def handle_section_edit(
     downstream_dirty = [sid for sid in all_dirty if sid != section_id]
 
     if not downstream_dirty:
-        node = db.query(ArtifactNode).get(section.artifact_node_id)
+        node = db.get(ArtifactNode, section.artifact_node_id)
         if node:
             node.version += 1
             db.commit()
@@ -254,11 +254,11 @@ def handle_section_edit(
     diff_summary = compute_diff_summary(old_content, new_content)
 
     for dirty_sid in downstream_dirty:
-        dirty_section = db.query(ArtifactSection).get(dirty_sid)
+        dirty_section = db.get(ArtifactSection, dirty_sid)
         if dirty_section is None:
             continue
 
-        dirty_node = db.query(ArtifactNode).get(dirty_section.artifact_node_id)
+        dirty_node = db.get(ArtifactNode, dirty_section.artifact_node_id)
         if dirty_node is None:
             continue
 
@@ -333,7 +333,7 @@ def handle_section_edit(
         if artifact_type == "CODE_GENERATION":
             try:
                 from .scaffolder import scaffold_project_files
-                proj = db.query(Project).get(dirty_node.project_id)
+                proj = db.get(Project, dirty_node.project_id)
                 if proj:
                     scaffold_project_files(proj.name, new_regen_content)
             except Exception:
@@ -346,7 +346,7 @@ def handle_section_edit(
 
     # --- Phase 4: Post-regeneration audit ---
     # Determine the project_id from the edited section's node
-    edited_node = db.query(ArtifactNode).get(section.artifact_node_id)
+    edited_node = db.get(ArtifactNode, section.artifact_node_id)
     audit_results = []
     if edited_node:
         try:
@@ -387,7 +387,7 @@ def rollback_section(
             f"No version {target_version} found for section {section_id}"
         )
 
-    section = db.query(ArtifactSection).get(section_id)
+    section = db.get(ArtifactSection, section_id)
     if section is None:
         raise ValueError(f"Section {section_id} not found")
 
@@ -398,7 +398,7 @@ def rollback_section(
     section.content_hash = version_record.content_hash
     section.updated_at = datetime.now(timezone.utc)
 
-    node = db.query(ArtifactNode).get(section.artifact_node_id)
+    node = db.get(ArtifactNode, section.artifact_node_id)
     if node:
         node.version += 1
 

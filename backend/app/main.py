@@ -1335,11 +1335,11 @@ async def edit_section(
     order.
     """
     # Validate the section exists and belongs to the right artifact/project
-    section = db.query(models.ArtifactSection).get(section_id)
+    section = db.get(models.ArtifactSection, section_id)
     if section is None:
         raise HTTPException(status_code=404, detail="Section not found")
 
-    node = db.query(models.ArtifactNode).get(section.artifact_node_id)
+    node = db.get(models.ArtifactNode, section.artifact_node_id)
     if node is None or str(node.project_id) != str(project_id) or node.artifact_type != artifact_type:
         raise HTTPException(status_code=404, detail="Section does not belong to the specified artifact/project")
 
@@ -1430,10 +1430,10 @@ async def edit_section_direct(
     db: Session = Depends(get_db),
 ):
     """Direct alias for editing a section by its ID."""
-    section = db.query(models.ArtifactSection).get(section_id)
+    section = db.get(models.ArtifactSection, section_id)
     if section is None:
         raise HTTPException(status_code=404, detail="Section not found")
-    node = db.query(models.ArtifactNode).get(section.artifact_node_id)
+    node = db.get(models.ArtifactNode, section.artifact_node_id)
     project_id = node.project_id if node else None
 
     if project_id:
@@ -2155,21 +2155,24 @@ from .reports.pdf_presentation import generate_project_presentation_pdf
 @app.get("/projects/{project_id}/presentation-pdf")
 def download_project_presentation_pdf(
     project_id: UUID,
+    theme: str = Query("dark", pattern="^(dark|light)$"),
     db: Session = Depends(get_db)
 ):
     """
     Generates and streams a deterministic, landscape presentation slide-deck PDF
     synthesizing the project overview, system architecture, database schema,
     API contracts, engineering tasks, and multi-cloud deployment specs.
+    Supports ?theme=dark (Executive Midnight) and ?theme=light (Printable Slate).
     """
     try:
-        project = db.query(models.Project).filter(models.Project.id == project_id).first()
+        project = db.get(models.Project, project_id)
         if not project:
             raise HTTPException(status_code=404, detail="Project not found")
 
-        pdf_bytes = generate_project_presentation_pdf(str(project_id), db)
+        pdf_bytes = generate_project_presentation_pdf(str(project_id), db, theme=theme)
         slug = sanitize_project_slug(project.name)
-        filename = f"{slug}_presentation.pdf"
+        theme_suffix = f"_{theme}" if theme == "light" else ""
+        filename = f"{slug}{theme_suffix}_presentation.pdf"
 
         return Response(
             content=pdf_bytes,
@@ -2190,19 +2193,22 @@ def download_project_presentation_pdf(
 @app.get("/projects/{project_id}/preview-presentation-pdf")
 def preview_project_presentation_pdf(
     project_id: UUID,
+    theme: str = Query("dark", pattern="^(dark|light)$"),
     db: Session = Depends(get_db)
 ):
     """
     Renders presentation PDF inline for browser viewing or embedding.
+    Supports ?theme=dark (Executive Midnight) and ?theme=light (Printable Slate).
     """
     try:
-        project = db.query(models.Project).filter(models.Project.id == project_id).first()
+        project = db.get(models.Project, project_id)
         if not project:
             raise HTTPException(status_code=404, detail="Project not found")
 
-        pdf_bytes = generate_project_presentation_pdf(str(project_id), db)
+        pdf_bytes = generate_project_presentation_pdf(str(project_id), db, theme=theme)
         slug = sanitize_project_slug(project.name)
-        filename = f"{slug}_presentation.pdf"
+        theme_suffix = f"_{theme}" if theme == "light" else ""
+        filename = f"{slug}{theme_suffix}_presentation.pdf"
 
         return Response(
             content=pdf_bytes,
@@ -2228,7 +2234,7 @@ def get_project_presentation_metadata(
     """
     Returns structural metadata for the 10-slide executive architectural presentation deck.
     """
-    project = db.query(models.Project).filter(models.Project.id == project_id).first()
+    project = db.get(models.Project, project_id)
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
 
@@ -2305,6 +2311,7 @@ def get_project_presentation_metadata(
         page_size="Letter (11 x 8.5 in / 792 x 612 pt)",
         total_slides=10,
         theme="Executive Dark Midnight (#0B0F17)",
+        supported_themes=["dark", "light"],
         branding={
             "brand_name": "AgentFlow",
             "logo_asset": "assets/PDF_Logo-white.png",

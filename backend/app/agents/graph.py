@@ -55,7 +55,7 @@ def run_pipeline(
     Executes the end-to-end multi-agent pipeline for a project,
     persisting all 7 artifact nodes and their sections in the database.
     """
-    project = db.query(Project).get(project_id)
+    project = db.get(Project, project_id)
     if project is None:
         raise ValueError(f"Project {project_id} not found")
 

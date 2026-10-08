@@ -296,6 +296,8 @@ export default function Home() {
   const [verificationData, setVerificationData] = useState(null);
   const [verifyingCode, setVerifyingCode] = useState(false);
   const [showDeckPreviewModal, setShowDeckPreviewModal] = useState(false);
+  const [deckPreviewTheme, setDeckPreviewTheme] = useState("dark");
+  const [deckPreviewCopied, setDeckPreviewCopied] = useState(false);
   const [codeFileSearch, setCodeFileSearch] = useState("");
   const [copiedCodeFilePath, setCopiedCodeFilePath] = useState(null);
   const [isCreatingCodeFile, setIsCreatingCodeFile] = useState(false);
@@ -348,6 +350,23 @@ export default function Home() {
       }
     } catch (e) { }
   }, []);
+
+  // Deck Preview Modal body scroll locking & Escape key close listener
+  useEffect(() => {
+    if (!showDeckPreviewModal) return;
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const handleKeyDown = (e) => {
+      if (e.key === "Escape") {
+        setShowDeckPreviewModal(false);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.body.style.overflow = prevOverflow;
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [showDeckPreviewModal]);
 
   // Close tools dropdown when clicking outside
   useEffect(() => {
@@ -4898,23 +4917,135 @@ export default function Home() {
                               padding: "14px 20px",
                               borderBottom: "1px solid #30363d",
                               background: "#161b22",
+                              flexWrap: "wrap",
+                              gap: 12,
                             }}
                           >
-                            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                              <span style={{ fontSize: 20 }}>📊</span>
-                              <div>
-                                <h3 style={{ margin: 0, fontSize: 15, fontWeight: 600, color: "#f0f6fc" }}>
-                                  Architectural Slide Deck Preview
-                                </h3>
-                                <p style={{ margin: 0, fontSize: 11, color: "#8b949e" }}>
-                                  10-Slide Report • Interactive Table of Contents • Branded Blueprint Canvas
+                            <div style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0, flex: "1 1 300px" }}>
+                              <div
+                                style={{
+                                  width: 36,
+                                  height: 36,
+                                  borderRadius: 8,
+                                  background: deckPreviewTheme === "dark" ? "rgba(56, 189, 248, 0.15)" : "rgba(2, 132, 199, 0.15)",
+                                  border: `1px solid ${deckPreviewTheme === "dark" ? "rgba(56, 189, 248, 0.3)" : "rgba(2, 132, 199, 0.3)"}`,
+                                  display: "flex",
+                                  alignItems: "center",
+                                  justifyContent: "center",
+                                  fontSize: 18,
+                                  flexShrink: 0,
+                                }}
+                              >
+                                📊
+                              </div>
+                              <div style={{ minWidth: 0 }}>
+                                <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                                  <h3
+                                    style={{
+                                      margin: 0,
+                                      fontSize: 15,
+                                      fontWeight: 600,
+                                      color: "#f0f6fc",
+                                      whiteSpace: "nowrap",
+                                      overflow: "hidden",
+                                      textOverflow: "ellipsis",
+                                    }}
+                                  >
+                                    {currentProject?.name ? `${currentProject.name} — Architecture Deck` : "Architectural Slide Deck Preview"}
+                                  </h3>
+                                  <span
+                                    style={{
+                                      fontSize: 10,
+                                      fontWeight: 600,
+                                      padding: "2px 8px",
+                                      borderRadius: 12,
+                                      background: "rgba(52, 211, 153, 0.15)",
+                                      color: "#34d399",
+                                      border: "1px solid rgba(52, 211, 153, 0.3)",
+                                    }}
+                                  >
+                                    10 Slides Verified
+                                  </span>
+                                </div>
+                                <p style={{ margin: "2px 0 0 0", fontSize: 11, color: "#8b949e" }}>
+                                  Deterministic ReportLab Engine • Interactive Table of Contents • {deckPreviewTheme === "dark" ? "Executive Dark (#0B0F17)" : "Printable Slate (#F8FAFC)"}
                                 </p>
                               </div>
                             </div>
-                            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                            <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", justifyContent: "flex-end" }}>
+                              {/* Theme Toggle Pill */}
+                              <div
+                                style={{
+                                  display: "inline-flex",
+                                  background: "#0d1117",
+                                  padding: 2,
+                                  borderRadius: 8,
+                                  border: "1px solid #30363d",
+                                  gap: 2,
+                                }}
+                              >
+                                <button
+                                  onClick={() => setDeckPreviewTheme("dark")}
+                                  style={{
+                                    padding: "4px 10px",
+                                    fontSize: 11,
+                                    fontWeight: 600,
+                                    borderRadius: 6,
+                                    border: "none",
+                                    cursor: "pointer",
+                                    background: deckPreviewTheme === "dark" ? "#21262d" : "transparent",
+                                    color: deckPreviewTheme === "dark" ? "#38bdf8" : "#8b949e",
+                                    transition: "all 0.15s ease",
+                                  }}
+                                  title="Executive Dark Mode"
+                                >
+                                  🌙 Dark
+                                </button>
+                                <button
+                                  onClick={() => setDeckPreviewTheme("light")}
+                                  style={{
+                                    padding: "4px 10px",
+                                    fontSize: 11,
+                                    fontWeight: 600,
+                                    borderRadius: 6,
+                                    border: "none",
+                                    cursor: "pointer",
+                                    background: deckPreviewTheme === "light" ? "#f1f5f9" : "transparent",
+                                    color: deckPreviewTheme === "light" ? "#0284c7" : "#8b949e",
+                                    transition: "all 0.15s ease",
+                                  }}
+                                  title="Printable Slate Light Mode"
+                                >
+                                  ☀️ Light
+                                </button>
+                              </div>
+
+                              {/* Copy Link Button */}
+                              <button
+                                onClick={() => {
+                                  if (typeof navigator !== "undefined" && navigator.clipboard) {
+                                    navigator.clipboard.writeText(getPresentationPdfUrl(currentProject.id, true, deckPreviewTheme));
+                                    setDeckPreviewCopied(true);
+                                    setTimeout(() => setDeckPreviewCopied(false), 2000);
+                                  }
+                                }}
+                                className="btn btn-secondary btn-sm"
+                                style={{
+                                  fontSize: 12,
+                                  padding: "5px 12px",
+                                  display: "inline-flex",
+                                  alignItems: "center",
+                                  gap: 5,
+                                }}
+                                title="Copy direct PDF URL to clipboard"
+                              >
+                                {deckPreviewCopied ? "✓ Copied" : "📋 Copy Link"}
+                              </button>
+
+                              {/* Download Button */}
                               <a
-                                href={getPresentationPdfUrl(currentProject.id, false)}
-                                download={`${currentProject.title || "Project"}_Slide_Deck.pdf`}
+                                href={getPresentationPdfUrl(currentProject.id, false, deckPreviewTheme)}
+                                download={`${(currentProject.name || currentProject.title || "Project").toLowerCase().replace(/\s+/g, "_")}_${deckPreviewTheme}_deck.pdf`}
                                 className="btn btn-primary btn-sm"
                                 style={{
                                   fontSize: 12,
@@ -4924,11 +5055,14 @@ export default function Home() {
                                   alignItems: "center",
                                   gap: 5,
                                 }}
+                                title="Download PDF presentation deck"
                               >
                                 ⬇️ Download PDF
                               </a>
+
+                              {/* Open Tab Button */}
                               <a
-                                href={getPresentationPdfUrl(currentProject.id, true)}
+                                href={getPresentationPdfUrl(currentProject.id, true, deckPreviewTheme)}
                                 target="_blank"
                                 rel="noreferrer"
                                 className="btn btn-secondary btn-sm"
@@ -4940,9 +5074,12 @@ export default function Home() {
                                   alignItems: "center",
                                   gap: 5,
                                 }}
+                                title="Open PDF in dedicated browser tab"
                               >
-                                ↗ Open New Tab
+                                ↗ Open Tab
                               </a>
+
+                              {/* Close Button */}
                               <button
                                 onClick={() => setShowDeckPreviewModal(false)}
                                 style={{
@@ -4954,7 +5091,7 @@ export default function Home() {
                                   padding: "4px 8px",
                                   borderRadius: 4,
                                 }}
-                                title="Close Modal"
+                                title="Close Modal (Escape)"
                               >
                                 ✕
                               </button>
@@ -4962,15 +5099,21 @@ export default function Home() {
                           </div>
 
                           {/* Modal Body / PDF Viewer Frame */}
-                          <div style={{ flex: 1, position: "relative", background: "#010409" }}>
+                          <div
+                            style={{
+                              flex: 1,
+                              position: "relative",
+                              background: deckPreviewTheme === "dark" ? "#010409" : "#e2e8f0",
+                            }}
+                          >
                             <iframe
-                              src={getPresentationPdfUrl(currentProject.id, true)}
+                              src={getPresentationPdfUrl(currentProject.id, true, deckPreviewTheme)}
                               title="Architecture Presentation Slide Deck"
                               style={{
                                 width: "100%",
                                 height: "100%",
                                 border: "none",
-                                background: "#0d1117",
+                                background: deckPreviewTheme === "dark" ? "#0b0f17" : "#f8fafc",
                               }}
                             />
                           </div>
