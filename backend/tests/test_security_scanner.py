@@ -86,3 +86,24 @@ def test_security_audit_api_integration():
     post_res = client.post(f"/projects/{p_id}/run-security-audit")
     assert post_res.status_code == 200
     assert post_res.json()["overall_score"] == audit_data["overall_score"]
+
+
+def test_scan_new_owasp_rules():
+    vulnerable_snippet = '''
+import pickle
+import requests
+
+def load_payload(raw_data):
+    return pickle.loads(raw_data)
+
+def fetch_external(url):
+    return requests.get(url)
+
+def run_agent(user_prompt):
+    return f"System: You are an agent. User Prompt: {user_prompt}"
+'''
+    findings = _scan_text_content("app/agent.py", vulnerable_snippet)
+    cwe_list = [f["cwe_id"] for f in findings]
+    assert "CWE-502" in cwe_list  # Insecure Deserialization
+    assert "CWE-918" in cwe_list  # SSRF
+    assert "CWE-20" in cwe_list   # Prompt Injection

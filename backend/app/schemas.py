@@ -928,3 +928,19 @@ class PresentationDeckMetadata(BaseModel):
     download_url: str
     preview_url: str
     generated_at: str
+
+
+# ---------------------------------------------------------------------------
+# Architecture Blueprint Markdown Specification Schemas
+# ---------------------------------------------------------------------------
+
+class MarkdownBlueprintOut(BaseModel):
+    project_id: UUID
+    project_name: str
+    project_slug: str
+    markdown_content: str
+    character_count: int
+    line_count: int
+    sections_count: int
+    generated_at: str
+    download_url: str

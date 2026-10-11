@@ -2590,5 +2590,72 @@ def download_project_seed_json(
         raise HTTPException(status_code=500, detail=f"Failed to download seed JSON: {str(e)}")
 
 
+# ---------------------------------------------------------------------------
+# Phase 18: Architecture Blueprint Markdown Specification Engine
+# ---------------------------------------------------------------------------
+
+from .reports.markdown_blueprint import generate_project_blueprint_markdown
+
+
+@app.get("/projects/{project_id}/blueprint-markdown", response_model=schemas.MarkdownBlueprintOut)
+def get_project_blueprint_markdown(
+    project_id: UUID,
+    db: Session = Depends(get_db)
+):
+    """
+    Returns complete GitHub Flavored Markdown specification for the project,
+    synthesizing system architecture, database DDL, API routes, codebase tree,
+    and OWASP security posture.
+    """
+    project = db.query(models.Project).filter(models.Project.id == project_id).first()
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    try:
+        md_text = generate_project_blueprint_markdown(str(project_id), db)
+        slug = sanitize_project_slug(project.name)
+        lines = md_text.splitlines()
+        sections_count = sum(1 for line in lines if line.startswith("## "))
+
+        return schemas.MarkdownBlueprintOut(
+            project_id=project.id,
+            project_name=project.name,
+            project_slug=slug,
+            markdown_content=md_text,
+            character_count=len(md_text),
+            line_count=len(lines),
+            sections_count=sections_count,
+            generated_at=datetime.now(timezone.utc).isoformat(),
+            download_url=f"/projects/{project.id}/download-blueprint-markdown"
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to generate blueprint markdown: {str(e)}")
+
+
+@app.get("/projects/{project_id}/download-blueprint-markdown")
+def download_project_blueprint_markdown(
+    project_id: UUID,
+    db: Session = Depends(get_db)
+):
+    """
+    Downloads the Architecture Blueprint specification directly as an ARCHITECTURE.md file attachment.
+    """
+    project = db.query(models.Project).filter(models.Project.id == project_id).first()
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    try:
+        md_text = generate_project_blueprint_markdown(str(project_id), db)
+        slug = sanitize_project_slug(project.name)
+        filename = f"{slug}_ARCHITECTURE.md"
+        return Response(
+            content=md_text,
+            media_type="text/markdown",
+            headers={"Content-Disposition": f'attachment; filename="{filename}"'}
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to download blueprint markdown: {str(e)}")
+
+
 
 

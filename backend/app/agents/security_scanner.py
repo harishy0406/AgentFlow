@@ -92,6 +92,36 @@ SECURITY_RULES = [
         "pattern": r"""(?i)@app\.(?:post|put|delete|patch)\(.*?\)(?![^@]*Depends\(.*?(?:auth|user|token|perm))""",
         "description": "Mutating REST endpoint does not declare authentication/permission dependencies.",
         "remediation": "Enforce authentication middleware or Depends(get_current_user) on mutating routes.",
+    },
+    {
+        "id": "SEC-OWASP-08",
+        "title": "Insecure Deserialization via Unsafe Object Loader",
+        "severity": "CRITICAL",
+        "owasp_category": "A08:2021 - Software and Data Integrity Failures",
+        "cwe_id": "CWE-502",
+        "pattern": r"""(?i)\b(?:pickle\.(?:loads?|Unpickler)|yaml\.(?:unsafe_load|load\([^)]*Loader\s*=\s*(?:yaml\.)?(?:Loader|CLoader|UnsafeLoader)\b)|marshal\.loads?|shelve\.open)\s*\(""",
+        "description": "Deserializing untrusted streams using pickle, unsafe YAML loader, or marshal allows arbitrary bytecode execution and RCE.",
+        "remediation": "Use safe serialization formats (such as json.loads) or yaml.safe_load instead of dynamic object unpickling.",
+    },
+    {
+        "id": "SEC-OWASP-09",
+        "title": "Server-Side Request Forgery (SSRF) Vector",
+        "severity": "HIGH",
+        "owasp_category": "A10:2021 - Server-Side Request Forgery",
+        "cwe_id": "CWE-918",
+        "pattern": r"""(?i)(?:requests\.(?:get|post|put|delete|patch|head)|httpx\.(?:get|post|put|delete|patch|head)|urllib\.request\.urlopen)\s*\(\s*(?:url|target_url|req_url|user_url|params\[['\"]url['\"]\]|request\.(?:args|query_params|json)\.get\(['\"]url['\"]\))""",
+        "description": "Outbound HTTP request initiated using unvalidated user-supplied URL variable, permitting network pivot and internal metadata exfiltration.",
+        "remediation": "Validate target URLs against an explicit domain allowlist and block requests to RFC 1918 private IP addresses and cloud metadata endpoints (169.254.169.254).",
+    },
+    {
+        "id": "SEC-AI-01",
+        "title": "Unsanitized Direct Prompt Injection in AI Agent Flow",
+        "severity": "HIGH",
+        "owasp_category": "OWASP LLM01:2025 - Prompt Injection",
+        "cwe_id": "CWE-20",
+        "pattern": r"""(?i)(?:f['\"][^'\"]*?(?:System:|Instructions?:)[^'\"]*?\{[a-zA-Z0-9_]*(?:user_input|user_prompt|prompt|input|message|query)[a-zA-Z0-9_]*\}[^'\"]*?|messages\s*=\s*\[\s*\{['\"]role['\"]\s*:\s*['\"]system['\"],\s*['\"]content['\"]\s*:\s*f['\"][^'\"]*?\{[a-zA-Z0-9_]*(?:user_input|user_prompt|prompt|input)[a-zA-Z0-9_]*\})""",
+        "description": "Unsanitized direct concatenation of user prompt into LLM system instruction context, enabling prompt injection and guardrail bypass.",
+        "remediation": "Separate system instructions from user-controlled inputs by using distinct message roles ({'role': 'user', 'content': user_prompt}) and validate input with guardrail filters.",
     }
 ]
 

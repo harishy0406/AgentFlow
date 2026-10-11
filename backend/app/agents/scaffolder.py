@@ -8,12 +8,14 @@ directly to local disk under `generated_projects/<project_slug>/`.
 import os
 import re
 from pathlib import Path
-from typing import Dict, List, Any
+from typing import Dict, List, Any, Optional
 
 
-def sanitize_project_slug(project_name: str) -> str:
+def sanitize_project_slug(project_name: Optional[str]) -> str:
     """Convert project name into a clean, filesystem-safe directory slug."""
-    slug = re.sub(r"[^a-zA-Z0-9_\-\s]", "", project_name).strip()
+    if not project_name:
+        return "agentflow_project"
+    slug = re.sub(r"[^a-zA-Z0-9_\-\s]", "", str(project_name)).strip()
     slug = re.sub(r"[\s\-]+", "_", slug).lower()
     return slug or "agentflow_project"
 

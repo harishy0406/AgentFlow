@@ -67,6 +67,8 @@ import {
   getProjectSeedData,
   getSeedSqlDownloadUrl,
   getSeedJsonDownloadUrl,
+  getBlueprintMarkdown,
+  getBlueprintDownloadUrl,
 } from "./lib/api";
 
 function RadialGauge({ value = 0, size = 110, strokeWidth = 10, label = "", color = "#00FF66", subtext = "" }) {
@@ -260,6 +262,12 @@ export default function Home() {
   const [showSeedModal, setShowSeedModal] = useState(false);
   const [seedSubTab, setSeedSubTab] = useState("sql"); // 'sql' | 'json' | 'python' | 'typescript'
 
+  // Architecture Blueprint Markdown state
+  const [blueprintData, setBlueprintData] = useState(null);
+  const [blueprintLoading, setBlueprintLoading] = useState(false);
+  const [showBlueprintModal, setShowBlueprintModal] = useState(false);
+  const [blueprintCopied, setBlueprintCopied] = useState(false);
+
   const downloadTextFile = (filename, text, mime = "text/plain") => {
     const blob = new Blob([text], { type: mime });
     const url = URL.createObjectURL(blob);
@@ -351,14 +359,18 @@ export default function Home() {
     } catch (e) { }
   }, []);
 
-  // Deck Preview Modal body scroll locking & Escape key close listener
+  // Global Modal body scroll locking & Escape key close listener (UI break fix for modal double-scrolling)
   useEffect(() => {
-    if (!showDeckPreviewModal) return;
+    const hasOpenModal = showDeckPreviewModal || showGraphqlModal || showSeedModal || showBlueprintModal;
+    if (!hasOpenModal) return;
     const prevOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     const handleKeyDown = (e) => {
       if (e.key === "Escape") {
         setShowDeckPreviewModal(false);
+        setShowGraphqlModal(false);
+        setShowSeedModal(false);
+        setShowBlueprintModal(false);
       }
     };
     window.addEventListener("keydown", handleKeyDown);
@@ -366,7 +378,7 @@ export default function Home() {
       document.body.style.overflow = prevOverflow;
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, [showDeckPreviewModal]);
+  }, [showDeckPreviewModal, showGraphqlModal, showSeedModal, showBlueprintModal]);
 
   // Close tools dropdown when clicking outside
   useEffect(() => {
@@ -580,6 +592,32 @@ export default function Home() {
         }
       },
       keywords: "slide deck presentation report pdf export view preview slides"
+    },
+    {
+      id: "action-inspect-blueprint",
+      title: "Inspect Architecture Blueprint (ARCHITECTURE.md)",
+      category: "Quick Action",
+      icon: "📐",
+      badge: "Spec",
+      action: async () => {
+        setShowCommandPalette(false);
+        if (currentProject) {
+          setBlueprintLoading(true);
+          try {
+            const res = await getBlueprintMarkdown(currentProject.id);
+            setBlueprintData(res);
+            setShowBlueprintModal(true);
+            showToast(`Generated Architecture Blueprint (${res.sections_count} sections)!`, "success");
+          } catch (err) {
+            showToast(err.message, "error");
+          } finally {
+            setBlueprintLoading(false);
+          }
+        } else {
+          showToast("Please select a project to inspect its Architecture Blueprint", "warning");
+        }
+      },
+      keywords: "blueprint markdown architecture md specification git runbook document"
     },
     {
       id: "action-download-zip",
@@ -1727,6 +1765,31 @@ export default function Home() {
 
                     <button
                       className="navbar-dropdown-item"
+                      disabled={blueprintLoading}
+                      onClick={async () => {
+                        setShowToolsDropdown(false);
+                        setBlueprintLoading(true);
+                        try {
+                          const res = await getBlueprintMarkdown(currentProject.id);
+                          setBlueprintData(res);
+                          setShowBlueprintModal(true);
+                          showToast(`Generated Architecture Blueprint (${res.sections_count} sections)!`, "success");
+                        } catch (err) {
+                          showToast(err.message, "error");
+                        } finally {
+                          setBlueprintLoading(false);
+                        }
+                      }}
+                    >
+                      <span className="dropdown-item-icon">📐</span>
+                      <div className="dropdown-item-text">
+                        <span className="dropdown-item-title">{blueprintLoading ? "Generating..." : "Architecture Blueprint (.md)"}</span>
+                        <span className="dropdown-item-desc">Full markdown spec &amp; runbook for git</span>
+                      </div>
+                    </button>
+
+                    <button
+                      className="navbar-dropdown-item"
                       disabled={generatingMigrations}
                       onClick={async () => {
                         setShowToolsDropdown(false);
@@ -2673,6 +2736,57 @@ export default function Home() {
                     ) : (
                       <span style={{ fontSize: 12, color: "var(--text-muted)" }}>
                         Select or create a project in Studio to export its seed fixtures.
+                      </span>
+                    )}
+                  </div>
+                </BentoCard>
+
+                <BentoCard span={12} accentColor="var(--electric-cyan, #00d2ff)" className="fade-in fade-in-delay-3">
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6, flexWrap: "wrap", gap: 8 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <span style={{ fontSize: 18 }}>📐</span>
+                      <h4 style={{ fontSize: 16, fontWeight: 700, margin: 0, color: "var(--text-primary)" }}>Architecture Blueprint Specification (ARCHITECTURE.md)</h4>
+                    </div>
+                    <span className="badge badge-cyan" style={{ fontSize: 10 }}>GIT SPEC &amp; RUNBOOK</span>
+                  </div>
+                  <p style={{ color: "var(--text-secondary)", fontSize: 13, marginBottom: 14 }}>
+                    Publication-grade GitHub Flavored Markdown specification synthesizing executive architecture mission, relational SQL DDL, REST OpenAPI contracts, verified file tree, OWASP security scorecard, and sprint roadmap.
+                  </p>
+                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                    {currentProject ? (
+                      <>
+                        <a
+                          href={getBlueprintDownloadUrl(currentProject.id)}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="btn btn-primary btn-sm"
+                          style={{ textDecoration: "none" }}
+                        >
+                          Download ARCHITECTURE.md
+                        </a>
+                        <button
+                          className="btn btn-secondary btn-sm"
+                          disabled={blueprintLoading}
+                          onClick={async () => {
+                            setBlueprintLoading(true);
+                            try {
+                              const res = await getBlueprintMarkdown(currentProject.id);
+                              setBlueprintData(res);
+                              setShowBlueprintModal(true);
+                              showToast(`Generated Architecture Blueprint (${res.sections_count} sections)!`, "success");
+                            } catch (err) {
+                              showToast(err.message, "error");
+                            } finally {
+                              setBlueprintLoading(false);
+                            }
+                          }}
+                        >
+                          {blueprintLoading ? "Generating..." : "Inspect Blueprint Markdown"}
+                        </button>
+                      </>
+                    ) : (
+                      <span style={{ fontSize: 12, color: "var(--text-muted)" }}>
+                        Select or create a project in Studio to generate its Architecture Blueprint.
                       </span>
                     )}
                   </div>
@@ -10974,6 +11088,150 @@ export default function Home() {
                   </pre>
                 </div>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Architecture Blueprint Markdown Specification Modal */}
+      {showBlueprintModal && blueprintData && (
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: "rgba(0, 0, 0, 0.85)",
+            backdropFilter: "blur(8px)",
+            WebkitBackdropFilter: "blur(8px)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 1000,
+            padding: 20,
+          }}
+          onClick={() => setShowBlueprintModal(false)}
+        >
+          <div
+            style={{
+              background: "var(--bg-card)",
+              border: "1px solid var(--border)",
+              borderRadius: 12,
+              width: "100%",
+              maxWidth: 1040,
+              maxHeight: "90vh",
+              display: "flex",
+              flexDirection: "column",
+              boxShadow: "0 16px 48px rgba(0, 0, 0, 0.9)",
+              overflow: "hidden",
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div
+              style={{
+                padding: "16px 20px",
+                borderBottom: "1px solid var(--border)",
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                background: "var(--bg-secondary)",
+                flexWrap: "wrap",
+                gap: 12,
+              }}
+            >
+              <div>
+                <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+                  <span style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--electric-cyan, #00d2ff)", display: "inline-block" }} />
+                  <h3 style={{ margin: 0, fontSize: 16, fontFamily: "var(--font-mono)", color: "var(--text-primary)" }}>
+                    Architecture Blueprint (ARCHITECTURE.md)
+                  </h3>
+                  <span className="badge badge-muted" style={{ fontSize: 10 }}>
+                    {blueprintData.sections_count} SECTIONS • {blueprintData.line_count} LINES • {(blueprintData.character_count / 1024).toFixed(1)} KB
+                  </span>
+                </div>
+                <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 2 }}>
+                  Publication-grade GitHub Flavored Markdown specification for {blueprintData.project_name}
+                </div>
+              </div>
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <button
+                  className="btn btn-secondary btn-sm"
+                  onClick={() => {
+                    if (navigator?.clipboard?.writeText) {
+                      navigator.clipboard.writeText(blueprintData.markdown_content);
+                      setBlueprintCopied(true);
+                      setTimeout(() => setBlueprintCopied(false), 2000);
+                      showToast("Blueprint markdown copied to clipboard!", "success");
+                    } else {
+                      downloadTextFile(`${blueprintData.project_slug}_ARCHITECTURE.md`, blueprintData.markdown_content, "text/markdown");
+                    }
+                  }}
+                  style={{ display: "flex", alignItems: "center", gap: 6 }}
+                >
+                  <span>{blueprintCopied ? "✓" : "📋"}</span>
+                  <span>{blueprintCopied ? "Copied" : "Copy Markdown"}</span>
+                </button>
+                <a
+                  href={getBlueprintDownloadUrl(blueprintData.project_id)}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="btn btn-primary btn-sm"
+                  style={{ textDecoration: "none" }}
+                >
+                  Download .md
+                </a>
+                <button
+                  className="btn btn-secondary btn-sm"
+                  onClick={() => setShowBlueprintModal(false)}
+                  style={{ padding: "4px 8px" }}
+                  title="Close (Esc)"
+                >
+                  ✕
+                </button>
+              </div>
+            </div>
+
+            {/* Modal Body: Markdown content viewer */}
+            <div
+              style={{
+                flex: 1,
+                padding: "20px 24px",
+                overflowY: "auto",
+                background: "var(--bg-primary)",
+              }}
+            >
+              <pre
+                style={{
+                  margin: 0,
+                  whiteSpace: "pre-wrap",
+                  wordBreak: "break-word",
+                  fontFamily: "var(--font-mono)",
+                  fontSize: 12,
+                  lineHeight: 1.6,
+                  color: "var(--text-secondary)",
+                }}
+              >
+                {blueprintData.markdown_content}
+              </pre>
+            </div>
+
+            {/* Modal Footer */}
+            <div
+              style={{
+                padding: "12px 20px",
+                borderTop: "1px solid var(--border)",
+                background: "var(--bg-secondary)",
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                fontSize: 11,
+                color: "var(--text-muted)",
+              }}
+            >
+              <span>Generated at {new Date(blueprintData.generated_at).toLocaleString()}</span>
+              <span>Ready for git repository check-in or architecture review</span>
             </div>
           </div>
         </div>

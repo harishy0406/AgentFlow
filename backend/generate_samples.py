@@ -13,7 +13,10 @@ from app.models import Project, ArtifactNode, ArtifactSection
 from app.reports.pdf_presentation import generate_project_presentation_pdf
 from app.agents.template_seeds import get_template_definition
 
-import fitz  # PyMuPDF
+try:
+    import pymupdf as fitz
+except ImportError:
+    import fitz  # PyMuPDF fallback
 
 def main():
     Base.metadata.create_all(bind=engine)

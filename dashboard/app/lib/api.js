@@ -538,4 +538,17 @@ export function getSeedJsonDownloadUrl(projectId, count = 5) {
   return `${API_BASE}/projects/${projectId}/seed-data/seeds.json?count=${count}`;
 }
 
+// ---------------------------------------------------------------------------
+// Architecture Blueprint Markdown Specification Engine
+// ---------------------------------------------------------------------------
+
+export async function getBlueprintMarkdown(projectId) {
+  return request(`/projects/${projectId}/blueprint-markdown`);
+}
+
+export function getBlueprintDownloadUrl(projectId) {
+  const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+  return `${API_BASE}/projects/${projectId}/download-blueprint-markdown`;
+}
+
 
