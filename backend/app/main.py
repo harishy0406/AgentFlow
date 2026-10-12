@@ -1827,7 +1827,8 @@ def get_mock_routes(
 # Phase 8+: OWASP & AST Security Shield & Vulnerability Audit Engine
 # ---------------------------------------------------------------------------
 
-from .agents.security_scanner import run_project_security_audit
+from .agents.security_scanner import run_project_security_audit, run_project_security_analysis
+from .reports.pdf_security_report import generate_project_security_report_pdf
 
 @app.get("/projects/{project_id}/security-audit", response_model=schemas.SecurityAuditReport)
 @app.post("/projects/{project_id}/run-security-audit", response_model=schemas.SecurityAuditReport)
@@ -1846,6 +1847,88 @@ def get_or_run_security_audit(
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/projects/{project_id}/security-analysis", response_model=schemas.SecurityAnalysisOut)
+def get_project_security_analysis(
+    project_id: UUID,
+    db: Session = Depends(get_db)
+):
+    """
+    Performs deep security analysis including Attack Surface Profiling,
+    STRIDE Threat Modeling, Defense-in-Depth breakdown, and compliance checks.
+    """
+    try:
+        analysis = run_project_security_analysis(project_id=project_id, db=db)
+        return analysis
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/projects/{project_id}/security-report-pdf")
+def download_project_security_report_pdf(
+    project_id: UUID,
+    theme: str = Query("dark", pattern="^(dark|light)$"),
+    db: Session = Depends(get_db)
+):
+    """
+    Generates and downloads a multi-slide landscape ReportLab PDF
+    summarizing the OWASP audit, attack surface profile, STRIDE threat model,
+    and remediation checklist with the executive slide deck theme.
+    """
+    project = db.get(models.Project, project_id)
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    try:
+        pdf_bytes = generate_project_security_report_pdf(str(project_id), db, theme=theme)
+        slug = sanitize_project_slug(project.name)
+        theme_suffix = f"_{theme}" if theme == "light" else ""
+        filename = f"{slug}{theme_suffix}_security_assessment.pdf"
+
+        return Response(
+            content=pdf_bytes,
+            media_type="application/pdf",
+            headers={
+                "Content-Disposition": f'attachment; filename="{filename}"',
+                "Content-Length": str(len(pdf_bytes)),
+            }
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to generate security assessment PDF: {str(e)}")
+
+
+@app.get("/projects/{project_id}/preview-security-report-pdf")
+def preview_project_security_report_pdf(
+    project_id: UUID,
+    theme: str = Query("dark", pattern="^(dark|light)$"),
+    db: Session = Depends(get_db)
+):
+    """
+    Renders security assessment PDF inline in the browser for modal viewing.
+    """
+    project = db.get(models.Project, project_id)
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    try:
+        pdf_bytes = generate_project_security_report_pdf(str(project_id), db, theme=theme)
+        slug = sanitize_project_slug(project.name)
+        theme_suffix = f"_{theme}" if theme == "light" else ""
+        filename = f"{slug}{theme_suffix}_security_assessment.pdf"
+
+        return Response(
+            content=pdf_bytes,
+            media_type="application/pdf",
+            headers={
+                "Content-Disposition": f'inline; filename="{filename}"',
+                "Content-Length": str(len(pdf_bytes)),
+            }
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to render security assessment PDF: {str(e)}")
 
 
 # ---------------------------------------------------------------------------

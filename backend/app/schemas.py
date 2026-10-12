@@ -532,11 +532,14 @@ class SecurityVulnerability(BaseModel):
     severity: str  # CRITICAL, HIGH, MEDIUM, LOW, INFO
     owasp_category: str
     cwe_id: str
+    layer: Optional[str] = "Application"
     file_target: str
     line_number: Optional[int] = None
     snippet: Optional[str] = None
     description: str
     remediation: str
+    suggested_patch: Optional[str] = None
+    effort_estimate: Optional[str] = "Low (15 mins)"
 
 
 class SecurityAuditReport(BaseModel):
@@ -550,6 +553,40 @@ class SecurityAuditReport(BaseModel):
     vulnerabilities: List[SecurityVulnerability] = []
     remediation_status: str
     timestamp: str
+
+
+class AttackSurfaceAnalysis(BaseModel):
+    public_routes_count: int
+    authenticated_routes_count: int
+    database_tables_count: int
+    external_egress_calls_count: int
+    unrestricted_inputs_count: int
+    attack_surface_rating: str  # MINIMAL, MODERATE, ELEVATED
+    key_exposure_vectors: List[str] = []
+
+
+class StrideThreatItem(BaseModel):
+    category: str  # Spoofing, Tampering, Repudiation, Information Disclosure, Denial of Service, Elevation of Privilege
+    threat_scenario: str
+    mitigation_control: str
+    status: str  # MITIGATED, MONITORED, ACTION_REQUIRED
+
+
+class ComplianceFrameworkAlignment(BaseModel):
+    framework: str
+    coverage_percentage: int
+    passed_controls: int
+    total_controls: int
+    status: str  # COMPLIANT, PARTIALLY_COMPLIANT
+
+
+class SecurityAnalysisOut(BaseModel):
+    audit_report: SecurityAuditReport
+    attack_surface: AttackSurfaceAnalysis
+    stride_threats: List[StrideThreatItem] = []
+    compliance_frameworks: List[ComplianceFrameworkAlignment] = []
+    defense_in_depth_layers: Dict[str, int] = {}
+    analyzed_at: str
 
 
 # ---------------------------------------------------------------------------
