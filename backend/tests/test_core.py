@@ -250,3 +250,85 @@ class TestApiSpecParser:
         assert paths[0] == "/api/v1/projects"
         assert paths[2] == "/api/v1/sections/{id}"
 
+
+# ---------------------------------------------------------------------------
+# 7. Artifact Node Lifecycle & Status Management
+# ---------------------------------------------------------------------------
+
+from app.agents.graph_engine import mark_node_fresh
+from app.models import ArtifactNode
+
+
+class TestArtifactNodeLifecycle:
+    def test_mark_node_fresh_updates_status(self):
+        """mark_node_fresh should update node status from stale to fresh."""
+        from unittest.mock import MagicMock
+        from uuid import uuid4
+
+        mock_db = MagicMock()
+        mock_node = MagicMock()
+        mock_node.status = "stale"
+        mock_db.get.return_value = mock_node
+
+        node_id = uuid4()
+        mark_node_fresh(node_id, mock_db)
+
+        mock_db.get.assert_called_once_with(ArtifactNode, node_id)
+        assert mock_node.status == "fresh"
+        mock_db.commit.assert_called_once()
+
+    def test_mark_node_fresh_noop_when_missing(self):
+        """mark_node_fresh should handle non-existent node safely."""
+        from unittest.mock import MagicMock
+        from uuid import uuid4
+
+        mock_db = MagicMock()
+        mock_db.get.return_value = None
+
+        node_id = uuid4()
+        mark_node_fresh(node_id, mock_db)
+        mock_db.commit.assert_not_called()
+
+    def test_run_pipeline_sets_fresh_status_on_artifacts(self, monkeypatch):
+        """run_pipeline must ensure all created artifact nodes have status='fresh' upon completion."""
+        from unittest.mock import MagicMock
+        from uuid import uuid4
+        from app.agents.graph import run_pipeline
+        from app.models import Project
+
+        project_id = uuid4()
+        mock_project = MagicMock(spec=Project)
+        mock_project.id = project_id
+        mock_project.name = "Test Pipeline Project"
+        mock_project.brief = "Build an automated testing system"
+        mock_project.clarifications = ""
+
+        mock_db = MagicMock()
+        mock_db.get.return_value = mock_project
+        mock_query = MagicMock()
+        mock_filter = MagicMock()
+        mock_filter.first.return_value = None
+        mock_query.filter.return_value = mock_filter
+        mock_db.query.return_value = mock_query
+
+        # Mock build_graph to return a dummy runnable
+        mock_graph = MagicMock()
+        mock_graph.invoke.return_value = {
+            "prd": "# PRD\n## Overview\nSpecs here.",
+            "sdd": "# SDD\n## Architecture\nArch here.",
+            "db_schema": "# DB\n## Tables\nSQL here.",
+            "api_spec": "# API\n## Endpoints\nRoutes here.",
+            "user_stories": "# Stories\n## User\nStory here.",
+            "tasks": "# Tasks\n## Dev\nTask here.",
+            "code_generation": "### File: main.py\n```python\nprint(1)\n```"
+        }
+        monkeypatch.setattr("app.agents.graph.build_graph", lambda: mock_graph)
+        monkeypatch.setattr("app.agents.graph.compute_quality_signal", lambda *args, **kwargs: 92.5)
+        monkeypatch.setattr("app.agents.graph.scaffold_project_files", lambda *args, **kwargs: None)
+
+        nodes = run_pipeline(project_id, mock_db)
+        assert len(nodes) == 7
+        for node in nodes:
+            assert node.status == "fresh"
+            assert node.quality_signal_score == 92.5
+

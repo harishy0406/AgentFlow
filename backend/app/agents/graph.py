@@ -93,6 +93,7 @@ def run_pipeline(
     nodes_created: List[ArtifactNode] = []
 
     for art_type, content in artifacts_map.items():
+        art_start_time = time.perf_counter()
         if status_callback:
             status_callback(art_type, f"{art_type.lower()}_started")
 
@@ -164,9 +165,13 @@ def run_pipeline(
             )
             db.add(version_record)
 
-        # Calculate quality signal
+        # Calculate quality signal and finalize fresh status
         quality = compute_quality_signal(art_type, content, project_id, db)
         node.quality_signal_score = quality
+        node.status = "fresh"
+        node.updated_at = datetime.now(timezone.utc)
+
+        elapsed_ms = max(int((time.perf_counter() - art_start_time) * 1000), 25)
 
         # Log generation event
         gen_log = GenerationLog(
@@ -177,7 +182,7 @@ def run_pipeline(
             model="claude-3-haiku",
             tokens_used=max(len(content) // 4, 100),
             cost_usd=0.015,
-            latency_ms=1200
+            latency_ms=elapsed_ms
         )
         db.add(gen_log)
 
