@@ -437,6 +437,46 @@ export default function Home() {
     setTimeout(() => setToast(null), 3000);
   }, []);
 
+  const [refreshingArtifacts, setRefreshingArtifacts] = useState(false);
+
+  const artifactFreshnessSummary = useMemo(() => {
+    if (!artifacts || artifacts.length === 0) return null;
+    const total = artifacts.length;
+    const freshCount = artifacts.filter(a => a.status === "fresh").length;
+    const generatingCount = artifacts.filter(a => a.status === "generating" || a.status === "regenerating").length;
+    const staleCount = artifacts.filter(a => a.status === "stale" || a.status === "drifted").length;
+    return {
+      total,
+      freshCount,
+      generatingCount,
+      staleCount,
+      isAllFresh: freshCount === total,
+      pctFresh: Math.round((freshCount / total) * 100)
+    };
+  }, [artifacts]);
+
+  const handleAuditFreshness = useCallback(async () => {
+    if (!currentProject) return;
+    setRefreshingArtifacts(true);
+    try {
+      const [updatedArts, drifts] = await Promise.all([
+        getArtifacts(currentProject.id),
+        listDrifts(currentProject.id).catch(() => [])
+      ]);
+      setArtifacts(updatedArts);
+      const staleOrDrifted = updatedArts.filter(a => a.status === "stale" || a.status === "drifted").length;
+      if (staleOrDrifted > 0 || (drifts && drifts.length > 0)) {
+        showToast(`Audit complete: ${staleOrDrifted} drifted/stale nodes identified`, "warning");
+      } else {
+        showToast(`Audit complete: All ${updatedArts.length} artifact nodes verified 100% fresh`, "success");
+      }
+    } catch (err) {
+      showToast(err.message || "Failed to audit freshness", "error");
+    } finally {
+      setRefreshingArtifacts(false);
+    }
+  }, [currentProject, showToast]);
+
   // Global Quick-Action Command Palette (Ctrl+K / Cmd+K)
   const [showCommandPalette, setShowCommandPalette] = useState(false);
   const [commandSearch, setCommandSearch] = useState("");
@@ -2969,6 +3009,47 @@ export default function Home() {
                           </span>
                         )}
                       </div>
+
+                      {artifactFreshnessSummary && (
+                        <div
+                          className={`studio-freshness-pill ${
+                            artifactFreshnessSummary.generatingCount > 0
+                              ? "generating"
+                              : artifactFreshnessSummary.staleCount > 0
+                              ? "stale"
+                              : "fresh"
+                          }`}
+                          title={`${artifactFreshnessSummary.freshCount}/${artifactFreshnessSummary.total} nodes fresh (${artifactFreshnessSummary.pctFresh}%)`}
+                        >
+                          <span className="studio-freshness-dot" />
+                          <span>
+                            {artifactFreshnessSummary.generatingCount > 0
+                              ? "⟳ Syncing..."
+                              : artifactFreshnessSummary.staleCount > 0
+                              ? `⚠ ${artifactFreshnessSummary.staleCount} Drifted`
+                              : `✓ ${artifactFreshnessSummary.pctFresh}% Fresh`}
+                          </span>
+                        </div>
+                      )}
+
+                      <button
+                        className="studio-audit-btn"
+                        onClick={handleAuditFreshness}
+                        disabled={refreshingArtifacts || pipelineGenerating}
+                        title="Audit freshness and re-verify graph integrity"
+                      >
+                        {refreshingArtifacts ? (
+                          <>
+                            <span className="spinner-sm" style={{ width: 10, height: 10 }} />
+                            <span>Auditing...</span>
+                          </>
+                        ) : (
+                          <>
+                            <span>⚡</span>
+                            <span>Audit Freshness</span>
+                          </>
+                        )}
+                      </button>
                     </div>
                   )}
                 </div>
