@@ -1394,6 +1394,31 @@ export default function Home() {
     [artifacts]
   );
 
+  const handleRefreshArtifacts = async () => {
+    showToast("Refreshing artifact statuses...", "info");
+    // Trigger a refresh by getting fresh artifacts from the API
+    if (currentProject) {
+      try {
+        const freshArtifacts = await getArtifacts(currentProject.id);
+        setArtifacts(freshArtifacts);
+        showToast("Artifact statuses refreshed successfully", "success");
+      } catch (err) {
+        showToast(`Failed to refresh: ${err.message}`, "error");
+      }
+    }
+  };
+
+  const handleRegenerateAll = async () => {
+    if (!currentProject) return;
+    showToast("Triggering full regeneration of all artifacts...", "info");
+    try {
+      await triggerEvalRun(currentProject.id);
+      showToast("Regeneration triggered - all 7 artifacts will be regenerated", "success");
+    } catch (err) {
+      showToast(`Regeneration failed: ${err.message}`, "error");
+    }
+  };
+
   const SIM_PRESETS = [
     {
       id: "ai-reviewer",
@@ -4005,6 +4030,40 @@ export default function Home() {
                       artifacts={artifacts}
                       onNodeClick={handleNodeClick}
                     />
+
+                    {/* Freshness Audit Control Panel */}
+                    <div className="freshness-audit">
+                      <h3>Freshness Audit</h3>
+                      <p>Last updated: {new Date().toLocaleString()}</p>
+                      <div className="audit-controls">
+                        <button
+                          className="btn btn-sm btn-outline-secondary"
+                          onClick={handleRefreshArtifacts}
+                        >
+                          🔄 Refresh Status
+                        </button>
+                        <button
+                          className="btn btn-sm btn-outline-primary"
+                          onClick={handleRegenerateAll}
+                        >
+                          ⚡ Regenerate All
+                        </button>
+                      </div>
+                      <ul className="artifact-status-list">
+                        {artifacts.map(artifact => (
+                          <li key={artifact.id} className="artifact-status-item">
+                            <span className="artifact-name">{artifact.artifact_type.replace('_', ' ')}</span>
+                            <span className={`status-badge ${artifact.status}`}>
+                              {artifact.status}
+                            </span>
+                            {artifact.updated_at && (
+                              <span className="timestamp">{new Date(artifact.updated_at).toLocaleTimeString()}</span>
+                            )}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+
                     {selectedArtifact && (
                       <div style={{ marginTop: 24 }}>
                         <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 12 }}>

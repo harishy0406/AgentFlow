@@ -23,6 +23,17 @@ const STATUS_COLORS = {
 };
 
 /**
+ * Status → class name for pipeline status badges.
+ */
+const STATUS_BADGE_CLASSES = {
+  fresh: "pipeline-badge fresh",
+  stale: "pipeline-badge stale",
+  regenerating: "pipeline-badge regenerating",
+  drifted: "pipeline-badge drifted",
+  pending: "pipeline-badge pending",
+};
+
+/**
  * Custom node styling for artifact nodes in the dependency graph.
  */
 function getNodeStyle(status) {
@@ -39,6 +50,14 @@ function getNodeStyle(status) {
     textAlign: "center",
     boxShadow: `0 0 12px ${borderColor}33`,
   };
+}
+
+/**
+ * Get pipeline status badge HTML for a given status.
+ */
+function getPipelineStatusBadge(status) {
+  const cls = STATUS_BADGE_CLASSES[status] || STATUS_BADGE_CLASSES.pending;
+  return `<div className="${cls}">${status}</div>`;
 }
 
 /**
@@ -126,6 +145,14 @@ export function buildEdges() {
     animated: true,
     style: { stroke: "#64748b", strokeWidth: 2 },
   }));
+}
+
+/**
+ * Get pipeline status badge HTML for a given status.
+ */
+export function getPipelineStatusBadge(status) {
+  const cls = STATUS_BADGE_CLASSES[status] || STATUS_BADGE_CLASSES.pending;
+  return `<div className="${cls}">${status}</div>`;
 }
 
 /**
