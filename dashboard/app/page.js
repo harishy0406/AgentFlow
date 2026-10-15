@@ -498,6 +498,20 @@ export default function Home() {
   }, [showCommandPalette]);
 
   const commandPaletteItems = useMemo(() => [
+    // Quick Actions
+    {
+      id: "action-audit-freshness",
+      title: "Audit Artifact Freshness & Integrity",
+      category: "Actions",
+      icon: "⚡",
+      badge: "Action",
+      action: () => {
+        setShowCommandPalette(false);
+        handleAuditFreshness();
+      },
+      keywords: "audit freshness verify integrity status sync drift reload check"
+    },
+
     // Studio Views
     {
       id: "tab-graph",

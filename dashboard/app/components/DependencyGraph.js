@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo } from "react";
+import { useCallback, useMemo, useEffect } from "react";
 import {
   ReactFlow,
   Background,
@@ -33,6 +33,16 @@ const STATUS_BADGE_CLASSES = {
   pending: "pipeline-badge pending",
 };
 
+const NODE_ICONS = {
+  PRD: "📋",
+  SDD: "📐",
+  DB_SCHEMA: "🗄️",
+  API_SPEC: "⚡",
+  USER_STORIES: "👥",
+  TASKS: "🔨",
+  CODE_GENERATION: "🚀",
+};
+
 /**
  * Custom node styling for artifact nodes in the dependency graph.
  */
@@ -48,37 +58,32 @@ function getNodeStyle(status) {
     fontFamily: "'Inter', sans-serif",
     minWidth: "160px",
     textAlign: "center",
-    boxShadow: `0 0 12px ${borderColor}33`,
+    boxShadow: `0 0 14px ${borderColor}40`,
   };
 }
 
 /**
- * Get pipeline status badge HTML for a given status.
- */
-function getPipelineStatusBadge(status) {
-  const cls = STATUS_BADGE_CLASSES[status] || STATUS_BADGE_CLASSES.pending;
-  return `<div className="${cls}">${status}</div>`;
-}
-
-/**
- * The fixed artifact dependency layout.
+ * The fixed artifact dependency layout (7-Node Autonomous DAG).
  *
  * Layout:
- *   PRD (top)
- *     ↓
- *   SDD
- *    ↓  ↘
- *  DB    USER_STORIES
- *    ↓      ↓
- *  API    TASKS
+ *         PRD (top)
+ *           ↓
+ *          SDD
+ *        ↓     ↘
+ *    DB_SCHEMA  USER_STORIES
+ *        ↓         ↓
+ *    API_SPEC    TASKS
+ *        ↘         ↙
+ *      CODE_GENERATION
  */
 const LAYOUT_POSITIONS = {
-  PRD:          { x: 300, y: 0 },
-  SDD:          { x: 300, y: 120 },
-  DB_SCHEMA:    { x: 150, y: 240 },
-  API_SPEC:     { x: 150, y: 360 },
-  USER_STORIES: { x: 450, y: 240 },
-  TASKS:        { x: 450, y: 360 },
+  PRD:             { x: 300, y: 0 },
+  SDD:             { x: 300, y: 120 },
+  DB_SCHEMA:       { x: 150, y: 240 },
+  API_SPEC:        { x: 150, y: 360 },
+  USER_STORIES:    { x: 450, y: 240 },
+  TASKS:           { x: 450, y: 360 },
+  CODE_GENERATION: { x: 300, y: 480 },
 };
 
 const EDGES_DEFINITION = [
@@ -87,6 +92,8 @@ const EDGES_DEFINITION = [
   { id: "e-sdd-us",  source: "SDD", target: "USER_STORIES" },
   { id: "e-db-api",  source: "DB_SCHEMA", target: "API_SPEC" },
   { id: "e-us-tasks", source: "USER_STORIES", target: "TASKS" },
+  { id: "e-api-code", source: "API_SPEC", target: "CODE_GENERATION" },
+  { id: "e-tasks-code", source: "TASKS", target: "CODE_GENERATION" },
 ];
 
 /**
@@ -104,6 +111,8 @@ export function buildNodes(artifacts = []) {
     const status = artifact?.status || "pending";
     const version = artifact?.version || 0;
     const quality = artifact?.quality_signal_score;
+    const qualityPct = quality != null ? (quality <= 1.0 ? Math.round(quality * 100) : Math.round(quality)) : null;
+    const icon = NODE_ICONS[type] || "📄";
 
     return {
       id: type,
@@ -111,7 +120,10 @@ export function buildNodes(artifacts = []) {
       data: {
         label: (
           <div>
-            <div style={{ fontWeight: 700, marginBottom: 6 }}>{type.replace("_", " ")}</div>
+            <div style={{ fontWeight: 700, marginBottom: 6, display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
+              <span>{icon}</span>
+              <span>{type.replace("_", " ")}</span>
+            </div>
             <div style={{
               display: "inline-block",
               padding: "2px 8px",
@@ -120,12 +132,13 @@ export function buildNodes(artifacts = []) {
               fontWeight: 600,
               background: STATUS_COLORS[status] || STATUS_COLORS.pending,
               color: "#fff",
+              boxShadow: `0 0 8px ${(STATUS_COLORS[status] || STATUS_COLORS.pending)}66`,
             }}>
               {status.toUpperCase()}
             </div>
-            <div style={{ marginTop: 6, fontSize: "11px", opacity: 0.7 }}>
+            <div style={{ marginTop: 6, fontSize: "11px", opacity: 0.75 }}>
               v{version}
-              {quality != null && ` • Q: ${(quality * 100).toFixed(0)}%`}
+              {qualityPct != null && ` • Q: ${qualityPct}%`}
             </div>
           </div>
         ),
@@ -156,7 +169,7 @@ export function getPipelineStatusBadge(status) {
 }
 
 /**
- * DependencyGraph — renders the 6-node artifact DAG.
+ * DependencyGraph — renders the 7-node artifact DAG.
  *
  * @param {Object} props
  * @param {Array}  props.artifacts - Artifact data from the API.
@@ -168,6 +181,11 @@ export default function DependencyGraph({ artifacts = [], onNodeClick }) {
 
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
+
+  // Synchronize live graph nodes whenever artifacts change
+  useEffect(() => {
+    setNodes(buildNodes(artifacts));
+  }, [artifacts, setNodes]);
 
   const handleNodeClick = useCallback(
     (event, node) => {

@@ -55,6 +55,7 @@ export default function DiffViewer({
   onClose,
 }) {
   const [viewMode, setViewMode] = useState("unified"); // 'unified' | 'split'
+  const [copiedPatch, setCopiedPatch] = useState(false);
 
   const diffLines = useMemo(() => {
     return computeLineDiff(oldContent, newContent);
@@ -69,6 +70,42 @@ export default function DiffViewer({
     });
     return { added, removed };
   }, [diffLines]);
+
+  const annotatedDiffLines = useMemo(() => {
+    let oldNum = 1;
+    let newNum = 1;
+    return diffLines.map((line) => {
+      let oldDisplay = "";
+      let newDisplay = "";
+      if (line.type === "same") {
+        oldDisplay = oldNum++;
+        newDisplay = newNum++;
+      } else if (line.type === "added") {
+        newDisplay = newNum++;
+      } else if (line.type === "removed") {
+        oldDisplay = oldNum++;
+      }
+      return {
+        ...line,
+        oldNum: oldDisplay,
+        newNum: newDisplay,
+      };
+    });
+  }, [diffLines]);
+
+  const handleCopyPatch = () => {
+    const patchHeader = `--- ${oldLabel}\n+++ ${newLabel}\n@@ -1,${oldContent.split("\n").length} +1,${newContent.split("\n").length} @@\n`;
+    const patchBody = diffLines.map((l) => {
+      if (l.type === "added") return `+${l.value}`;
+      if (l.type === "removed") return `-${l.value}`;
+      return ` ${l.value}`;
+    }).join("\n");
+    if (typeof navigator !== "undefined" && navigator.clipboard) {
+      navigator.clipboard.writeText(patchHeader + patchBody);
+      setCopiedPatch(true);
+      setTimeout(() => setCopiedPatch(false), 2000);
+    }
+  };
 
   return (
     <div
@@ -102,6 +139,22 @@ export default function DiffViewer({
           <span style={{ color: "#f85149", fontWeight: 600 }}>-{stats.removed}</span>
         </div>
         <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+          <button
+            className="btn btn-secondary btn-sm"
+            style={{
+              fontSize: 11,
+              padding: "3px 8px",
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 4,
+              color: copiedPatch ? "#3fb950" : "#c9d1d9",
+              borderColor: copiedPatch ? "#238636" : "#30363d",
+            }}
+            onClick={handleCopyPatch}
+            title="Copy standard git unified diff patch to clipboard"
+          >
+            {copiedPatch ? "✓ Copied" : "📋 Copy Patch"}
+          </button>
           <button
             className={`btn btn-secondary btn-sm ${viewMode === "unified" ? "active" : ""}`}
             style={{ fontSize: 11, padding: "3px 8px" }}
@@ -137,7 +190,7 @@ export default function DiffViewer({
       {/* Unified Diff View */}
       {viewMode === "unified" && (
         <div style={{ maxHeight: 320, overflowY: "auto", padding: "8px 0" }}>
-          {diffLines.map((line, idx) => {
+          {annotatedDiffLines.map((line, idx) => {
             let bg = "transparent";
             let color = "#c9d1d9";
             let symbol = " ";
@@ -157,6 +210,7 @@ export default function DiffViewer({
                 key={idx}
                 style={{
                   display: "flex",
+                  alignItems: "center",
                   background: bg,
                   color: color,
                   padding: "1px 12px",
@@ -167,15 +221,43 @@ export default function DiffViewer({
               >
                 <span
                   style={{
-                    width: 20,
+                    width: 32,
                     userSelect: "none",
-                    opacity: 0.6,
+                    textAlign: "right",
+                    paddingRight: 6,
+                    color: "#484f58",
+                    fontFamily: "monospace",
+                    fontSize: 10,
+                  }}
+                >
+                  {line.oldNum}
+                </span>
+                <span
+                  style={{
+                    width: 32,
+                    userSelect: "none",
+                    textAlign: "right",
+                    paddingRight: 8,
+                    color: "#484f58",
+                    fontFamily: "monospace",
+                    fontSize: 10,
+                    borderRight: "1px solid #30363d",
+                    marginRight: 8,
+                  }}
+                >
+                  {line.newNum}
+                </span>
+                <span
+                  style={{
+                    width: 16,
+                    userSelect: "none",
+                    opacity: 0.7,
                     fontWeight: "bold",
                   }}
                 >
                   {symbol}
                 </span>
-                <span>{line.value || " "}</span>
+                <span style={{ flex: 1 }}>{line.value || " "}</span>
               </div>
             );
           })}
