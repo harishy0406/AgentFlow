@@ -8431,36 +8431,43 @@ export default function Home() {
 
                         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: 12 }}>
                           {(securityAnalysis?.stride_threats || [
-                            { stride_category: "Spoofing", title: "Identity Spoofing & Credential Impersonation", threat_agent: "External Anonymous Actor", impact_level: "HIGH", mitigation_status: "MITIGATED", description: "Attacker attempts to forge claims or bypass authentication tokens.", mitigation: "Enforce strict RS256 JWT validation, reject None algorithm, short expiration (15m)." },
-                            { stride_category: "Tampering", title: "Parameter & State Tampering", threat_agent: "Malicious Authenticated User", impact_level: "HIGH", mitigation_status: "MITIGATED", description: "Attacker modifies payload state or SQL queries via unsanitized parameters.", mitigation: "Use parameterized queries, Pydantic strict schemas, ORM boundaries." },
-                            { stride_category: "Repudiation", title: "Audit Trail Deniability", threat_agent: "Compromised Insider", impact_level: "MEDIUM", mitigation_status: "MITIGATED", description: "Actions taken by users cannot be indisputably attributed.", mitigation: "Immutable structured JSON audit logging with correlation IDs and timestamps." },
-                            { stride_category: "Information Disclosure", title: "Sensitive Secret Leakage", threat_agent: "Network Eavesdropper / Repository Scanner", impact_level: "CRITICAL", mitigation_status: "MITIGATED", description: "Accidental exposure of connection strings, API keys, or raw JWTs.", mitigation: "Strict vault injection, zero hardcoded credentials, env masking in logs." },
-                            { stride_category: "Denial of Service", title: "Resource Exhaustion & Flood Attack", threat_agent: "Distributed Botnet", impact_level: "MEDIUM", mitigation_status: "MITIGATED", description: "Mass API traffic causing CPU or database connection pool starvation.", mitigation: "Sliding window rate limiters (60 req/min), query timeouts, connection pooling." },
-                            { stride_category: "Elevation of Privilege", title: "Vertical Privilege Escalation", threat_agent: "Low-privilege Authenticated Actor", impact_level: "CRITICAL", mitigation_status: "MITIGATED", description: "Attacker accesses administrative roles or executes commands as container root.", mitigation: "Non-root Docker containers, granular RBAC gate decorators, least-privilege DB users." },
+                            { category: "Spoofing", stride_category: "Spoofing", title: "Identity Spoofing & Credential Impersonation", threat_agent: "External Anonymous Actor", impact_level: "HIGH", status: "MITIGATED", mitigation_status: "MITIGATED", description: "Attacker attempts to forge claims or bypass authentication tokens.", threat_scenario: "Attacker attempts to forge claims or bypass authentication tokens.", mitigation: "Enforce strict RS256 JWT validation, reject None algorithm, short expiration (15m).", mitigation_control: "Enforce strict RS256 JWT validation, reject None algorithm, short expiration (15m)." },
+                            { category: "Tampering", stride_category: "Tampering", title: "Parameter & State Tampering", threat_agent: "Malicious Authenticated User", impact_level: "HIGH", status: "MITIGATED", mitigation_status: "MITIGATED", description: "Attacker modifies payload state or SQL queries via unsanitized parameters.", threat_scenario: "Attacker modifies payload state or SQL queries via unsanitized parameters.", mitigation: "Use parameterized queries, Pydantic strict schemas, ORM boundaries.", mitigation_control: "Use parameterized queries, Pydantic strict schemas, ORM boundaries." },
+                            { category: "Repudiation", stride_category: "Repudiation", title: "Audit Trail Deniability", threat_agent: "Compromised Insider", impact_level: "MEDIUM", status: "MITIGATED", mitigation_status: "MITIGATED", description: "Actions taken by users cannot be indisputably attributed.", threat_scenario: "Actions taken by users cannot be indisputably attributed.", mitigation: "Immutable structured JSON audit logging with correlation IDs and timestamps.", mitigation_control: "Immutable structured JSON audit logging with correlation IDs and timestamps." },
+                            { category: "Information Disclosure", stride_category: "Information Disclosure", title: "Sensitive Secret Leakage", threat_agent: "Network Eavesdropper / Repository Scanner", impact_level: "CRITICAL", status: "MITIGATED", mitigation_status: "MITIGATED", description: "Accidental exposure of connection strings, API keys, or raw JWTs.", threat_scenario: "Accidental exposure of connection strings, API keys, or raw JWTs.", mitigation: "Strict vault injection, zero hardcoded credentials, env masking in logs.", mitigation_control: "Strict vault injection, zero hardcoded credentials, env masking in logs." },
+                            { category: "Denial of Service", stride_category: "Denial of Service", title: "Resource Exhaustion & Flood Attack", threat_agent: "Distributed Botnet", impact_level: "MEDIUM", status: "MITIGATED", mitigation_status: "MITIGATED", description: "Mass API traffic causing CPU or database connection pool starvation.", threat_scenario: "Mass API traffic causing CPU or database connection pool starvation.", mitigation: "Sliding window rate limiters (60 req/min), query timeouts, connection pooling.", mitigation_control: "Sliding window rate limiters (60 req/min), query timeouts, connection pooling." },
+                            { category: "Elevation of Privilege", stride_category: "Elevation of Privilege", title: "Vertical Privilege Escalation", threat_agent: "Low-privilege Authenticated Actor", impact_level: "CRITICAL", status: "MITIGATED", mitigation_status: "MITIGATED", description: "Attacker accesses administrative roles or executes commands as container root.", threat_scenario: "Attacker accesses administrative roles or executes commands as container root.", mitigation: "Non-root Docker containers, granular RBAC gate decorators, least-privilege DB users.", mitigation_control: "Non-root Docker containers, granular RBAC gate decorators, least-privilege DB users." },
                           ]).map((threat, idx) => {
-                            const impactColor = threat.impact_level === "CRITICAL" ? "var(--accent-red)" : threat.impact_level === "HIGH" ? "#FB923C" : "var(--terminal-green)";
-                            const statusColor = threat.mitigation_status === "MITIGATED" ? "var(--terminal-green)" : "#FB923C";
-                            const icon = threat.stride_category.startsWith("S") ? "🎭" : threat.stride_category.startsWith("T") ? "✏️" : threat.stride_category.startsWith("R") ? "📜" : threat.stride_category.startsWith("I") ? "👁️" : threat.stride_category.startsWith("D") ? "⚡" : "⬆️";
+                            const catStr = String(threat?.category || threat?.stride_category || "Spoofing");
+                            const status = threat?.status || threat?.mitigation_status || "MITIGATED";
+                            const impactLevel = threat?.impact_level || (status === "ACTION_REQUIRED" ? "HIGH" : status === "MONITORED" ? "MEDIUM" : "LOW");
+                            const impactColor = impactLevel === "CRITICAL" ? "var(--accent-red)" : impactLevel === "HIGH" ? "#FB923C" : impactLevel === "MEDIUM" ? "var(--accent-blue)" : "var(--terminal-green)";
+                            const statusColor = status === "MITIGATED" ? "var(--terminal-green)" : status === "MONITORED" ? "var(--accent-blue)" : "#FB923C";
+                            const icon = catStr.startsWith("S") ? "🎭" : catStr.startsWith("T") ? "✏️" : catStr.startsWith("R") ? "📜" : catStr.startsWith("I") ? "👁️" : catStr.startsWith("D") ? "⚡" : "⬆️";
+                            const threatAgent = threat?.threat_agent || (catStr.startsWith("S") ? "External Anonymous Actor" : catStr.startsWith("T") ? "Malicious Authenticated User" : catStr.startsWith("R") ? "Compromised Insider" : catStr.startsWith("I") ? "Network Eavesdropper" : catStr.startsWith("D") ? "Distributed Botnet" : "Low-privilege Authenticated Actor");
+                            const description = threat?.description || threat?.threat_scenario || "";
+                            const mitigation = threat?.mitigation || threat?.mitigation_control || "Enforce automated security controls and validation.";
+                            const title = threat?.title || (threat?.threat_scenario ? threat.threat_scenario.slice(0, 50) + (threat.threat_scenario.length > 50 ? "..." : "") : `${catStr} Vector`);
                             return (
                               <div key={idx} style={{ background: "var(--bg-secondary)", border: "1px solid var(--border)", borderRadius: 8, padding: 14 }}>
                                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 }}>
                                   <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                                     <span style={{ fontSize: 16 }}>{icon}</span>
-                                    <strong style={{ fontSize: 13, color: "var(--text-primary)" }}>{threat.stride_category}: {threat.title}</strong>
+                                    <strong style={{ fontSize: 13, color: "var(--text-primary)" }}>{catStr}: {title}</strong>
                                   </div>
                                   <span style={{ fontSize: 10, fontWeight: 800, padding: "2px 6px", borderRadius: 4, background: `${impactColor}15`, color: impactColor, border: `1px solid ${impactColor}30`, fontFamily: "var(--font-mono)" }}>
-                                    {threat.impact_level}
+                                    {impactLevel}
                                   </span>
                                 </div>
                                 <div style={{ fontSize: 11, color: "var(--text-muted)", marginBottom: 6, display: "flex", gap: 12, flexWrap: "wrap" }}>
-                                  <span>Threat Actor: <strong style={{ color: "var(--text-secondary)" }}>{threat.threat_agent}</strong></span>
-                                  <span>Status: <strong style={{ color: statusColor }}>{threat.mitigation_status}</strong></span>
+                                  <span>Threat Actor: <strong style={{ color: "var(--text-secondary)" }}>{threatAgent}</strong></span>
+                                  <span>Status: <strong style={{ color: statusColor }}>{status}</strong></span>
                                 </div>
                                 <p style={{ fontSize: 12, color: "var(--text-secondary)", margin: "0 0 8px" }}>
-                                  {threat.description}
+                                  {description}
                                 </p>
                                 <div style={{ fontSize: 11, color: "var(--text-muted)", background: "var(--bg-primary)", padding: "8px 10px", borderRadius: 4, borderLeft: `3px solid ${statusColor}` }}>
-                                  <strong style={{ color: "var(--terminal-green)" }}>Remediation:</strong> {threat.mitigation}
+                                  <strong style={{ color: "var(--terminal-green)" }}>Remediation:</strong> {mitigation}
                                 </div>
                               </div>
                             );
