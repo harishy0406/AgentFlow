@@ -233,12 +233,12 @@ class NumberedSecurityReportCanvas(canvas.Canvas):
         score = getattr(self, "overall_score", 100)
         self.setFont("Helvetica-Bold", 7.5)
         self.setFillColor(colors.HexColor(tc("#94A3B8")))
-        self.drawString(36, 17, f"CONFIDENTIAL // OWASP ASVS COMPLIANT • AUDIT GRADE: {grade} ({score}/100)")
+        self.drawString(36, 17, f"CONFIDENTIAL // AUDIT GRADE: {grade} ({score}/100)")
 
         # Footer Center
         self.setFont("Helvetica", 7.5)
         self.setFillColor(colors.HexColor(tc("#64748B")))
-        self.drawCentredString(width / 2, 17, "AgentFlow Autonomous Security Shield • Static AST & Vulnerability Engine")
+        self.drawCentredString(width / 2, 17, "AgentFlow Autonomous Security Shield • Static AST & Threat Engine")
 
         # Footer Right: Page Number
         self.setFont("Helvetica-Bold", 7.5)
@@ -359,12 +359,47 @@ def generate_project_security_report_pdf(
         textColor=colors.HexColor(tc("#38BDF8")),
     )
 
+    # Card & Metric Specific Styles to guarantee zero vertical overlap
+    card_label_style = ParagraphStyle(
+        "SecCardLabel",
+        parent=base_styles["Normal"],
+        fontName="Helvetica-Bold",
+        fontSize=8.5,
+        leading=11,
+        textColor=colors.HexColor(tc("#94A3B8")),
+        spaceAfter=5,
+    )
+    card_val_large_style = ParagraphStyle(
+        "SecCardValLarge",
+        parent=base_styles["Normal"],
+        fontName="Helvetica-Bold",
+        fontSize=24,
+        leading=28,
+        spaceAfter=5,
+    )
+    card_val_med_style = ParagraphStyle(
+        "SecCardValMed",
+        parent=base_styles["Normal"],
+        fontName="Helvetica-Bold",
+        fontSize=18,
+        leading=22,
+        spaceAfter=4,
+    )
+    card_sub_style = ParagraphStyle(
+        "SecCardSub",
+        parent=base_styles["Normal"],
+        fontName="Helvetica",
+        fontSize=8,
+        leading=11,
+        textColor=colors.HexColor(tc("#94A3B8")),
+    )
+
     flowables = []
 
     # =========================================================================
     # SLIDE 1: Cover Page / Title Slide
     # =========================================================================
-    flowables.append(Spacer(1, 25))
+    flowables.append(Spacer(1, 20))
     flowables.append(Paragraph("🛡️ ENTERPRISE SECURITY ASSESSMENT", ParagraphStyle(
         "Overline", fontName="Helvetica-Bold", fontSize=11, leading=14, textColor=colors.HexColor(tc("#EF4444" if not is_light else "#DC2626")), spaceAfter=6
     )))
@@ -375,33 +410,49 @@ def generate_project_security_report_pdf(
     ))
     flowables.append(Spacer(1, 10))
 
-    # Badge Cards Table on Title Slide
+    # Badge Cards Table on Title Slide - separate flowables per cell to eliminate collision
     grade_color = "#10B981" if security_grade in ["A+", "A"] else "#FBBF24" if security_grade == "B" else "#EF4444"
     card_data = [
         [
-            Paragraph(f"<b>SECURITY GRADE</b><br/><font size='26' color='{grade_color}'><b>{security_grade}</b></font><br/><font size='8' color='{tc('#94A3B8')}'>{remediation_status}</font>", body_style),
-            Paragraph(f"<b>OVERALL SCORE</b><br/><font size='26' color='{tc('#38BDF8')}'><b>{overall_score}/100</b></font><br/><font size='8' color='{tc('#94A3B8')}'>AST Static Verification Score</font>", body_style),
-            Paragraph(f"<b>ACTIVE FINDINGS</b><br/><font size='26' color='{tc('#EF4444' if total_findings > 0 else '#10B981')}'><b>{total_findings}</b></font><br/><font size='8' color='{tc('#94A3B8')}'>{severity_counts.get('CRITICAL', 0)} Critical • {severity_counts.get('HIGH', 0)} High</font>", body_style),
-            Paragraph(f"<b>ASSETS AUDITED</b><br/><font size='26' color='{tc('#FFFFFF')}'><b>{scanned_count}</b></font><br/><font size='8' color='{tc('#94A3B8')}'>Code, Schemas, Contracts</font>", body_style),
+            [
+                Paragraph("SECURITY GRADE", card_label_style),
+                Paragraph(f"<font color='{grade_color}'>{security_grade}</font>", card_val_large_style),
+                Paragraph(remediation_status, card_sub_style),
+            ],
+            [
+                Paragraph("OVERALL SCORE", card_label_style),
+                Paragraph(f"<font color='{tc('#38BDF8')}'>{overall_score}/100</font>", card_val_large_style),
+                Paragraph("AST Static Verification Score", card_sub_style),
+            ],
+            [
+                Paragraph("ACTIVE FINDINGS", card_label_style),
+                Paragraph(f"<font color='{tc('#EF4444' if total_findings > 0 else '#10B981')}'>{total_findings}</font>", card_val_large_style),
+                Paragraph(f"{severity_counts.get('CRITICAL', 0)} Critical • {severity_counts.get('HIGH', 0)} High", card_sub_style),
+            ],
+            [
+                Paragraph("ASSETS AUDITED", card_label_style),
+                Paragraph(f"<font color='{tc('#FFFFFF')}'>{scanned_count}</font>", card_val_large_style),
+                Paragraph("Code, Schemas, Contracts", card_sub_style),
+            ],
         ]
     ]
-    t_cards = Table(card_data, colWidths=[175, 175, 175, 175])
+    t_cards = Table(card_data, colWidths=[180, 180, 180, 180])
     t_cards.setStyle(TableStyle([
         ("BACKGROUND", (0, 0), (-1, -1), colors.HexColor(tc("#121826"))),
         ("BOX", (0, 0), (-1, -1), 1, colors.HexColor(tc("#26334D"))),
         ("INNERGRID", (0, 0), (-1, -1), 0.5, colors.HexColor(tc("#1E293B"))),
-        ("TOPPADDING", (0, 0), (-1, -1), 16),
-        ("BOTTOMPADDING", (0, 0), (-1, -1), 16),
+        ("TOPPADDING", (0, 0), (-1, -1), 12),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 12),
         ("LEFTPADDING", (0, 0), (-1, -1), 14),
         ("RIGHTPADDING", (0, 0), (-1, -1), 14),
     ]))
     flowables.append(t_cards)
-    flowables.append(Spacer(1, 20))
+    flowables.append(Spacer(1, 16))
 
     # Executive Brief Box
     brief_text = project.brief or "Autonomous microservice architecture designed for enterprise throughput and resilience."
-    p_brief = Paragraph(f"<b>PROJECT CONTEXT & SCOPE:</b> {brief_text}", body_style)
-    t_brief = Table([[p_brief]], colWidths=[700])
+    p_brief = Paragraph(f"<b>PROJECT CONTEXT &amp; SCOPE:</b> {brief_text}", body_style)
+    t_brief = Table([[p_brief]], colWidths=[720])
     t_brief.setStyle(TableStyle([
         ("BACKGROUND", (0, 0), (-1, -1), colors.HexColor(tc("#0F2338"))),
         ("BOX", (0, 0), (-1, -1), 1, colors.HexColor(tc("#0284C7"))),
@@ -455,7 +506,7 @@ def generate_project_security_report_pdf(
             Paragraph("Next Scheduled Release (P3)", body_style),
         ],
     ]
-    t_sev = Table(sev_rows, colWidths=[120, 70, 330, 180])
+    t_sev = Table(sev_rows, colWidths=[120, 70, 340, 190])
     t_sev.setStyle(TableStyle([
         ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor(tc("#1A2438"))),
         ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.HexColor(tc("#111827")), colors.HexColor(tc("#162032"))]),
@@ -470,20 +521,58 @@ def generate_project_security_report_pdf(
     flowables.append(Spacer(1, 14))
 
     # Compliance Frameworks Row
-    fw_header = Paragraph("<b>COMPLIANCE FRAMEWORKS ALIGNMENT:</b>", body_style)
+    fw_head_style = ParagraphStyle(
+        "SecFwHead",
+        parent=base_styles["Normal"],
+        fontName="Helvetica-Bold",
+        fontSize=8.5,
+        leading=11,
+        textColor=colors.HexColor(tc("#94A3B8")),
+        spaceAfter=4,
+    )
+    fw_header = Paragraph("<b>COMPLIANCE FRAMEWORKS ALIGNMENT:</b>", fw_head_style)
+    fw_title_style = ParagraphStyle(
+        "SecFwTitle",
+        parent=base_styles["Normal"],
+        fontName="Helvetica-Bold",
+        fontSize=9,
+        leading=12,
+        textColor=colors.HexColor(tc("#FFFFFF")),
+        spaceAfter=3,
+    )
+    fw_metric_style = ParagraphStyle(
+        "SecFwMetric",
+        parent=base_styles["Normal"],
+        fontName="Helvetica-Bold",
+        fontSize=8.5,
+        leading=11,
+        spaceAfter=2,
+    )
+    fw_sub_style = ParagraphStyle(
+        "SecFwSub",
+        parent=base_styles["Normal"],
+        fontName="Helvetica",
+        fontSize=7.5,
+        leading=10,
+        textColor=colors.HexColor(tc("#94A3B8")),
+    )
     fw_cells = [
         [
-            Paragraph(f"<b>{fw['framework']}</b><br/><font color='{tc('#34D399') if fw['status'] == 'COMPLIANT' else tc('#FBBF24')}'><b>{fw['coverage_percentage']}% Verified ({fw['passed_controls']}/{fw['total_controls']} Controls)</b></font><br/><font size='7.5' color='{tc('#94A3B8')}'>Status: {fw['status']}</font>", body_style)
+            [
+                Paragraph(fw["framework"], fw_title_style),
+                Paragraph(f"<font color='{tc('#34D399') if fw['status'] == 'COMPLIANT' else tc('#FBBF24')}'>{fw['coverage_percentage']}% Verified ({fw['passed_controls']}/{fw['total_controls']} Controls)</font>", fw_metric_style),
+                Paragraph(f"Status: {fw['status']}", fw_sub_style),
+            ]
             for fw in frameworks
         ]
     ]
-    t_fw = Table(fw_cells, colWidths=[233, 233, 234])
+    t_fw = Table(fw_cells, colWidths=[240, 240, 240])
     t_fw.setStyle(TableStyle([
         ("BACKGROUND", (0, 0), (-1, -1), colors.HexColor(tc("#121826"))),
         ("BOX", (0, 0), (-1, -1), 1, colors.HexColor(tc("#26334D"))),
         ("INNERGRID", (0, 0), (-1, -1), 0.5, colors.HexColor(tc("#1E293B"))),
-        ("TOPPADDING", (0, 0), (-1, -1), 10),
-        ("BOTTOMPADDING", (0, 0), (-1, -1), 10),
+        ("TOPPADDING", (0, 0), (-1, -1), 8),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 8),
         ("LEFTPADDING", (0, 0), (-1, -1), 10),
         ("RIGHTPADDING", (0, 0), (-1, -1), 10),
     ]))
@@ -506,21 +595,37 @@ def generate_project_security_report_pdf(
 
     as_metrics = [
         [
-            Paragraph(f"<b>ATTACK SURFACE RATING</b><br/><font size='18' color='{as_color}'><b>{as_rating}</b></font><br/><font size='7.5' color='{tc('#94A3B8')}'>Evaluated Ingress Vectors</font>", body_style),
-            Paragraph(f"<b>PUBLIC HTTP ROUTES</b><br/><font size='18' color='{tc('#FFFFFF')}'><b>{attack_surf.get('public_routes_count', 0)}</b></font><br/><font size='7.5' color='{tc('#94A3B8')}'>Unauthenticated Endpoints</font>", body_style),
-            Paragraph(f"<b>AUTH GATED ROUTES</b><br/><font size='18' color='{tc('#38BDF8')}'><b>{attack_surf.get('authenticated_routes_count', 0)}</b></font><br/><font size='7.5' color='{tc('#94A3B8')}'>JWT / RBAC Protected</font>", body_style),
-            Paragraph(f"<b>PERSISTENCE TABLES</b><br/><font size='18' color='{tc('#FFFFFF')}'><b>{attack_surf.get('database_tables_count', 0)}</b></font><br/><font size='7.5' color='{tc('#94A3B8')}'>Relational DDL Entities</font>", body_style),
+            [
+                Paragraph("ATTACK SURFACE RATING", card_label_style),
+                Paragraph(f"<font color='{as_color}'>{as_rating}</font>", card_val_med_style),
+                Paragraph("Evaluated Ingress Vectors", card_sub_style),
+            ],
+            [
+                Paragraph("PUBLIC HTTP ROUTES", card_label_style),
+                Paragraph(f"<font color='{tc('#FFFFFF')}'>{attack_surf.get('public_routes_count', 0)}</font>", card_val_med_style),
+                Paragraph("Unauthenticated Endpoints", card_sub_style),
+            ],
+            [
+                Paragraph("AUTH GATED ROUTES", card_label_style),
+                Paragraph(f"<font color='{tc('#38BDF8')}'>{attack_surf.get('authenticated_routes_count', 0)}</font>", card_val_med_style),
+                Paragraph("JWT / RBAC Protected", card_sub_style),
+            ],
+            [
+                Paragraph("PERSISTENCE TABLES", card_label_style),
+                Paragraph(f"<font color='{tc('#FFFFFF')}'>{attack_surf.get('database_tables_count', 0)}</font>", card_val_med_style),
+                Paragraph("Relational DDL Entities", card_sub_style),
+            ],
         ]
     ]
-    t_as = Table(as_metrics, colWidths=[175, 175, 175, 175])
+    t_as = Table(as_metrics, colWidths=[180, 180, 180, 180])
     t_as.setStyle(TableStyle([
         ("BACKGROUND", (0, 0), (-1, -1), colors.HexColor(tc("#121826"))),
         ("BOX", (0, 0), (-1, -1), 1, colors.HexColor(tc("#26334D"))),
         ("INNERGRID", (0, 0), (-1, -1), 0.5, colors.HexColor(tc("#1E293B"))),
-        ("TOPPADDING", (0, 0), (-1, -1), 10),
-        ("BOTTOMPADDING", (0, 0), (-1, -1), 10),
-        ("LEFTPADDING", (0, 0), (-1, -1), 10),
-        ("RIGHTPADDING", (0, 0), (-1, -1), 10),
+        ("TOPPADDING", (0, 0), (-1, -1), 12),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 12),
+        ("LEFTPADDING", (0, 0), (-1, -1), 12),
+        ("RIGHTPADDING", (0, 0), (-1, -1), 12),
     ]))
     flowables.append(t_as)
     flowables.append(Spacer(1, 14))
@@ -542,7 +647,7 @@ def generate_project_security_report_pdf(
             Paragraph(f"• <b>{vec}</b>", body_style),
             Paragraph(mit, body_style),
         ])
-    t_exp = Table(exp_rows, colWidths=[320, 380])
+    t_exp = Table(exp_rows, colWidths=[330, 390])
     t_exp.setStyle(TableStyle([
         ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor(tc("#1A2438"))),
         ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.HexColor(tc("#111827")), colors.HexColor(tc("#162032"))]),

@@ -656,7 +656,7 @@ export default function Home() {
       action: () => {
         setShowCommandPalette(false);
         if (currentProject) {
-          setSlideModalOpen(true);
+          setShowDeckPreviewModal(true);
         } else {
           showToast("Please select or generate a project first to view its Slide Deck", "warning");
         }
@@ -1780,7 +1780,7 @@ export default function Home() {
               {/* Split Action: Executive Slide Deck */}
               <div className="nav-btn-split">
                 <a
-                  href={getPresentationPdfUrl(currentProject.id)}
+                  href={getPresentationPdfUrl(currentProject?.id)}
                   target="_blank"
                   rel="noreferrer"
                   className="btn btn-primary btn-sm nav-split-main"
@@ -1795,15 +1795,15 @@ export default function Home() {
                   </svg>
                   Slide Deck
                 </a>
-                <a
-                  href={getPresentationPdfUrl(currentProject.id, true)}
-                  target="_blank"
-                  rel="noreferrer"
+                <button
+                  type="button"
+                  onClick={() => setShowDeckPreviewModal(true)}
                   className="nav-split-sub"
                   title="Preview landscape presentation slide deck in browser"
+                  style={{ background: "transparent", border: "none", cursor: "pointer", font: "inherit" }}
                 >
                   Preview
-                </a>
+                </button>
               </div>
 
               {/* Tools & Export Dropdown Menu */}
@@ -2766,7 +2766,7 @@ export default function Home() {
                     {currentProject ? (
                       <>
                         <a
-                          href={getPresentationPdfUrl(currentProject.id)}
+                          href={getPresentationPdfUrl(currentProject?.id)}
                           target="_blank"
                           rel="noreferrer"
                           className="btn btn-primary btn-sm"
@@ -2774,15 +2774,14 @@ export default function Home() {
                         >
                           Download Deck (.pdf)
                         </a>
-                        <a
-                          href={getPresentationPdfUrl(currentProject.id, true)}
-                          target="_blank"
-                          rel="noreferrer"
+                        <button
+                          type="button"
+                          onClick={() => setShowDeckPreviewModal(true)}
                           className="btn btn-secondary btn-sm"
-                          style={{ textDecoration: "none" }}
+                          style={{ textDecoration: "none", cursor: "pointer" }}
                         >
                           Preview Deck
-                        </a>
+                        </button>
                       </>
                     ) : (
                       <span style={{ fontSize: 12, color: "var(--text-muted)" }}>
@@ -5318,7 +5317,7 @@ export default function Home() {
                           <span>👁️</span> Preview Deck
                         </button>
                         <a
-                          href={getPresentationPdfUrl(currentProject.id)}
+                          href={getPresentationPdfUrl(currentProject?.id)}
                           target="_blank"
                           rel="noreferrer"
                           className="btn btn-secondary btn-sm"
@@ -5797,253 +5796,6 @@ export default function Home() {
                         ) : (
                           <div style={{ color: "var(--text-muted)", padding: 20 }}>Select a file from the tree to preview or edit.</div>
                         )}
-                      </div>
-                    )}
-
-                    {/* Interactive Slide Deck Preview Modal */}
-                    {showDeckPreviewModal && (
-                      <div
-                        style={{
-                          position: "fixed",
-                          top: 0,
-                          left: 0,
-                          right: 0,
-                          bottom: 0,
-                          backgroundColor: "rgba(0, 0, 0, 0.75)",
-                          backdropFilter: "blur(4px)",
-                          zIndex: 9999,
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          padding: 24,
-                        }}
-                        onClick={() => setShowDeckPreviewModal(false)}
-                      >
-                        <div
-                          style={{
-                            background: "#0d1117",
-                            border: "1px solid #30363d",
-                            borderRadius: 12,
-                            width: "90vw",
-                            maxWidth: 1100,
-                            height: "85vh",
-                            display: "flex",
-                            flexDirection: "column",
-                            boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.7)",
-                            overflow: "hidden",
-                          }}
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          {/* Modal Header */}
-                          <div
-                            style={{
-                              display: "flex",
-                              justifyContent: "space-between",
-                              alignItems: "center",
-                              padding: "14px 20px",
-                              borderBottom: "1px solid #30363d",
-                              background: "#161b22",
-                              flexWrap: "wrap",
-                              gap: 12,
-                            }}
-                          >
-                            <div style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0, flex: "1 1 300px" }}>
-                              <div
-                                style={{
-                                  width: 36,
-                                  height: 36,
-                                  borderRadius: 8,
-                                  background: deckPreviewTheme === "dark" ? "rgba(56, 189, 248, 0.15)" : "rgba(2, 132, 199, 0.15)",
-                                  border: `1px solid ${deckPreviewTheme === "dark" ? "rgba(56, 189, 248, 0.3)" : "rgba(2, 132, 199, 0.3)"}`,
-                                  display: "flex",
-                                  alignItems: "center",
-                                  justifyContent: "center",
-                                  fontSize: 18,
-                                  flexShrink: 0,
-                                }}
-                              >
-                                📊
-                              </div>
-                              <div style={{ minWidth: 0 }}>
-                                <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-                                  <h3
-                                    style={{
-                                      margin: 0,
-                                      fontSize: 15,
-                                      fontWeight: 600,
-                                      color: "#f0f6fc",
-                                      whiteSpace: "nowrap",
-                                      overflow: "hidden",
-                                      textOverflow: "ellipsis",
-                                    }}
-                                  >
-                                    {currentProject?.name ? `${currentProject.name} — Architecture Deck` : "Architectural Slide Deck Preview"}
-                                  </h3>
-                                  <span
-                                    style={{
-                                      fontSize: 10,
-                                      fontWeight: 600,
-                                      padding: "2px 8px",
-                                      borderRadius: 12,
-                                      background: "rgba(52, 211, 153, 0.15)",
-                                      color: "#34d399",
-                                      border: "1px solid rgba(52, 211, 153, 0.3)",
-                                    }}
-                                  >
-                                    10 Slides Verified
-                                  </span>
-                                </div>
-                                <p style={{ margin: "2px 0 0 0", fontSize: 11, color: "#8b949e" }}>
-                                  Deterministic ReportLab Engine • Interactive Table of Contents • {deckPreviewTheme === "dark" ? "Executive Dark (#0B0F17)" : "Printable Slate (#F8FAFC)"}
-                                </p>
-                              </div>
-                            </div>
-                            <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", justifyContent: "flex-end" }}>
-                              {/* Theme Toggle Pill */}
-                              <div
-                                style={{
-                                  display: "inline-flex",
-                                  background: "#0d1117",
-                                  padding: 2,
-                                  borderRadius: 8,
-                                  border: "1px solid #30363d",
-                                  gap: 2,
-                                }}
-                              >
-                                <button
-                                  onClick={() => setDeckPreviewTheme("dark")}
-                                  style={{
-                                    padding: "4px 10px",
-                                    fontSize: 11,
-                                    fontWeight: 600,
-                                    borderRadius: 6,
-                                    border: "none",
-                                    cursor: "pointer",
-                                    background: deckPreviewTheme === "dark" ? "#21262d" : "transparent",
-                                    color: deckPreviewTheme === "dark" ? "#38bdf8" : "#8b949e",
-                                    transition: "all 0.15s ease",
-                                  }}
-                                  title="Executive Dark Mode"
-                                >
-                                  🌙 Dark
-                                </button>
-                                <button
-                                  onClick={() => setDeckPreviewTheme("light")}
-                                  style={{
-                                    padding: "4px 10px",
-                                    fontSize: 11,
-                                    fontWeight: 600,
-                                    borderRadius: 6,
-                                    border: "none",
-                                    cursor: "pointer",
-                                    background: deckPreviewTheme === "light" ? "#f1f5f9" : "transparent",
-                                    color: deckPreviewTheme === "light" ? "#0284c7" : "#8b949e",
-                                    transition: "all 0.15s ease",
-                                  }}
-                                  title="Printable Slate Light Mode"
-                                >
-                                  ☀️ Light
-                                </button>
-                              </div>
-
-                              {/* Copy Link Button */}
-                              <button
-                                onClick={() => {
-                                  if (typeof navigator !== "undefined" && navigator.clipboard) {
-                                    navigator.clipboard.writeText(getPresentationPdfUrl(currentProject.id, true, deckPreviewTheme));
-                                    setDeckPreviewCopied(true);
-                                    setTimeout(() => setDeckPreviewCopied(false), 2000);
-                                  }
-                                }}
-                                className="btn btn-secondary btn-sm"
-                                style={{
-                                  fontSize: 12,
-                                  padding: "5px 12px",
-                                  display: "inline-flex",
-                                  alignItems: "center",
-                                  gap: 5,
-                                }}
-                                title="Copy direct PDF URL to clipboard"
-                              >
-                                {deckPreviewCopied ? "✓ Copied" : "📋 Copy Link"}
-                              </button>
-
-                              {/* Download Button */}
-                              <a
-                                href={getPresentationPdfUrl(currentProject.id, false, deckPreviewTheme)}
-                                download={`${(currentProject.name || currentProject.title || "Project").toLowerCase().replace(/\s+/g, "_")}_${deckPreviewTheme}_deck.pdf`}
-                                className="btn btn-primary btn-sm"
-                                style={{
-                                  fontSize: 12,
-                                  padding: "5px 12px",
-                                  textDecoration: "none",
-                                  display: "inline-flex",
-                                  alignItems: "center",
-                                  gap: 5,
-                                }}
-                                title="Download PDF presentation deck"
-                              >
-                                ⬇️ Download PDF
-                              </a>
-
-                              {/* Open Tab Button */}
-                              <a
-                                href={getPresentationPdfUrl(currentProject.id, true, deckPreviewTheme)}
-                                target="_blank"
-                                rel="noreferrer"
-                                className="btn btn-secondary btn-sm"
-                                style={{
-                                  fontSize: 12,
-                                  padding: "5px 12px",
-                                  textDecoration: "none",
-                                  display: "inline-flex",
-                                  alignItems: "center",
-                                  gap: 5,
-                                }}
-                                title="Open PDF in dedicated browser tab"
-                              >
-                                ↗ Open Tab
-                              </a>
-
-                              {/* Close Button */}
-                              <button
-                                onClick={() => setShowDeckPreviewModal(false)}
-                                style={{
-                                  background: "transparent",
-                                  border: "none",
-                                  color: "#8b949e",
-                                  cursor: "pointer",
-                                  fontSize: 18,
-                                  padding: "4px 8px",
-                                  borderRadius: 4,
-                                }}
-                                title="Close Modal (Escape)"
-                              >
-                                ✕
-                              </button>
-                            </div>
-                          </div>
-
-                          {/* Modal Body / PDF Viewer Frame */}
-                          <div
-                            style={{
-                              flex: 1,
-                              position: "relative",
-                              background: deckPreviewTheme === "dark" ? "#010409" : "#e2e8f0",
-                            }}
-                          >
-                            <iframe
-                              src={getPresentationPdfUrl(currentProject.id, true, deckPreviewTheme)}
-                              title="Architecture Presentation Slide Deck"
-                              style={{
-                                width: "100%",
-                                height: "100%",
-                                border: "none",
-                                background: deckPreviewTheme === "dark" ? "#0b0f17" : "#f8fafc",
-                              }}
-                            />
-                          </div>
-                        </div>
                       </div>
                     )}
                   </div>
@@ -7845,7 +7597,7 @@ export default function Home() {
                         </button>
 
                         <a
-                          href={getSecurityReportPdfUrl(currentProject.id, "dark")}
+                          href={getSecurityReportPdfUrl(currentProject?.id, "dark")}
                           className="btn btn-secondary btn-sm"
                           style={{ textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 6 }}
                           title="Download executive landscape Security Assessment PDF report"
@@ -8551,254 +8303,6 @@ export default function Home() {
                                 </p>
                               </div>
                             ))}
-                          </div>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Interactive Security Assessment Report PDF Preview Modal */}
-                    {showSecurityPdfModal && (
-                      <div
-                        style={{
-                          position: "fixed",
-                          top: 0,
-                          left: 0,
-                          right: 0,
-                          bottom: 0,
-                          backgroundColor: "rgba(0, 0, 0, 0.75)",
-                          backdropFilter: "blur(4px)",
-                          zIndex: 9999,
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          padding: 24,
-                        }}
-                        onClick={() => setShowSecurityPdfModal(false)}
-                      >
-                        <div
-                          style={{
-                            background: "#0d1117",
-                            border: "1px solid #30363d",
-                            borderRadius: 12,
-                            width: "90vw",
-                            maxWidth: 1100,
-                            height: "85vh",
-                            display: "flex",
-                            flexDirection: "column",
-                            boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.7)",
-                            overflow: "hidden",
-                          }}
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          {/* Modal Header */}
-                          <div
-                            style={{
-                              display: "flex",
-                              justifyContent: "space-between",
-                              alignItems: "center",
-                              padding: "14px 20px",
-                              borderBottom: "1px solid #30363d",
-                              background: "#161b22",
-                              flexWrap: "wrap",
-                              gap: 12,
-                            }}
-                          >
-                            <div style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0, flex: "1 1 300px" }}>
-                              <div
-                                style={{
-                                  width: 36,
-                                  height: 36,
-                                  borderRadius: 8,
-                                  background: "rgba(239, 68, 68, 0.15)",
-                                  border: "1px solid rgba(239, 68, 68, 0.3)",
-                                  display: "flex",
-                                  alignItems: "center",
-                                  justifyContent: "center",
-                                  fontSize: 18,
-                                  flexShrink: 0,
-                                }}
-                              >
-                                🛡️
-                              </div>
-                              <div style={{ minWidth: 0 }}>
-                                <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-                                  <h3
-                                    style={{
-                                      margin: 0,
-                                      fontSize: 15,
-                                      fontWeight: 600,
-                                      color: "#f0f6fc",
-                                      whiteSpace: "nowrap",
-                                      overflow: "hidden",
-                                      textOverflow: "ellipsis",
-                                    }}
-                                  >
-                                    {currentProject?.name ? `${currentProject.name} — Security Assessment Report` : "Executive Security Assessment Report"}
-                                  </h3>
-                                  <span
-                                    style={{
-                                      fontSize: 10,
-                                      fontWeight: 600,
-                                      padding: "2px 8px",
-                                      borderRadius: 12,
-                                      background: "rgba(239, 68, 68, 0.15)",
-                                      color: "#EF4444",
-                                      border: "1px solid rgba(239, 68, 68, 0.3)",
-                                      fontFamily: "var(--font-mono)",
-                                    }}
-                                  >
-                                    Grade {securityAudit?.security_grade || "A+"} ({securityAudit?.overall_score || 92}/100)
-                                  </span>
-                                </div>
-                                <p style={{ margin: "2px 0 0 0", fontSize: 11, color: "#8b949e" }}>
-                                  Deterministic ReportLab Engine • STRIDE Threat Model • 6 Landscape Slides • {securityPdfTheme === "dark" ? "Executive Dark (#0B0F17)" : "Printable Slate (#F8FAFC)"}
-                                </p>
-                              </div>
-                            </div>
-                            <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", justifyContent: "flex-end" }}>
-                              {/* Theme Toggle Pill */}
-                              <div
-                                style={{
-                                  display: "inline-flex",
-                                  background: "#0d1117",
-                                  padding: 2,
-                                  borderRadius: 8,
-                                  border: "1px solid #30363d",
-                                  gap: 2,
-                                }}
-                              >
-                                <button
-                                  onClick={() => setSecurityPdfTheme("dark")}
-                                  style={{
-                                    padding: "4px 10px",
-                                    fontSize: 11,
-                                    fontWeight: 600,
-                                    borderRadius: 6,
-                                    border: "none",
-                                    cursor: "pointer",
-                                    background: securityPdfTheme === "dark" ? "#21262d" : "transparent",
-                                    color: securityPdfTheme === "dark" ? "#EF4444" : "#8b949e",
-                                    transition: "all 0.15s ease",
-                                  }}
-                                  title="Executive Dark Mode"
-                                >
-                                  🌙 Dark
-                                </button>
-                                <button
-                                  onClick={() => setSecurityPdfTheme("light")}
-                                  style={{
-                                    padding: "4px 10px",
-                                    fontSize: 11,
-                                    fontWeight: 600,
-                                    borderRadius: 6,
-                                    border: "none",
-                                    cursor: "pointer",
-                                    background: securityPdfTheme === "light" ? "#f1f5f9" : "transparent",
-                                    color: securityPdfTheme === "light" ? "#dc2626" : "#8b949e",
-                                    transition: "all 0.15s ease",
-                                  }}
-                                  title="Printable Slate Light Mode"
-                                >
-                                  ☀️ Light
-                                </button>
-                              </div>
-
-                              {/* Copy Link Button */}
-                              <button
-                                onClick={() => {
-                                  if (typeof navigator !== "undefined" && navigator.clipboard) {
-                                    navigator.clipboard.writeText(getSecurityReportPreviewUrl(currentProject.id, securityPdfTheme));
-                                    setSecurityPdfCopied(true);
-                                    setTimeout(() => setSecurityPdfCopied(false), 2000);
-                                  }
-                                }}
-                                className="btn btn-secondary btn-sm"
-                                style={{
-                                  fontSize: 12,
-                                  padding: "5px 12px",
-                                  display: "inline-flex",
-                                  alignItems: "center",
-                                  gap: 5,
-                                }}
-                                title="Copy direct PDF URL to clipboard"
-                              >
-                                {securityPdfCopied ? "✓ Copied" : "📋 Copy Link"}
-                              </button>
-
-                              {/* Download Button */}
-                              <a
-                                href={getSecurityReportPdfUrl(currentProject.id, securityPdfTheme)}
-                                download={`${(currentProject.name || currentProject.title || "Project").toLowerCase().replace(/\s+/g, "_")}_${securityPdfTheme}_security_report.pdf`}
-                                className="btn btn-primary btn-sm"
-                                style={{
-                                  fontSize: 12,
-                                  padding: "5px 12px",
-                                  textDecoration: "none",
-                                  display: "inline-flex",
-                                  alignItems: "center",
-                                  gap: 5,
-                                }}
-                                title="Download executive Security Assessment Report PDF"
-                              >
-                                ⬇️ Download PDF
-                              </a>
-
-                              {/* Open Tab Button */}
-                              <a
-                                href={getSecurityReportPreviewUrl(currentProject.id, securityPdfTheme)}
-                                target="_blank"
-                                rel="noreferrer"
-                                className="btn btn-secondary btn-sm"
-                                style={{
-                                  fontSize: 12,
-                                  padding: "5px 12px",
-                                  textDecoration: "none",
-                                  display: "inline-flex",
-                                  alignItems: "center",
-                                  gap: 5,
-                                }}
-                                title="Open PDF in dedicated browser tab"
-                              >
-                                ↗ Open Tab
-                              </a>
-
-                              {/* Close Button */}
-                              <button
-                                onClick={() => setShowSecurityPdfModal(false)}
-                                style={{
-                                  background: "transparent",
-                                  border: "none",
-                                  color: "#8b949e",
-                                  cursor: "pointer",
-                                  fontSize: 18,
-                                  padding: "4px 8px",
-                                  borderRadius: 4,
-                                }}
-                                title="Close Modal (Escape)"
-                              >
-                                ✕
-                              </button>
-                            </div>
-                          </div>
-
-                          {/* Modal Body / PDF Viewer Frame */}
-                          <div
-                            style={{
-                              flex: 1,
-                              position: "relative",
-                              background: securityPdfTheme === "dark" ? "#010409" : "#e2e8f0",
-                            }}
-                          >
-                            <iframe
-                              src={getSecurityReportPreviewUrl(currentProject.id, securityPdfTheme)}
-                              title="Security Assessment Report PDF"
-                              style={{
-                                width: "100%",
-                                height: "100%",
-                                border: "none",
-                                background: securityPdfTheme === "dark" ? "#0b0f17" : "#f8fafc",
-                              }}
-                            />
                           </div>
                         </div>
                       </div>
@@ -12255,6 +11759,519 @@ export default function Home() {
             >
               <span>Generated at {new Date(blueprintData.generated_at).toLocaleString()}</span>
               <span>Ready for git repository check-in or architecture review</span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Interactive Slide Deck Preview Modal (Executive Architecture Deck) */}
+      {showDeckPreviewModal && (
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: "rgba(0, 0, 0, 0.75)",
+            backdropFilter: "blur(4px)",
+            zIndex: 9999,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: 24,
+          }}
+          onClick={() => setShowDeckPreviewModal(false)}
+        >
+          <div
+            style={{
+              background: "#0d1117",
+              border: "1px solid #30363d",
+              borderRadius: 12,
+              width: "90vw",
+              maxWidth: 1100,
+              height: "85vh",
+              display: "flex",
+              flexDirection: "column",
+              boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.7)",
+              overflow: "hidden",
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                padding: "14px 20px",
+                borderBottom: "1px solid #30363d",
+                background: "#161b22",
+                flexWrap: "wrap",
+                gap: 12,
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0, flex: "1 1 300px" }}>
+                <div
+                  style={{
+                    width: 36,
+                    height: 36,
+                    borderRadius: 8,
+                    background: deckPreviewTheme === "dark" ? "rgba(56, 189, 248, 0.15)" : "rgba(2, 132, 199, 0.15)",
+                    border: `1px solid ${deckPreviewTheme === "dark" ? "rgba(56, 189, 248, 0.3)" : "rgba(2, 132, 199, 0.3)"}`,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    fontSize: 18,
+                    flexShrink: 0,
+                  }}
+                >
+                  📊
+                </div>
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                    <h3
+                      style={{
+                        margin: 0,
+                        fontSize: 15,
+                        fontWeight: 600,
+                        color: "#f0f6fc",
+                        whiteSpace: "nowrap",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                      }}
+                    >
+                      {currentProject?.name ? `${currentProject.name} — Architecture Deck` : "Architectural Slide Deck Preview"}
+                    </h3>
+                    <span
+                      style={{
+                        fontSize: 10,
+                        fontWeight: 600,
+                        padding: "2px 8px",
+                        borderRadius: 12,
+                        background: "rgba(52, 211, 153, 0.15)",
+                        color: "#34d399",
+                        border: "1px solid rgba(52, 211, 153, 0.3)",
+                      }}
+                    >
+                      10 Slides Verified
+                    </span>
+                  </div>
+                  <p style={{ margin: "2px 0 0 0", fontSize: 11, color: "#8b949e" }}>
+                    Deterministic ReportLab Engine • Interactive Table of Contents • {deckPreviewTheme === "dark" ? "Executive Dark (#0B0F17)" : "Printable Slate (#F8FAFC)"}
+                  </p>
+                </div>
+              </div>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", justifyContent: "flex-end" }}>
+                {/* Theme Toggle Pill */}
+                <div
+                  style={{
+                    display: "inline-flex",
+                    background: "#0d1117",
+                    padding: 2,
+                    borderRadius: 8,
+                    border: "1px solid #30363d",
+                    gap: 2,
+                  }}
+                >
+                  <button
+                    onClick={() => setDeckPreviewTheme("dark")}
+                    style={{
+                      padding: "4px 10px",
+                      fontSize: 11,
+                      fontWeight: 600,
+                      borderRadius: 6,
+                      border: "none",
+                      cursor: "pointer",
+                      background: deckPreviewTheme === "dark" ? "#21262d" : "transparent",
+                      color: deckPreviewTheme === "dark" ? "#38bdf8" : "#8b949e",
+                      transition: "all 0.15s ease",
+                    }}
+                    title="Executive Dark Mode"
+                  >
+                    🌙 Dark
+                  </button>
+                  <button
+                    onClick={() => setDeckPreviewTheme("light")}
+                    style={{
+                      padding: "4px 10px",
+                      fontSize: 11,
+                      fontWeight: 600,
+                      borderRadius: 6,
+                      border: "none",
+                      cursor: "pointer",
+                      background: deckPreviewTheme === "light" ? "#f1f5f9" : "transparent",
+                      color: deckPreviewTheme === "light" ? "#0284c7" : "#8b949e",
+                      transition: "all 0.15s ease",
+                    }}
+                    title="Printable Slate Light Mode"
+                  >
+                    ☀️ Light
+                  </button>
+                </div>
+
+                {/* Copy Link Button */}
+                <button
+                  onClick={() => {
+                    if (typeof navigator !== "undefined" && navigator.clipboard && currentProject?.id) {
+                      navigator.clipboard.writeText(getPresentationPdfUrl(currentProject.id, true, deckPreviewTheme));
+                      setDeckPreviewCopied(true);
+                      setTimeout(() => setDeckPreviewCopied(false), 2000);
+                    }
+                  }}
+                  className="btn btn-secondary btn-sm"
+                  style={{
+                    fontSize: 12,
+                    padding: "5px 12px",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 5,
+                  }}
+                  title="Copy direct PDF URL to clipboard"
+                  disabled={!currentProject?.id}
+                >
+                  {deckPreviewCopied ? "✓ Copied" : "📋 Copy Link"}
+                </button>
+
+                {/* Download Button */}
+                <a
+                  href={getPresentationPdfUrl(currentProject?.id, false, deckPreviewTheme)}
+                  download={`${((currentProject?.name || currentProject?.title || "Project")).toLowerCase().replace(/\s+/g, "_")}_${deckPreviewTheme}_deck.pdf`}
+                  className={`btn btn-primary btn-sm ${!currentProject?.id ? "disabled" : ""}`}
+                  style={{
+                    fontSize: 12,
+                    padding: "5px 12px",
+                    textDecoration: "none",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 5,
+                    pointerEvents: currentProject?.id ? "auto" : "none",
+                  }}
+                  title="Download PDF presentation deck"
+                >
+                  ⬇️ Download PDF
+                </a>
+
+                {/* Open Tab Button */}
+                <a
+                  href={getPresentationPdfUrl(currentProject?.id, true, deckPreviewTheme)}
+                  target="_blank"
+                  rel="noreferrer"
+                  className={`btn btn-secondary btn-sm ${!currentProject?.id ? "disabled" : ""}`}
+                  style={{
+                    fontSize: 12,
+                    padding: "5px 12px",
+                    textDecoration: "none",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 5,
+                    pointerEvents: currentProject?.id ? "auto" : "none",
+                  }}
+                  title="Open PDF in dedicated browser tab"
+                >
+                  ↗ Open Tab
+                </a>
+
+                {/* Close Button */}
+                <button
+                  onClick={() => setShowDeckPreviewModal(false)}
+                  style={{
+                    background: "transparent",
+                    border: "none",
+                    color: "#8b949e",
+                    cursor: "pointer",
+                    fontSize: 18,
+                    padding: "4px 8px",
+                    borderRadius: 4,
+                  }}
+                  title="Close Modal (Escape)"
+                >
+                  ✕
+                </button>
+              </div>
+            </div>
+
+            {/* Modal Body / PDF Viewer Frame */}
+            <div
+              style={{
+                flex: 1,
+                position: "relative",
+                background: deckPreviewTheme === "dark" ? "#010409" : "#e2e8f0",
+              }}
+            >
+              {currentProject?.id ? (
+                <iframe
+                  src={getPresentationPdfUrl(currentProject.id, true, deckPreviewTheme)}
+                  title="Architecture Presentation Slide Deck"
+                  style={{
+                    width: "100%",
+                    height: "100%",
+                    border: "none",
+                    background: deckPreviewTheme === "dark" ? "#0b0f17" : "#f8fafc",
+                  }}
+                />
+              ) : (
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%", color: "#8b949e", fontSize: 14 }}>
+                  No active project selected to preview slide deck.
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Interactive Security Assessment Report PDF Preview Modal */}
+      {showSecurityPdfModal && (
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: "rgba(0, 0, 0, 0.75)",
+            backdropFilter: "blur(4px)",
+            zIndex: 9999,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: 24,
+          }}
+          onClick={() => setShowSecurityPdfModal(false)}
+        >
+          <div
+            style={{
+              background: "#0d1117",
+              border: "1px solid #30363d",
+              borderRadius: 12,
+              width: "90vw",
+              maxWidth: 1100,
+              height: "85vh",
+              display: "flex",
+              flexDirection: "column",
+              boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.7)",
+              overflow: "hidden",
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                padding: "14px 20px",
+                borderBottom: "1px solid #30363d",
+                background: "#161b22",
+                flexWrap: "wrap",
+                gap: 12,
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0, flex: "1 1 300px" }}>
+                <div
+                  style={{
+                    width: 36,
+                    height: 36,
+                    borderRadius: 8,
+                    background: "rgba(239, 68, 68, 0.15)",
+                    border: "1px solid rgba(239, 68, 68, 0.3)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    fontSize: 18,
+                    flexShrink: 0,
+                  }}
+                >
+                  🛡️
+                </div>
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                    <h3
+                      style={{
+                        margin: 0,
+                        fontSize: 15,
+                        fontWeight: 600,
+                        color: "#f0f6fc",
+                        whiteSpace: "nowrap",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                      }}
+                    >
+                      {currentProject?.name ? `${currentProject.name} — Security Assessment Report` : "Executive Security Assessment Report"}
+                    </h3>
+                    <span
+                      style={{
+                        fontSize: 10,
+                        fontWeight: 600,
+                        padding: "2px 8px",
+                        borderRadius: 12,
+                        background: "rgba(239, 68, 68, 0.15)",
+                        color: "#EF4444",
+                        border: "1px solid rgba(239, 68, 68, 0.3)",
+                        fontFamily: "var(--font-mono)",
+                      }}
+                    >
+                      Grade {securityAudit?.security_grade || "A+"} ({securityAudit?.overall_score || 92}/100)
+                    </span>
+                  </div>
+                  <p style={{ margin: "2px 0 0 0", fontSize: 11, color: "#8b949e" }}>
+                    Deterministic ReportLab Engine • STRIDE Threat Model • 6 Landscape Slides • {securityPdfTheme === "dark" ? "Executive Dark (#0B0F17)" : "Printable Slate (#F8FAFC)"}
+                  </p>
+                </div>
+              </div>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", justifyContent: "flex-end" }}>
+                {/* Theme Toggle Pill */}
+                <div
+                  style={{
+                    display: "inline-flex",
+                    background: "#0d1117",
+                    padding: 2,
+                    borderRadius: 8,
+                    border: "1px solid #30363d",
+                    gap: 2,
+                  }}
+                >
+                  <button
+                    onClick={() => setSecurityPdfTheme("dark")}
+                    style={{
+                      padding: "4px 10px",
+                      fontSize: 11,
+                      fontWeight: 600,
+                      borderRadius: 6,
+                      border: "none",
+                      cursor: "pointer",
+                      background: securityPdfTheme === "dark" ? "#21262d" : "transparent",
+                      color: securityPdfTheme === "dark" ? "#EF4444" : "#8b949e",
+                      transition: "all 0.15s ease",
+                    }}
+                    title="Executive Dark Mode"
+                  >
+                    🌙 Dark
+                  </button>
+                  <button
+                    onClick={() => setSecurityPdfTheme("light")}
+                    style={{
+                      padding: "4px 10px",
+                      fontSize: 11,
+                      fontWeight: 600,
+                      borderRadius: 6,
+                      border: "none",
+                      cursor: "pointer",
+                      background: securityPdfTheme === "light" ? "#f1f5f9" : "transparent",
+                      color: securityPdfTheme === "light" ? "#dc2626" : "#8b949e",
+                      transition: "all 0.15s ease",
+                    }}
+                    title="Printable Slate Light Mode"
+                  >
+                    ☀️ Light
+                  </button>
+                </div>
+
+                {/* Copy Link Button */}
+                <button
+                  onClick={() => {
+                    if (typeof navigator !== "undefined" && navigator.clipboard && currentProject?.id) {
+                      navigator.clipboard.writeText(getSecurityReportPreviewUrl(currentProject.id, securityPdfTheme));
+                      setSecurityPdfCopied(true);
+                      setTimeout(() => setSecurityPdfCopied(false), 2000);
+                    }
+                  }}
+                  className="btn btn-secondary btn-sm"
+                  style={{
+                    fontSize: 12,
+                    padding: "5px 12px",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 5,
+                  }}
+                  title="Copy direct PDF URL to clipboard"
+                  disabled={!currentProject?.id}
+                >
+                  {securityPdfCopied ? "✓ Copied" : "📋 Copy Link"}
+                </button>
+
+                {/* Download Button */}
+                <a
+                  href={getSecurityReportPdfUrl(currentProject?.id, securityPdfTheme)}
+                  download={`${((currentProject?.name || currentProject?.title || "Project")).toLowerCase().replace(/\s+/g, "_")}_${securityPdfTheme}_security_report.pdf`}
+                  className={`btn btn-primary btn-sm ${!currentProject?.id ? "disabled" : ""}`}
+                  style={{
+                    fontSize: 12,
+                    padding: "5px 12px",
+                    textDecoration: "none",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 5,
+                    pointerEvents: currentProject?.id ? "auto" : "none",
+                  }}
+                  title="Download executive Security Assessment Report PDF"
+                >
+                  ⬇️ Download PDF
+                </a>
+
+                {/* Open Tab Button */}
+                <a
+                  href={getSecurityReportPreviewUrl(currentProject?.id, securityPdfTheme)}
+                  target="_blank"
+                  rel="noreferrer"
+                  className={`btn btn-secondary btn-sm ${!currentProject?.id ? "disabled" : ""}`}
+                  style={{
+                    fontSize: 12,
+                    padding: "5px 12px",
+                    textDecoration: "none",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 5,
+                    pointerEvents: currentProject?.id ? "auto" : "none",
+                  }}
+                  title="Open PDF in dedicated browser tab"
+                >
+                  ↗ Open Tab
+                </a>
+
+                {/* Close Button */}
+                <button
+                  onClick={() => setShowSecurityPdfModal(false)}
+                  style={{
+                    background: "transparent",
+                    border: "none",
+                    color: "#8b949e",
+                    cursor: "pointer",
+                    fontSize: 18,
+                    padding: "4px 8px",
+                    borderRadius: 4,
+                  }}
+                  title="Close Modal (Escape)"
+                >
+                  ✕
+                </button>
+              </div>
+            </div>
+
+            {/* Modal Body / PDF Viewer Frame */}
+            <div
+              style={{
+                flex: 1,
+                position: "relative",
+                background: securityPdfTheme === "dark" ? "#010409" : "#e2e8f0",
+              }}
+            >
+              {currentProject?.id ? (
+                <iframe
+                  src={getSecurityReportPreviewUrl(currentProject.id, securityPdfTheme)}
+                  title="Security Assessment Report PDF"
+                  style={{
+                    width: "100%",
+                    height: "100%",
+                    border: "none",
+                    background: securityPdfTheme === "dark" ? "#0b0f17" : "#f8fafc",
+                  }}
+                />
+              ) : (
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%", color: "#8b949e", fontSize: 14 }}>
+                  No active project selected to preview security report.
+                </div>
+              )}
             </div>
           </div>
         </div>

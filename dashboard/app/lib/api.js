@@ -379,12 +379,14 @@ export async function getSecurityAnalysis(projectId) {
 }
 
 export function getSecurityReportPdfUrl(projectId, theme = "dark") {
+  if (!projectId) return "";
   const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
   const themeParam = theme ? `?theme=${encodeURIComponent(theme)}` : "";
   return `${API_BASE}/projects/${projectId}/security-report-pdf${themeParam}`;
 }
 
 export function getSecurityReportPreviewUrl(projectId, theme = "dark") {
+  if (!projectId) return "";
   const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
   const themeParam = theme ? `?theme=${encodeURIComponent(theme)}` : "";
   return `${API_BASE}/projects/${projectId}/preview-security-report-pdf${themeParam}`;
@@ -513,6 +515,7 @@ export async function generateProjectIac(projectId) {
 // ---------------------------------------------------------------------------
 
 export function getPresentationPdfUrl(projectId, inline = false, theme = "dark") {
+  if (!projectId) return "";
   const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
   const endpoint = inline ? "preview-presentation-pdf" : "presentation-pdf";
   const themeParam = theme ? `?theme=${encodeURIComponent(theme)}` : "";
