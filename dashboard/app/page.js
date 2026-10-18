@@ -335,6 +335,13 @@ export default function Home() {
   const [copilotMode, setCopilotMode] = useState("qa"); // 'qa' | 'modify'
   const [modifyTargetArtifact, setModifyTargetArtifact] = useState("AUTO");
   const [apiTestResults, setApiTestResults] = useState({});
+  const chatMessagesEndRef = useRef(null);
+
+  useEffect(() => {
+    if (activeTab === "chat" && chatMessagesEndRef.current) {
+      chatMessagesEndRef.current.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [chatMessages, chatLoading, activeTab]);
 
   // SaaS Navigation & Theme state
   const [saasTab, setSaasTab] = useState("home"); // 'home' | 'studio' | 'features' | 'workflow' | 'pricing' | 'docs' | 'download' | 'about'
@@ -841,6 +848,11 @@ export default function Home() {
       pattern: /(create|new project|generate|start|build|scaffold|make (a )?project|init)/i,
       target: { saas: "studio", tab: "create", label: "Studio Creator" },
       answer: "Navigating to Studio Creator. Configure your project specifications and launch the 7-agent fleet!"
+    },
+    {
+      pattern: /(chat|copilot|ai chat|ask ai|assistant|change request|modify spec)/i,
+      target: { saas: "studio", tab: "chat", label: "AI Chat & Copilot" },
+      answer: "Opening AI Chat & Copilot. Ask architectural questions or submit spec change requests with DAG cascade."
     },
     {
       pattern: /(graph|dag|architecture|dependency|nodes|topology|visualize)/i,
@@ -1379,6 +1391,58 @@ export default function Home() {
     }
   };
 
+  const handleSendCopilotMessage = async (textToSend) => {
+    const text = (textToSend !== undefined ? textToSend : chatInput).trim();
+    if (!text || chatLoading || !currentProject) return;
+    setChatInput("");
+    setChatLoading(true);
+    const isModify = copilotMode === "modify";
+    setChatMessages((prev) => [...prev, { role: "user", text, isModify }]);
+    try {
+      if (isModify) {
+        const res = await chatModifyProject(
+          currentProject.id,
+          text,
+          modifyTargetArtifact === "AUTO" ? null : modifyTargetArtifact
+        );
+        setChatMessages((prev) => [
+          ...prev,
+          {
+            role: "assistant",
+            isModify: true,
+            text: res.explanation,
+            target_artifact: res.target_artifact,
+            target_section_key: res.target_section_key,
+            regenerated_artifacts: res.regenerated_artifacts,
+            rescaffolded_files_count: res.rescaffolded_files_count,
+            diff_summary: res.diff_summary,
+          },
+        ]);
+        // Refresh project artifacts and code files
+        const updatedArts = await getArtifacts(currentProject.id);
+        setArtifacts(updatedArts);
+        try {
+          const updatedCode = await getCodeFiles(currentProject.id);
+          setCodeData(updatedCode);
+        } catch (e) {}
+        showToast(`⚡ Downstream regeneration complete! Target: ${res.target_artifact}`, "success");
+      } else {
+        const res = await askProjectAssistant(currentProject.id, text, []);
+        setChatMessages((prev) => [
+          ...prev,
+          { role: "assistant", text: res.reply, references: res.referenced_artifacts },
+        ]);
+      }
+    } catch (err) {
+      setChatMessages((prev) => [
+        ...prev,
+        { role: "assistant", text: `Error: ${err.message}` },
+      ]);
+      showToast(err.message, "error");
+    } finally {
+      setChatLoading(false);
+    }
+  };
 
   const handleLoadProjects = async () => {
     try {
@@ -2983,12 +3047,12 @@ export default function Home() {
                   {/* Category Switcher */}
                   <div className="nav-group">
                     <button
-                      className={`nav-group-btn ${["create", "projects", "graph", "artifacts", "code", "workspaces"].includes(activeTab)
+                      className={`nav-group-btn ${["create", "projects", "chat", "graph", "artifacts", "code", "workspaces"].includes(activeTab)
                           ? "active"
                           : ""
                         }`}
                       onClick={() => {
-                        if (!["create", "projects", "graph", "artifacts", "code", "workspaces"].includes(activeTab)) {
+                        if (!["create", "projects", "chat", "graph", "artifacts", "code", "workspaces"].includes(activeTab)) {
                           setActiveTab(currentProject ? "graph" : "create");
                         }
                       }}
@@ -3096,13 +3160,16 @@ export default function Home() {
                 {/* Sub-tab Pills (Filtered by Category) */}
                 <div className="tabs">
                   {/* Core Workspace Tabs */}
-                  {["create", "projects", "graph", "artifacts", "code", "workspaces"].includes(activeTab) && (
+                  {["create", "projects", "chat", "graph", "artifacts", "code", "workspaces"].includes(activeTab) && (
                     <>
                       <button className={`tab ${activeTab === "create" ? "active" : ""}`} onClick={() => setActiveTab("create")}>
                         New Project
                       </button>
                       <button className={`tab ${activeTab === "projects" ? "active" : ""}`} onClick={() => { setActiveTab("projects"); handleLoadProjects(); }}>
                         Projects
+                      </button>
+                      <button className={`tab ${activeTab === "chat" ? "active" : ""}`} onClick={() => setActiveTab("chat")}>
+                        AI Chat
                       </button>
                       <button className={`tab ${activeTab === "graph" ? "active" : ""}`} onClick={() => setActiveTab("graph")} disabled={!currentProject}>
                         Architecture Graph
@@ -4033,6 +4100,584 @@ export default function Home() {
                   </div>
                 )}
 
+                {/* Tab: AI Chat & Copilot */}
+                {activeTab === "chat" && (
+                  <div className="card" style={{ padding: 24, position: "relative" }}>
+                    {/* Header */}
+                    <div
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "flex-start",
+                        flexWrap: "wrap",
+                        gap: 16,
+                        marginBottom: 20,
+                        borderBottom: "1px solid var(--border)",
+                        paddingBottom: 16,
+                      }}
+                    >
+                      <div>
+                        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
+                          <span style={{ fontSize: 22 }}>🤖</span>
+                          <h2 className="card-title" style={{ margin: 0, fontSize: 18, fontWeight: 700 }}>
+                            AI Copilot &amp; Change Request Engine
+                          </h2>
+                          {currentProject && (
+                            <span
+                              className="badge"
+                              style={{
+                                background: "rgba(0, 255, 102, 0.12)",
+                                color: "var(--accent-green)",
+                                border: "1px solid var(--accent-green)",
+                                fontSize: 11,
+                                padding: "2px 8px",
+                                borderRadius: 999,
+                                fontWeight: 600,
+                              }}
+                            >
+                              ● {currentProject.name}
+                            </span>
+                          )}
+                        </div>
+                        <p style={{ fontSize: 12, color: "var(--text-secondary)", margin: 0, lineHeight: 1.5 }}>
+                          Architectural Q&amp;A and automated specification change requests grounded in the deterministic 7-node DAG.
+                        </p>
+                      </div>
+
+                      {/* Mode Switcher Tabs & Clear button */}
+                      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                        <div
+                          style={{
+                            display: "inline-flex",
+                            background: "var(--bg-secondary)",
+                            borderRadius: 8,
+                            padding: 3,
+                            border: "1px solid var(--border)",
+                          }}
+                        >
+                          <button
+                            type="button"
+                            className="btn btn-sm"
+                            style={{
+                              background: copilotMode === "qa" ? "var(--bg-card)" : "transparent",
+                              color: copilotMode === "qa" ? "var(--accent-blue)" : "var(--text-muted)",
+                              boxShadow: copilotMode === "qa" ? "0 2px 8px rgba(0,0,0,0.4)" : "none",
+                              border: copilotMode === "qa" ? "1px solid var(--accent-blue)" : "1px solid transparent",
+                              fontWeight: 600,
+                              fontSize: 12,
+                              padding: "6px 14px",
+                              borderRadius: 6,
+                              cursor: "pointer",
+                              transition: "all 0.15s ease",
+                            }}
+                            onClick={() => setCopilotMode("qa")}
+                          >
+                            💬 Ask Questions
+                          </button>
+                          <button
+                            type="button"
+                            className="btn btn-sm"
+                            style={{
+                              background: copilotMode === "modify" ? "rgba(0, 255, 102, 0.12)" : "transparent",
+                              color: copilotMode === "modify" ? "var(--accent-green)" : "var(--text-muted)",
+                              boxShadow: copilotMode === "modify" ? "0 2px 8px rgba(0,255,102,0.15)" : "none",
+                              border: copilotMode === "modify" ? "1px solid var(--accent-green)" : "1px solid transparent",
+                              fontWeight: 600,
+                              fontSize: 12,
+                              padding: "6px 14px",
+                              borderRadius: 6,
+                              cursor: "pointer",
+                              transition: "all 0.15s ease",
+                            }}
+                            onClick={() => setCopilotMode("modify")}
+                          >
+                            ⚡ AI Change Request
+                          </button>
+                        </div>
+
+                        {chatMessages.length > 0 && (
+                          <button
+                            type="button"
+                            className="btn btn-outline-secondary btn-sm"
+                            style={{ fontSize: 11, padding: "6px 10px", color: "var(--text-muted)" }}
+                            onClick={() => setChatMessages([])}
+                            title="Clear conversation history"
+                          >
+                            🗑️ Clear
+                          </button>
+                        )}
+                      </div>
+                    </div>
+
+                    {!currentProject ? (
+                      <div
+                        style={{
+                          textAlign: "center",
+                          padding: "48px 24px",
+                          background: "var(--bg-secondary)",
+                          borderRadius: 8,
+                          border: "1px dashed var(--border)",
+                        }}
+                      >
+                        <div style={{ fontSize: 36, marginBottom: 12 }}>⚡</div>
+                        <h3 style={{ fontSize: 16, fontWeight: 700, margin: "0 0 8px" }}>No Active Project Selected</h3>
+                        <p
+                          style={{
+                            fontSize: 13,
+                            color: "var(--text-secondary)",
+                            maxWidth: 460,
+                            margin: "0 auto 18px",
+                            lineHeight: 1.5,
+                          }}
+                        >
+                          Please select a project or create a new fleet to query architectural specifications, database schemas, or submit cascading change requests.
+                        </p>
+                        <div style={{ display: "flex", gap: 10, justifyContent: "center" }}>
+                          <button
+                            className="btn btn-primary btn-sm"
+                            onClick={() => {
+                              setActiveTab("projects");
+                              handleLoadProjects();
+                            }}
+                          >
+                            📂 Browse Projects
+                          </button>
+                          <button className="btn btn-secondary btn-sm" onClick={() => setActiveTab("create")}>
+                            ✨ Create New Project
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <>
+                        {/* Target Spec Bar (Only in Modify Mode) */}
+                        {copilotMode === "modify" && (
+                          <div
+                            style={{
+                              padding: "12px 16px",
+                              marginBottom: 16,
+                              background: "linear-gradient(90deg, rgba(0, 255, 102, 0.06), rgba(56, 189, 248, 0.04))",
+                              border: "1px solid rgba(0, 255, 102, 0.3)",
+                              borderRadius: 8,
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "space-between",
+                              flexWrap: "wrap",
+                              gap: 12,
+                              fontSize: 12,
+                            }}
+                          >
+                            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                              <span style={{ color: "var(--accent-green)", fontWeight: 700 }}>⚡ Target Spec Node:</span>
+                              <select
+                                value={modifyTargetArtifact}
+                                onChange={(e) => setModifyTargetArtifact(e.target.value)}
+                                style={{
+                                  fontSize: 12,
+                                  background: "var(--bg-card)",
+                                  color: "var(--text-primary)",
+                                  border: "1px solid var(--border)",
+                                  borderRadius: 6,
+                                  padding: "6px 12px",
+                                  fontWeight: 600,
+                                  cursor: "pointer",
+                                  outline: "none",
+                                }}
+                              >
+                                <option value="AUTO">✨ Auto-Detect from Prompt (Recommended)</option>
+                                <option value="PRD">PRD (Product Requirements Document)</option>
+                                <option value="SDD">SDD (System Architecture &amp; Design)</option>
+                                <option value="DB_SCHEMA">DB_SCHEMA (SQL Tables &amp; DDL)</option>
+                                <option value="API_SPEC">API_SPEC (REST Endpoints)</option>
+                                <option value="USER_STORIES">USER_STORIES (Agile Stories)</option>
+                                <option value="TASKS">TASKS (Engineering Plan)</option>
+                                <option value="CODE_GENERATION">CODE_GENERATION (Source Code)</option>
+                              </select>
+                            </div>
+                            <div style={{ fontSize: 11, color: "var(--text-secondary)", display: "flex", alignItems: "center", gap: 6 }}>
+                              <span>🔄</span>
+                              <span>AgentFlow automatically cascades selective regeneration downstream across the DAG.</span>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Messages Stream */}
+                        <div
+                          style={{
+                            minHeight: 440,
+                            maxHeight: 580,
+                            overflowY: "auto",
+                            display: "flex",
+                            flexDirection: "column",
+                            gap: 14,
+                            padding: 16,
+                            background: "var(--bg-secondary)",
+                            borderRadius: 8,
+                            border: "1px solid var(--border)",
+                            marginBottom: 16,
+                          }}
+                        >
+                          {chatMessages.length === 0 ? (
+                            <div style={{ textAlign: "center", color: "var(--text-muted)", padding: "36px 16px" }}>
+                              <div
+                                style={{
+                                  width: 48,
+                                  height: 48,
+                                  borderRadius: "50%",
+                                  border: "1px solid var(--border)",
+                                  display: "flex",
+                                  alignItems: "center",
+                                  justifyContent: "center",
+                                  margin: "0 auto 14px",
+                                  color: copilotMode === "modify" ? "var(--accent-green)" : "var(--accent-blue)",
+                                  fontFamily: "var(--font-mono)",
+                                  fontSize: 20,
+                                  background: "var(--bg-card)",
+                                }}
+                              >
+                                {copilotMode === "modify" ? "⚡" : "🤖"}
+                              </div>
+                              {copilotMode === "modify" ? (
+                                <>
+                                  <h4 style={{ margin: "0 0 6px", fontSize: 15, fontWeight: 700, color: "var(--text-primary)" }}>
+                                    AI Change-to-Modify Engine
+                                  </h4>
+                                  <p
+                                    style={{
+                                      fontSize: 12,
+                                      color: "var(--text-secondary)",
+                                      maxWidth: 520,
+                                      margin: "0 auto 20px",
+                                      lineHeight: 1.5,
+                                    }}
+                                  >
+                                    Describe any functional requirement, database schema, REST endpoint, or architecture modification. AgentFlow updates the target specification and automatically cascades selective regeneration to all downstream nodes and code files in the DAG.
+                                  </p>
+                                </>
+                              ) : (
+                                <>
+                                  <h4 style={{ margin: "0 0 6px", fontSize: 15, fontWeight: 700, color: "var(--text-primary)" }}>
+                                    Project Copilot: Grounded Q&amp;A
+                                  </h4>
+                                  <p
+                                    style={{
+                                      fontSize: 12,
+                                      color: "var(--text-secondary)",
+                                      maxWidth: 520,
+                                      margin: "0 auto 20px",
+                                      lineHeight: 1.5,
+                                    }}
+                                  >
+                                    Ask questions about this project&apos;s architecture, APIs, database schema, user stories, security posture, or implementation tasks. Responses are strictly grounded in your current project artifacts.
+                                  </p>
+                                </>
+                              )}
+
+                              {/* Suggestion Chips */}
+                              <div style={{ maxWidth: 640, margin: "0 auto", textAlign: "left" }}>
+                                <div
+                                  style={{
+                                    fontSize: 11,
+                                    fontWeight: 600,
+                                    color: "var(--text-muted)",
+                                    marginBottom: 8,
+                                    letterSpacing: "0.5px",
+                                    textTransform: "uppercase",
+                                  }}
+                                >
+                                  Suggested Prompts
+                                </div>
+                                <div
+                                  style={{
+                                    display: "grid",
+                                    gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
+                                    gap: 8,
+                                  }}
+                                >
+                                  {(copilotMode === "modify"
+                                    ? [
+                                        "Add an audit_logs table to the DB Schema with user_id, action, timestamp",
+                                        "Add OAuth Google Login endpoint /api/v1/auth/google to API Spec",
+                                        "Add 2FA Two-Factor Authentication requirement to PRD",
+                                        "Update SDD architecture to use Redis session caching",
+                                      ]
+                                    : [
+                                        "Explain the system architecture and 7-stage DAG flow",
+                                        "List all database tables, columns, and foreign keys",
+                                        "What are the main REST API endpoints and response codes?",
+                                        "Summarize the technical tasks required for implementation",
+                                      ]
+                                  ).map((s) => (
+                                    <button
+                                      key={s}
+                                      type="button"
+                                      className="btn btn-secondary btn-sm"
+                                      style={{
+                                        fontSize: 11,
+                                        textAlign: "left",
+                                        padding: "8px 12px",
+                                        lineHeight: 1.4,
+                                        background: "var(--bg-card)",
+                                        border: "1px solid var(--border)",
+                                        display: "flex",
+                                        alignItems: "flex-start",
+                                        gap: 6,
+                                      }}
+                                      onClick={() => handleSendCopilotMessage(s)}
+                                    >
+                                      <span style={{ color: copilotMode === "modify" ? "var(--accent-green)" : "var(--accent-blue)" }}>›</span>
+                                      <span>{s}</span>
+                                    </button>
+                                  ))}
+                                </div>
+                              </div>
+                            </div>
+                          ) : (
+                            chatMessages.map((msg, idx) => (
+                              <div
+                                key={idx}
+                                style={{
+                                  alignSelf: msg.role === "user" ? "flex-end" : "flex-start",
+                                  maxWidth: "85%",
+                                  background:
+                                    msg.role === "user"
+                                      ? "linear-gradient(135deg, rgba(30,144,255,0.15), rgba(255,255,255,0.05))"
+                                      : "var(--bg-card)",
+                                  color: "var(--text-primary)",
+                                  border:
+                                    msg.role === "user"
+                                      ? "1px solid rgba(56, 189, 248, 0.4)"
+                                      : msg.isModify
+                                      ? "1px solid rgba(0, 255, 102, 0.4)"
+                                      : "1px solid var(--border)",
+                                  padding: "14px 16px",
+                                  borderRadius: msg.role === "user" ? "12px 12px 2px 12px" : "12px 12px 12px 2px",
+                                  fontSize: 13,
+                                  lineHeight: 1.5,
+                                  boxShadow: "0 2px 8px rgba(0,0,0,0.2)",
+                                }}
+                              >
+                                {/* Message Header Badge */}
+                                <div
+                                  style={{
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "space-between",
+                                    gap: 10,
+                                    marginBottom: 8,
+                                    paddingBottom: 6,
+                                    borderBottom: "1px solid var(--border)",
+                                  }}
+                                >
+                                  <span
+                                    style={{
+                                      fontSize: 11,
+                                      fontWeight: 700,
+                                      color:
+                                        msg.role === "user"
+                                          ? "var(--accent-blue)"
+                                          : msg.isModify
+                                          ? "var(--accent-green)"
+                                          : "var(--terminal-green)",
+                                      display: "flex",
+                                      alignItems: "center",
+                                      gap: 6,
+                                    }}
+                                  >
+                                    <span>
+                                      {msg.role === "user"
+                                        ? "👤 You"
+                                        : msg.isModify
+                                        ? "⚡ AgentFlow Spec Engine"
+                                        : "🤖 Project Copilot"}
+                                    </span>
+                                  </span>
+                                  {msg.isModify && (
+                                    <span
+                                      style={{
+                                        fontSize: 10,
+                                        fontWeight: 700,
+                                        background: "rgba(0, 255, 102, 0.15)",
+                                        color: "var(--accent-green)",
+                                        padding: "2px 6px",
+                                        borderRadius: 4,
+                                        letterSpacing: "0.5px",
+                                      }}
+                                    >
+                                      SPEC MODIFIED &amp; REGENERATED
+                                    </span>
+                                  )}
+                                </div>
+
+                                {msg.isModify && msg.role === "assistant" && (
+                                  <div
+                                    style={{
+                                      marginBottom: 10,
+                                      padding: "8px 10px",
+                                      background: "rgba(0, 255, 102, 0.05)",
+                                      borderRadius: 6,
+                                      border: "1px solid rgba(0, 255, 102, 0.2)",
+                                    }}
+                                  >
+                                    {msg.target_artifact && (
+                                      <div style={{ fontSize: 11, color: "var(--text-secondary)", marginBottom: 2 }}>
+                                        Modified Spec:{" "}
+                                        <strong style={{ color: "var(--accent-green)" }}>{msg.target_artifact}</strong>{" "}
+                                        ({msg.target_section_key})
+                                      </div>
+                                    )}
+                                    {msg.regenerated_artifacts && msg.regenerated_artifacts.length > 0 && (
+                                      <div style={{ fontSize: 11, color: "var(--accent-blue)", marginTop: 4 }}>
+                                        Downstream Cascaded: {msg.regenerated_artifacts.map((a) => `#${a}`).join(" ➔ ")}
+                                      </div>
+                                    )}
+                                    {msg.rescaffolded_files_count != null && (
+                                      <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 4 }}>
+                                        📁 {msg.rescaffolded_files_count} codebase files re-scaffolded from updated specifications
+                                      </div>
+                                    )}
+                                    {msg.diff_summary && (
+                                      <div
+                                        style={{
+                                          marginTop: 8,
+                                          fontSize: 11,
+                                          fontFamily: "var(--font-mono)",
+                                          background: "var(--bg-primary)",
+                                          padding: "6px 8px",
+                                          borderRadius: 4,
+                                          overflowX: "auto",
+                                        }}
+                                      >
+                                        {msg.diff_summary}
+                                      </div>
+                                    )}
+                                  </div>
+                                )}
+
+                                <div style={{ whiteSpace: "pre-wrap" }}>{msg.text}</div>
+
+                                {msg.references && msg.references.length > 0 && (
+                                  <div
+                                    style={{
+                                      marginTop: 10,
+                                      paddingTop: 8,
+                                      borderTop: "1px solid var(--border)",
+                                      display: "flex",
+                                      gap: 6,
+                                      flexWrap: "wrap",
+                                      alignItems: "center",
+                                    }}
+                                  >
+                                    <span style={{ fontSize: 10, color: "var(--text-muted)", fontWeight: 600 }}>
+                                      REFERENCED SPECS:
+                                    </span>
+                                    {msg.references.map((r) => (
+                                      <span
+                                        key={r}
+                                        style={{
+                                          fontSize: 10,
+                                          background: "var(--bg-primary)",
+                                          border: "1px solid var(--border)",
+                                          color: "var(--accent-blue)",
+                                          padding: "2px 8px",
+                                          borderRadius: 4,
+                                          fontWeight: 600,
+                                          fontFamily: "var(--font-mono)",
+                                        }}
+                                      >
+                                        #{r}
+                                      </span>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+                            ))
+                          )}
+
+                          {chatLoading && (
+                            <div
+                              style={{
+                                alignSelf: "flex-start",
+                                fontSize: 12,
+                                color: copilotMode === "modify" ? "var(--accent-green)" : "var(--terminal-green)",
+                                fontFamily: "var(--font-mono)",
+                                background: "var(--bg-card)",
+                                border: "1px solid var(--border)",
+                                borderRadius: 8,
+                                padding: "10px 14px",
+                                display: "flex",
+                                alignItems: "center",
+                                gap: 8,
+                              }}
+                            >
+                              <span className="spinner-sm" style={{ width: 12, height: 12 }} />
+                              <span>
+                                {copilotMode === "modify"
+                                  ? "⚡ Applying specification changes & selectively regenerating DAG downstream..."
+                                  : "🤖 Grounding query in project specs, database schema, & APIs..."}
+                              </span>
+                            </div>
+                          )}
+                          <div ref={chatMessagesEndRef} />
+                        </div>
+
+                        {/* Chat Input Form */}
+                        <form
+                          onSubmit={(e) => {
+                            e.preventDefault();
+                            handleSendCopilotMessage();
+                          }}
+                          style={{
+                            display: "flex",
+                            gap: 10,
+                            background: "var(--bg-secondary)",
+                            padding: "10px",
+                            borderRadius: 8,
+                            border: "1px solid var(--border)",
+                          }}
+                        >
+                          <input
+                            type="text"
+                            className="input"
+                            value={chatInput}
+                            onChange={(e) => setChatInput(e.target.value)}
+                            placeholder={
+                              copilotMode === "modify"
+                                ? "Describe changes to make & cascade downstream (e.g. 'Add Stripe webhook /api/v1/webhooks/stripe to API Spec')..."
+                                : "Ask Copilot anything about architecture, schema, APIs, or implementation tasks..."
+                            }
+                            style={{ flex: 1, fontSize: 13, padding: "8px 12px" }}
+                          />
+                          <button
+                            type="submit"
+                            className="btn btn-primary"
+                            disabled={chatLoading || !chatInput.trim()}
+                            style={{
+                              fontSize: 12,
+                              padding: "0 18px",
+                              background: copilotMode === "modify" ? "var(--accent-green)" : undefined,
+                              color: copilotMode === "modify" ? "#000000" : undefined,
+                              fontWeight: 700,
+                              display: "inline-flex",
+                              alignItems: "center",
+                              gap: 6,
+                            }}
+                          >
+                            {copilotMode === "modify" ? (
+                              <>
+                                <span>⚡</span> Apply Change
+                              </>
+                            ) : (
+                              <>
+                                <span>➤</span> Ask Copilot
+                              </>
+                            )}
+                          </button>
+                        </form>
+                      </>
+                    )}
+                  </div>
+                )}
+
                 {/* Tab: Dependency Graph */}
                 {activeTab === "graph" && currentProject && (
                   <div className="card">
@@ -4181,7 +4826,7 @@ export default function Home() {
                                   gap: 6,
                                 }}
                                 onClick={() => {
-                                  setShowChat(true);
+                                  setActiveTab("chat");
                                   setCopilotMode("modify");
                                   setModifyTargetArtifact(currentArt.artifact_type);
                                 }}
@@ -10498,448 +11143,6 @@ export default function Home() {
       </div>
       {toast && (
         <div className={`toast toast-${toast.type}`}>{toast.message}</div>
-      )}
-
-      {/* Floating Copilot Trigger Button */}
-      {currentProject && !showChat && (
-        <button
-          onClick={() => setShowChat(true)}
-          style={{
-            position: "fixed",
-            bottom: 24,
-            right: 24,
-            background: "var(--btn-primary-bg)",
-            color: "var(--btn-primary-color)",
-            border: "1px solid var(--border)",
-            borderRadius: "9999px",
-            padding: "10px 18px",
-            fontSize: 12,
-            fontWeight: 600,
-            fontFamily: "var(--font-mono)",
-            letterSpacing: "0.03em",
-            boxShadow: "var(--shadow-glow)",
-            cursor: "pointer",
-            zIndex: 999,
-            display: "flex",
-            alignItems: "center",
-            gap: 8,
-          }}
-        >
-          <span style={{ width: 7, height: 7, borderRadius: "50%", background: "var(--terminal-green)", display: "inline-block", boxShadow: "0 0 6px var(--terminal-green)" }} />
-          <span>Ask AI Copilot</span>
-        </button>
-      )}
-
-      {/* Interactive Copilot Chat Widget */}
-      {currentProject && showChat && (
-        <div
-          style={{
-            position: "fixed",
-            bottom: 24,
-            right: 24,
-            width: 400,
-            height: 520,
-            background: "var(--bg-card)",
-            border: "1px solid var(--border)",
-            borderRadius: 8,
-            boxShadow: "0 16px 48px rgba(0,0,0,0.9)",
-            zIndex: 1000,
-            display: "flex",
-            flexDirection: "column",
-            overflow: "hidden",
-          }}
-        >
-          {/* Header */}
-          <div
-            style={{
-              padding: "12px 16px",
-              background: "var(--bg-secondary)",
-              borderBottom: "1px solid var(--border)",
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-            }}
-          >
-            <div>
-              <strong style={{ fontSize: 13, display: "flex", alignItems: "center", gap: 8, fontFamily: "var(--font-mono)", letterSpacing: "0.02em" }}>
-                <span style={{ width: 6, height: 6, borderRadius: "50%", background: copilotMode === "modify" ? "var(--accent-green)" : "var(--terminal-green)", display: "inline-block" }} />
-                {copilotMode === "modify" ? "⚡ AI Copilot: Change & Regenerate" : "💬 Project Copilot: Q&A"}
-              </strong>
-              <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 2 }}>
-                Grounded in {currentProject.name} specs
-              </div>
-            </div>
-            <button
-              onClick={() => setShowChat(false)}
-              style={{
-                background: "transparent",
-                border: "none",
-                color: "var(--text-muted)",
-                cursor: "pointer",
-                fontSize: 16,
-                padding: "2px 6px",
-              }}
-            >
-              ✕
-            </button>
-          </div>
-
-          {/* Mode Switcher Tabs */}
-          <div
-            style={{
-              display: "flex",
-              borderBottom: "1px solid var(--border)",
-              background: "var(--bg-primary)",
-            }}
-          >
-            <button
-              style={{
-                flex: 1,
-                padding: "8px 12px",
-                fontSize: 11,
-                fontWeight: 600,
-                border: "none",
-                borderBottom: copilotMode === "qa" ? "2px solid var(--accent-blue)" : "2px solid transparent",
-                background: copilotMode === "qa" ? "var(--bg-secondary)" : "transparent",
-                color: copilotMode === "qa" ? "var(--text-primary)" : "var(--text-muted)",
-                cursor: "pointer",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                gap: 6,
-              }}
-              onClick={() => setCopilotMode("qa")}
-            >
-              <span>💬</span> Ask Questions
-            </button>
-            <button
-              style={{
-                flex: 1,
-                padding: "8px 12px",
-                fontSize: 11,
-                fontWeight: 600,
-                border: "none",
-                borderBottom: copilotMode === "modify" ? "2px solid var(--accent-green)" : "2px solid transparent",
-                background: copilotMode === "modify" ? "rgba(0, 255, 102, 0.08)" : "transparent",
-                color: copilotMode === "modify" ? "var(--accent-green)" : "var(--text-muted)",
-                cursor: "pointer",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                gap: 6,
-              }}
-              onClick={() => setCopilotMode("modify")}
-            >
-              <span>⚡</span> AI Change Request
-            </button>
-          </div>
-
-          {/* Target Artifact Bar (Only in Modify Mode) */}
-          {copilotMode === "modify" && (
-            <div
-              style={{
-                padding: "8px 12px",
-                background: "linear-gradient(90deg, rgba(0, 255, 102, 0.05), rgba(56, 189, 248, 0.05))",
-                borderBottom: "1px solid var(--border)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-                gap: 8,
-                fontSize: 11,
-              }}
-            >
-              <span style={{ color: "var(--text-secondary)", fontWeight: 600, whiteSpace: "nowrap" }}>
-                Target Spec:
-              </span>
-              <select
-                value={modifyTargetArtifact}
-                onChange={(e) => setModifyTargetArtifact(e.target.value)}
-                style={{
-                  flex: 1,
-                  fontSize: 11,
-                  background: "var(--bg-secondary)",
-                  color: "var(--text-primary)",
-                  border: "1px solid var(--border)",
-                  borderRadius: 4,
-                  padding: "3px 6px",
-                  cursor: "pointer",
-                }}
-              >
-                <option value="AUTO">✨ Auto-Detect from Prompt</option>
-                <option value="PRD">PRD (Requirements)</option>
-                <option value="SDD">SDD (Architecture &amp; Design)</option>
-                <option value="DB_SCHEMA">DB_SCHEMA (SQL Tables &amp; DDL)</option>
-                <option value="API_SPEC">API_SPEC (REST Endpoints)</option>
-                <option value="USER_STORIES">USER_STORIES (Agile Stories)</option>
-                <option value="TASKS">TASKS (Engineering Plan)</option>
-                <option value="CODE_GENERATION">CODE_GENERATION (Source Code)</option>
-              </select>
-            </div>
-          )}
-
-          {/* Messages Stream */}
-          <div
-            style={{
-              flex: 1,
-              padding: 16,
-              overflowY: "auto",
-              display: "flex",
-              flexDirection: "column",
-              gap: 12,
-            }}
-          >
-            {chatMessages.length === 0 ? (
-              <div style={{ textAlign: "center", color: "var(--text-muted)", fontSize: 12, marginTop: 24 }}>
-                <div style={{ width: 36, height: 36, borderRadius: "50%", border: "1px solid var(--border)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 12px", color: copilotMode === "modify" ? "var(--accent-green)" : "var(--text-muted)", fontFamily: "var(--font-mono)", fontSize: 14 }}>
-                  {copilotMode === "modify" ? "⚡" : "?"}
-                </div>
-                {copilotMode === "modify" ? (
-                  <>
-                    <p style={{ margin: "0 0 4px", fontWeight: 600, color: "var(--text-primary)" }}>
-                      AI Change-to-Modify Engine
-                    </p>
-                    <p style={{ fontSize: 11, color: "var(--text-secondary)", lineHeight: 1.4, margin: "0 0 14px" }}>
-                      Describe any requirement, schema, API, or architecture change. AgentFlow applies it to the target spec and automatically cascades selective regeneration through the DAG!
-                    </p>
-                  </>
-                ) : (
-                  <p>Ask anything about this project&apos;s architecture, APIs, DB schema, or implementation tasks.</p>
-                )}
-
-                {/* Suggestion Chips */}
-                <div style={{ display: "flex", flexDirection: "column", gap: 6, marginTop: 10 }}>
-                  {(copilotMode === "modify" ? [
-                    "Add an audit_logs table to the DB Schema with user_id, action, timestamp",
-                    "Add OAuth Google Login endpoint /api/v1/auth/google to API Spec",
-                    "Add 2FA Two-Factor Authentication requirement to PRD",
-                    "Update SDD architecture to use Redis session caching",
-                  ] : [
-                    "Explain the system architecture",
-                    "List all database tables and keys",
-                    "What are the main API endpoints?",
-                  ]).map((s) => (
-                    <button
-                      key={s}
-                      className="btn btn-secondary btn-sm"
-                      style={{ fontSize: 11, textAlign: "left", padding: "6px 10px", lineHeight: 1.3 }}
-                      onClick={async () => {
-                        setChatInput(s);
-                        setChatLoading(true);
-                        setChatMessages((prev) => [...prev, { role: "user", text: s, isModify: copilotMode === "modify" }]);
-                        try {
-                          if (copilotMode === "modify") {
-                            const res = await chatModifyProject(
-                              currentProject.id,
-                              s,
-                              modifyTargetArtifact === "AUTO" ? null : modifyTargetArtifact
-                            );
-                            setChatMessages((prev) => [
-                              ...prev,
-                              {
-                                role: "assistant",
-                                isModify: true,
-                                text: res.explanation,
-                                target_artifact: res.target_artifact,
-                                target_section_key: res.target_section_key,
-                                regenerated_artifacts: res.regenerated_artifacts,
-                                rescaffolded_files_count: res.rescaffolded_files_count,
-                                diff_summary: res.diff_summary,
-                              },
-                            ]);
-                            // Refresh project artifacts and code files
-                            const updatedArts = await getArtifacts(currentProject.id);
-                            setArtifacts(updatedArts);
-                            try {
-                              const updatedCode = await getCodeFiles(currentProject.id);
-                              setCodeData(updatedCode);
-                            } catch (e) {}
-                            showToast(`⚡ Downstream regeneration complete! Target: ${res.target_artifact}`, "success");
-                          } else {
-                            const res = await askProjectAssistant(currentProject.id, s, []);
-                            setChatMessages((prev) => [
-                              ...prev,
-                              { role: "assistant", text: res.reply, references: res.referenced_artifacts },
-                            ]);
-                          }
-                        } catch (err) {
-                          setChatMessages((prev) => [
-                            ...prev,
-                            { role: "assistant", text: `Error: ${err.message}` },
-                          ]);
-                        } finally {
-                          setChatLoading(false);
-                        }
-                      }}
-                    >
-                      › {s}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            ) : (
-              chatMessages.map((msg, idx) => (
-                <div
-                  key={idx}
-                  style={{
-                    alignSelf: msg.role === "user" ? "flex-end" : "flex-start",
-                    maxWidth: "88%",
-                    background: msg.role === "user" ? "#ffffff" : "var(--bg-secondary)",
-                    color: msg.role === "user" ? "#000000" : "var(--text-primary)",
-                    border: msg.role === "user" ? "none" : (msg.isModify ? "1px solid rgba(0, 255, 102, 0.4)" : "1px solid var(--border)"),
-                    padding: "10px 12px",
-                    borderRadius: msg.role === "user" ? "8px 8px 2px 8px" : "8px 8px 8px 2px",
-                    fontSize: 12,
-                    lineHeight: 1.45,
-                    whiteSpace: "pre-wrap",
-                  }}
-                >
-                  {msg.isModify && msg.role === "assistant" && (
-                    <div style={{ marginBottom: 8, paddingBottom: 6, borderBottom: "1px solid var(--border)" }}>
-                      <span
-                        style={{
-                          fontSize: 10,
-                          fontWeight: 700,
-                          background: "rgba(0, 255, 102, 0.15)",
-                          color: "var(--accent-green)",
-                          padding: "2px 6px",
-                          borderRadius: 4,
-                          display: "inline-block",
-                          marginBottom: 4,
-                        }}
-                      >
-                        ⚡ SPEC MODIFIED &amp; REGENERATED
-                      </span>
-                      {msg.target_artifact && (
-                        <div style={{ fontSize: 11, color: "var(--text-secondary)" }}>
-                          Modified: <strong>{msg.target_artifact}</strong> ({msg.target_section_key})
-                        </div>
-                      )}
-                      {msg.regenerated_artifacts && msg.regenerated_artifacts.length > 0 && (
-                        <div style={{ fontSize: 11, color: "var(--accent-blue)", marginTop: 2 }}>
-                          Downstream Cascaded: {msg.regenerated_artifacts.map((a) => `#${a}`).join(" ➔ ")}
-                        </div>
-                      )}
-                    </div>
-                  )}
-
-                  {msg.text}
-
-                  {msg.references && msg.references.length > 0 && (
-                    <div style={{ marginTop: 6, display: "flex", gap: 4, flexWrap: "wrap" }}>
-                      {msg.references.map((r) => (
-                        <span
-                          key={r}
-                          style={{
-                            fontSize: 9,
-                            background: "var(--bg-primary)",
-                            border: "1px solid var(--border)",
-                            color: "var(--text-secondary)",
-                            padding: "2px 6px",
-                            borderRadius: 4,
-                            fontWeight: 600,
-                            fontFamily: "var(--font-mono)",
-                          }}
-                        >
-                          # {r}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              ))
-            )}
-            {chatLoading && (
-              <div style={{ alignSelf: "flex-start", fontSize: 11, color: copilotMode === "modify" ? "var(--accent-green)" : "var(--terminal-green)", fontFamily: "var(--font-mono)" }}>
-                › {copilotMode === "modify" ? "⚡ Applying change & propagating DAG downstream..." : "Copilot is thinking..."}
-              </div>
-            )}
-          </div>
-
-          {/* Chat Input */}
-          <form
-            onSubmit={async (e) => {
-              e.preventDefault();
-              if (!chatInput.trim() || chatLoading) return;
-              const text = chatInput.trim();
-              setChatInput("");
-              setChatLoading(true);
-              setChatMessages((prev) => [...prev, { role: "user", text, isModify: copilotMode === "modify" }]);
-              try {
-                if (copilotMode === "modify") {
-                  const res = await chatModifyProject(
-                    currentProject.id,
-                    text,
-                    modifyTargetArtifact === "AUTO" ? null : modifyTargetArtifact
-                  );
-                  setChatMessages((prev) => [
-                    ...prev,
-                    {
-                      role: "assistant",
-                      isModify: true,
-                      text: res.explanation,
-                      target_artifact: res.target_artifact,
-                      target_section_key: res.target_section_key,
-                      regenerated_artifacts: res.regenerated_artifacts,
-                      rescaffolded_files_count: res.rescaffolded_files_count,
-                      diff_summary: res.diff_summary,
-                    },
-                  ]);
-                  // Refresh project artifacts and code files
-                  const updatedArts = await getArtifacts(currentProject.id);
-                  setArtifacts(updatedArts);
-                  try {
-                    const updatedCode = await getCodeFiles(currentProject.id);
-                    setCodeData(updatedCode);
-                  } catch (e) {}
-                  showToast(`⚡ Downstream regeneration complete! Target: ${res.target_artifact}`, "success");
-                } else {
-                  const res = await askProjectAssistant(currentProject.id, text, []);
-                  setChatMessages((prev) => [
-                    ...prev,
-                    { role: "assistant", text: res.reply, references: res.referenced_artifacts },
-                  ]);
-                }
-              } catch (err) {
-                setChatMessages((prev) => [
-                  ...prev,
-                  { role: "assistant", text: `Error: ${err.message}` },
-                ]);
-              } finally {
-                setChatLoading(false);
-              }
-            }}
-            style={{
-              padding: "10px 12px",
-              background: "var(--bg-secondary)",
-              borderTop: "1px solid var(--border)",
-              display: "flex",
-              gap: 8,
-            }}
-          >
-            <input
-              type="text"
-              className="input"
-              value={chatInput}
-              onChange={(e) => setChatInput(e.target.value)}
-              placeholder={copilotMode === "modify" ? "Describe changes to make & cascade downstream..." : "Ask Copilot about specs or code..."}
-              style={{ flex: 1, fontSize: 12, padding: "6px 10px" }}
-            />
-            <button
-              type="submit"
-              className="btn btn-primary btn-sm"
-              disabled={chatLoading || !chatInput.trim()}
-              style={{
-                fontSize: 12,
-                padding: "0 12px",
-                background: copilotMode === "modify" ? "var(--accent-green)" : undefined,
-                color: copilotMode === "modify" ? "#000000" : undefined,
-                fontWeight: copilotMode === "modify" ? 700 : undefined,
-              }}
-            >
-              {copilotMode === "modify" ? "⚡ Apply" : "➤"}
-            </button>
-          </form>
-        </div>
       )}
 
       {/* SQL & Alembic Migration Viewer Modal */}
