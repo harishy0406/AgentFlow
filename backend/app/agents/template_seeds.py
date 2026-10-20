@@ -887,13 +887,13 @@ def seed_template_project(
     art_data = t_def.get("artifacts", {})
 
     models_attribution = {
-        "PRD": "Claude 3.5 Sonnet",
-        "SDD": "Claude 3.5 Sonnet",
-        "DB_SCHEMA": "Claude Haiku",
-        "API_SPEC": "Claude Haiku",
-        "USER_STORIES": "GPT-4o",
-        "TASKS": "GPT-4o",
-        "CODE_GENERATION": "Claude 3.5 Sonnet",
+        "PRD": "Google Gemini 2.0 Flash",
+        "SDD": "Claude 3.5 Sonnet (Anthropic)",
+        "DB_SCHEMA": "OpenAI GPT-4o",
+        "API_SPEC": "DeepSeek V3",
+        "USER_STORIES": "Groq (Llama 3.3 70B)",
+        "TASKS": "NVIDIA Nemotron 70B",
+        "CODE_GENERATION": "Claude 3.5 Sonnet (Anthropic)",
     }
 
     base_time = datetime.now(timezone.utc) - timedelta(minutes=15)

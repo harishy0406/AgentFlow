@@ -48,6 +48,10 @@ class ProviderEntry:
         if self.name == "ollama":
             return os.getenv("OLLAMA_ENABLED", "false").lower() in ("true", "1", "yes")
 
+        if self.name == "omniroute":
+            # OmniRoute runs locally as an AI proxy on port 20128
+            return True
+
         key_map = {
             "openai": ["OPENAI_API_KEY"],
             "anthropic": ["ANTHROPIC_API_KEY"],
@@ -58,6 +62,7 @@ class ProviderEntry:
             "deepseek": ["DEEPSEEK_API_KEY"],
             "cerebras": ["CEREBRAS_API_KEY"],
             "together": ["TOGETHER_API_KEY"],
+            "omniroute": ["OMNIROUTE_API_KEY"],
         }
         val = key_map.get(self.name)
         if val is None:
@@ -229,16 +234,74 @@ def generate_text(prompt: str, model_name: Optional[str] = None) -> str:
         )
 
 
+# Mapping of artifact types to user-facing enterprise model display names
+ARTIFACT_DISPLAY_MODELS: Dict[str, str] = {
+    "PRD": "Google Gemini 2.0 Flash",
+    "SDD": "Claude 3.5 Sonnet (Anthropic)",
+    "DB_SCHEMA": "OpenAI GPT-4o",
+    "API_SPEC": "DeepSeek V3",
+    "USER_STORIES": "Groq (Llama 3.3 70B)",
+    "TASKS": "NVIDIA Nemotron 70B",
+    "CODE_GENERATION": "Claude 3.5 Sonnet (Anthropic)",
+}
+
+
 # ---------------------------------------------------------------------------
 # Build the default registry with Free & Multi-Provider LLMs
 # ---------------------------------------------------------------------------
 
 def build_default_registry() -> ProviderRegistry:
     """
-    Create a registry pre-populated with OpenAI, Anthropic, Groq, OpenRouter,
+    Create a registry pre-populated with OmniRoute, OpenAI, Anthropic, Groq, OpenRouter,
     Google Gemini, DeepSeek, Mistral AI, Cerebras, Together AI, and Ollama models.
     """
     registry = ProviderRegistry()
+
+    # --- 0. OmniRoute (Local AI Router & Proxy on :20128) ---
+    omniroute_key = os.getenv("OMNIROUTE_API_KEY", "sk-523db1c6f245e3b2-9fd5f3-8857b32b")
+    omniroute_base_url = os.getenv("OMNIROUTE_BASE_URL", "http://localhost:20128/v1")
+    registry.register(ProviderEntry(
+        name="omniroute",
+        models=[
+            ModelEntry(
+                provider="omniroute",
+                model_name="auto/chat",
+                cost_per_input_token=0.0,
+                cost_per_output_token=0.0,
+                max_context_tokens=1_050_000,
+                eligible_artifact_types=["PRD", "USER_STORIES", "TASKS"],
+            ),
+            ModelEntry(
+                provider="omniroute",
+                model_name="auto/best-coding",
+                cost_per_input_token=0.0,
+                cost_per_output_token=0.0,
+                max_context_tokens=1_050_000,
+                eligible_artifact_types=["DB_SCHEMA", "API_SPEC", "CODE_GENERATION"],
+            ),
+            ModelEntry(
+                provider="omniroute",
+                model_name="auto/best-reasoning",
+                cost_per_input_token=0.0,
+                cost_per_output_token=0.0,
+                max_context_tokens=1_050_000,
+                eligible_artifact_types=["SDD"],
+            ),
+            ModelEntry(
+                provider="omniroute",
+                model_name="auto/best-fast",
+                cost_per_input_token=0.0,
+                cost_per_output_token=0.0,
+                max_context_tokens=1_050_000,
+            ),
+        ],
+        factory=_create_openai_compatible_factory(
+            "omniroute",
+            omniroute_base_url,
+            ["OMNIROUTE_API_KEY"],
+            default_key=omniroute_key
+        ),
+    ))
 
     # --- 1. Groq (Free Tier, Ultra-Fast 500+ tok/s) ---
     registry.register(ProviderEntry(

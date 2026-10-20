@@ -242,6 +242,25 @@ export function buildNodes(artifacts = [], selectedArtifactId = null) {
               v{version}
               {qualityPct != null && ` • Q: ${qualityPct}%`}
             </div>
+            {artifact?.generated_by_model && (
+              <div style={{
+                marginTop: 6,
+                fontSize: "10px",
+                fontWeight: 600,
+                color: "#38bdf8",
+                background: "rgba(56, 189, 248, 0.1)",
+                padding: "2px 6px",
+                borderRadius: "4px",
+                border: "1px solid rgba(56, 189, 248, 0.25)",
+                whiteSpace: "nowrap",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                maxWidth: "140px",
+                margin: "6px auto 0",
+              }}>
+                {artifact.generated_by_model}
+              </div>
+            )}
           </div>
         ),
       },

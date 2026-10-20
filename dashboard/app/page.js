@@ -116,14 +116,67 @@ function RadialGauge({ value = 0, size = 110, strokeWidth = 10, label = "", colo
 }
 
 const DAG_GENERATION_STAGES = [
-  { id: "PRD", label: "PRD Specification", agent: "Business Analyst", model: "Claude 3.5 Sonnet", icon: "📋", desc: "Synthesizing user personas, product scope, and functional boundaries..." },
-  { id: "SDD", label: "System Architecture", agent: "System Designer", model: "Claude 3.5 Sonnet", icon: "📐", desc: "Architecting microservice topology, event queues, and SLA constraints..." },
-  { id: "DB_SCHEMA", label: "Database Schema", agent: "Database Architect", model: "Claude Haiku", icon: "🗄️", desc: "Generating relational DDL, 3NF tables, and indexing strategies..." },
-  { id: "API_SPEC", label: "OpenAPI 3.0 Contract", agent: "API Designer", model: "Claude Haiku", icon: "⚡", desc: "Drafting REST route definitions, request/response models, and error codes..." },
-  { id: "QA_ENGINEER", label: "QA & Consistency Audit", agent: "QA Engineer", model: "Claude Haiku", icon: "🧪", desc: "Verifying semantic consistency, cross-artifact parity, and edge cases..." },
-  { id: "USER_STORIES", label: "User Stories & Tasks", agent: "Project Planner", model: "GPT-4o", icon: "🔨", desc: "Decomposing features into Gherkin acceptance criteria and engineering task DAG..." },
-  { id: "CODE_GENERATION", label: "Source Code & Scaffolding", agent: "Dev Fleet", model: "Claude 3.5 Sonnet", icon: "🚀", desc: "Scaffolding executable FastAPI repository, data models, and test suites..." }
+  { id: "PRD", label: "PRD Specification", agent: "Business Analyst", model: "Google Gemini 2.0 Flash", icon: "📋", desc: "Synthesizing user personas, product scope, and functional boundaries..." },
+  { id: "SDD", label: "System Architecture", agent: "System Designer", model: "Claude 3.5 Sonnet (Anthropic)", icon: "📐", desc: "Architecting microservice topology, event queues, and SLA constraints..." },
+  { id: "DB_SCHEMA", label: "Database Schema", agent: "Database Architect", model: "OpenAI GPT-4o", icon: "🗄️", desc: "Generating relational DDL, 3NF tables, and indexing strategies..." },
+  { id: "API_SPEC", label: "OpenAPI 3.0 Contract", agent: "API Designer", model: "DeepSeek V3", icon: "⚡", desc: "Drafting REST route definitions, request/response models, and error codes..." },
+  { id: "QA_ENGINEER", label: "QA & Consistency Audit", agent: "QA Engineer", model: "Groq (Llama 3.3 70B)", icon: "🧪", desc: "Verifying semantic consistency, cross-artifact parity, and edge cases..." },
+  { id: "USER_STORIES", label: "User Stories & Tasks", agent: "Project Planner", model: "NVIDIA Nemotron 70B", icon: "🔨", desc: "Decomposing features into Gherkin acceptance criteria and engineering task DAG..." },
+  { id: "CODE_GENERATION", label: "Source Code & Scaffolding", agent: "Dev Fleet", model: "Claude 3.5 Sonnet (Anthropic)", icon: "🚀", desc: "Scaffolding executable FastAPI repository, data models, and test suites..." }
 ];
+
+function renderModelBadge(modelName) {
+  if (!modelName) return <span style={{ color: "var(--text-secondary)", fontSize: 11 }}>Claude 3.5 Sonnet</span>;
+  const lower = modelName.toLowerCase();
+  
+  if (lower.includes("gemini") || lower.includes("google")) {
+    return (
+      <span style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "2px 8px", borderRadius: 6, fontSize: 11, fontWeight: 600, background: "rgba(59, 130, 246, 0.12)", color: "#60A5FA", border: "1px solid rgba(59, 130, 246, 0.3)" }}>
+        <span>🔵</span> {modelName}
+      </span>
+    );
+  }
+  if (lower.includes("claude") || lower.includes("anthropic") || lower.includes("sonnet") || lower.includes("haiku")) {
+    return (
+      <span style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "2px 8px", borderRadius: 6, fontSize: 11, fontWeight: 600, background: "rgba(168, 85, 247, 0.12)", color: "#C084FC", border: "1px solid rgba(168, 85, 247, 0.3)" }}>
+        <span>🟣</span> {modelName}
+      </span>
+    );
+  }
+  if (lower.includes("gpt") || lower.includes("openai")) {
+    return (
+      <span style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "2px 8px", borderRadius: 6, fontSize: 11, fontWeight: 600, background: "rgba(16, 185, 129, 0.12)", color: "#34D399", border: "1px solid rgba(16, 185, 129, 0.3)" }}>
+        <span>🟢</span> {modelName}
+      </span>
+    );
+  }
+  if (lower.includes("deepseek")) {
+    return (
+      <span style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "2px 8px", borderRadius: 6, fontSize: 11, fontWeight: 600, background: "rgba(14, 165, 233, 0.12)", color: "#38BDF8", border: "1px solid rgba(14, 165, 233, 0.3)" }}>
+        <span>🔷</span> {modelName}
+      </span>
+    );
+  }
+  if (lower.includes("groq") || lower.includes("llama")) {
+    return (
+      <span style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "2px 8px", borderRadius: 6, fontSize: 11, fontWeight: 600, background: "rgba(249, 115, 22, 0.12)", color: "#FB923C", border: "1px solid rgba(249, 115, 22, 0.3)" }}>
+        <span>🟠</span> {modelName}
+      </span>
+    );
+  }
+  if (lower.includes("nvidia") || lower.includes("nemotron")) {
+    return (
+      <span style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "2px 8px", borderRadius: 6, fontSize: 11, fontWeight: 600, background: "rgba(118, 185, 0, 0.12)", color: "#84CC16", border: "1px solid rgba(118, 185, 0, 0.3)" }}>
+        <span>⚡</span> {modelName}
+      </span>
+    );
+  }
+  return (
+    <span style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "2px 8px", borderRadius: 6, fontSize: 11, fontWeight: 600, background: "rgba(148, 163, 184, 0.12)", color: "#CBD5E1", border: "1px solid rgba(148, 163, 184, 0.3)" }}>
+      <span>🤖</span> {modelName}
+    </span>
+  );
+}
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState("create");
@@ -4840,7 +4893,7 @@ export default function Home() {
                                     ? `${(currentArt.quality_signal_score * 100).toFixed(0)}%`
                                     : "N/A"}
                                 </strong>{" "}
-                                • Model: <span style={{ color: "var(--text-primary)", fontWeight: 600 }}>{currentArt.generated_by_model || "claude-3-haiku"}</span>
+                                • Model: {renderModelBadge(currentArt.generated_by_model)}
                               </div>
                             </div>
                           </div>
@@ -6064,7 +6117,7 @@ export default function Home() {
                                 {a.artifact_type.replace("_", " ")}
                               </td>
                               <td style={{ padding: "8px 12px", color: "var(--text-secondary)" }}>
-                                {a.generated_by_model || "default"}
+                                {renderModelBadge(a.generated_by_model)}
                               </td>
                               <td style={{ padding: "8px 12px", textAlign: "center" }}>v{a.version}</td>
                               <td style={{ padding: "8px 12px", textAlign: "center" }}>

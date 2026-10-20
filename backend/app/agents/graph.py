@@ -18,6 +18,7 @@ from .nodes import (
 from .graph_engine import compute_content_hash
 from .quality_signals import compute_quality_signal
 from .scaffolder import scaffold_project_files
+from .provider_registry import ARTIFACT_DISPLAY_MODELS
 from ..models import Project, ArtifactNode, ArtifactSection, ArtifactVersion, GenerationLog
 
 def build_graph() -> StateGraph:
@@ -106,19 +107,21 @@ def run_pipeline(
             .first()
         )
 
+        display_model = ARTIFACT_DISPLAY_MODELS.get(art_type, "Claude 3.5 Sonnet (Anthropic)")
         if node is None:
             node = ArtifactNode(
                 project_id=project_id,
                 artifact_type=art_type,
                 version=1,
                 status="generating",
-                generated_by_model="claude-3-haiku"
+                generated_by_model=display_model
             )
             db.add(node)
             db.flush()
         else:
             node.version += 1
             node.status = "generating"
+            node.generated_by_model = display_model
 
         # Clear existing sections and replace with generated content
         db.query(ArtifactSection).filter(ArtifactSection.artifact_node_id == node.id).delete()
@@ -178,10 +181,10 @@ def run_pipeline(
             project_id=project_id,
             artifact_node_id=node.id,
             triggered_by="full_pipeline",
-            provider="anthropic",
-            model="claude-3-haiku",
+            provider="omniroute",
+            model=display_model,
             tokens_used=max(len(content) // 4, 100),
-            cost_usd=0.015,
+            cost_usd=0.0,
             latency_ms=elapsed_ms
         )
         db.add(gen_log)

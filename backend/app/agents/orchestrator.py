@@ -44,6 +44,7 @@ from .prompts import (
     CODE_GENERATION_REGEN_PROMPT,
 )
 from .router import get_chat_model_for_artifact, RoutingDecision
+from .provider_registry import ARTIFACT_DISPLAY_MODELS
 from .quality_signals import compute_quality_signal
 from .auditor import run_audit
 
@@ -305,7 +306,7 @@ def handle_section_edit(
             artifact_type, new_regen_content, dirty_node.project_id, db
         )
         dirty_node.quality_signal_score = quality_score
-        dirty_node.generated_by_model = f"{decision.chosen_provider}/{decision.chosen_model}"
+        dirty_node.generated_by_model = ARTIFACT_DISPLAY_MODELS.get(artifact_type, f"{decision.chosen_provider}/{decision.chosen_model}")
 
         # Bump version on the parent node
         dirty_node.version += 1
