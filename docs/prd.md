@@ -12,11 +12,11 @@
 
 ## 1. Executive Summary
 
-AgentFlow is an adaptive multi-agent workflow orchestration platform that automates the generation, synchronization, and evolution of software engineering artifacts — PRDs, Software Design Documents (SDDs), database schemas, API specifications, user stories, and task breakdowns.
+AgentFlow is an adaptive multi-agent workflow orchestration platform that automates the generation, synchronization, and evolution of software engineering artifacts — PRDs, Software Design Documents (SDDs), database schemas, API specifications, user stories, task breakdowns, and fully scaffolded source code repositories.
 
-Unlike existing multi-agent LLM frameworks (MetaGPT, ChatDev, ALMAS) that treat requirement changes as a trigger for full-pipeline regeneration, AgentFlow models the artifact lifecycle as a **typed dependency graph** and performs **diff-aware selective regeneration**, updating only the artifacts actually affected by a change. It further introduces **artifact-specific quality-signal routing** to pick the right LLM for each document type, and a **Consistency Auditor Agent** that continuously detects and repairs cross-document drift.
+Unlike existing multi-agent LLM frameworks (MetaGPT, ChatDev, ALMAS) that treat requirement changes as a trigger for full-pipeline regeneration, AgentFlow models the artifact lifecycle as a **7-node typed dependency graph** and performs **diff-aware selective regeneration**, updating only the artifacts and code files actually affected by a change. It further introduces **artifact-specific quality-signal routing**, an **OmniRoute multi-model presentation layer** dispatching to specialized models (Gemini, Claude, GPT-4o, DeepSeek, Groq, Nemotron), and a **Consistency Auditor Agent** that continuously detects and repairs cross-document drift.
 
-The result is a system that is cheaper, faster, and more consistent than "all-or-nothing" multi-agent documentation pipelines, particularly in real-world settings where requirements change frequently mid-project.
+The result is an end-to-end specification-to-code system that is cheaper, faster, and more consistent than "all-or-nothing" multi-agent pipelines, particularly in real-world settings where requirements evolve frequently mid-project.
 
 ---
 
@@ -58,29 +58,32 @@ Software teams generate a chain of interdependent artifacts during the planning 
 
 ## 5. Key Novelty (Differentiators)
 
-1. **Typed Dependency-Graph-Aware Selective Regeneration** — Artifacts are nodes in a typed directed graph (PRD → SDD → Database Schema → API Spec → User Stories → Tasks). A requirement change triggers a diff-aware subgraph recomputation that touches only affected downstream nodes, instead of full-pipeline regeneration used by MetaGPT/ChatDev, and unlike ALMAS/Meta-RAG which only operate on source code via AST compression.
-2. **Artifact-Type-Specific Quality-Signal Routing** — Instead of routing on generic prompt difficulty (as surveyed in Yang et al.), AgentFlow's Decision Engine scores each artifact type on a domain-specific structural signal (referential integrity for schemas, requirement-traceability coverage for PRDs, endpoint completeness for API specs) and routes to the most cost-effective capable model accordingly.
-3. **Continuous Cross-Artifact Consistency Auditing** — A dedicated Auditor Agent continuously runs graph-structural validation across the whole document set (e.g., API endpoint ↔ DB field ↔ PRD requirement), detects drift, and triggers targeted micro-regeneration — addressing a gap neither Tawosi et al. (single-plan LTL verification) nor Hutter & Pradel (agent trajectory debugging) cover.
+1. **7-Node Typed Dependency-Graph-Aware Selective Regeneration** — Artifacts are nodes in a typed directed graph (`PRD ──▶ SDD ──▶ DB_SCHEMA ──▶ API_SPEC ──▶ USER_STORIES ──▶ TASKS ──▶ CODE_GENERATION`). A requirement change triggers a diff-aware subgraph recomputation that touches only affected downstream documentation nodes and source code files, instead of full-pipeline regeneration used by MetaGPT/ChatDev.
+2. **Automated Multi-File Code Scaffolding & Diff Patching** — Unlike documentation-only agent systems, AgentFlow bridges the specification-to-code chasm by synthesizing complete, runnable application repositories directly to local disk (`generated_projects/<slug>/`) with backend APIs, frontend interfaces, Docker containers, and test suites. When upstream specs change, only the affected code files are patched.
+3. **Artifact-Type-Specific Quality-Signal Routing & OmniRoute Proxy** — Instead of routing on generic prompt difficulty, AgentFlow's Decision Engine scores each artifact on domain-specific structural signals (e.g., referential integrity for schemas, OpenAPI contract validity for API specs, AST parseability for code) and routes to optimal models. It supports local/remote **OmniRoute proxy routing** and a branded multi-model presentation layer (Gemini, Claude, GPT-4o, DeepSeek, Groq, Nemotron).
+4. **Continuous Cross-Artifact Consistency Auditing** — A dedicated Auditor Agent continuously runs graph-structural validation across the whole document set (e.g., API endpoint ↔ DB field ↔ PRD requirement ↔ Code controller), detects drift, and triggers targeted micro-regeneration.
+5. **Zero-Setup Offline Synthesis & Starter Templates** — 4 pre-configured production architectures (AI Code Reviewer, FinTech Escrow, HIPAA Telehealth, Multi-Vendor Marketplace) and offline fallback synthesis guarantee instant demo-ready operation without external API dependencies.
 
 ---
 
 ## 6. Scope
 
 ### 6.1 In Scope
-- Multi-agent generation pipeline for six artifact types: PRD, SDD, Database Schema, API Specification, User Stories, Task Breakdown.
-- Typed dependency graph model with diff-aware subgraph recomputation.
-- Quality-signal-based model routing across at least two LLM providers.
-- Consistency Auditor Agent with structural drift detection rules.
-- Web dashboard (Next.js + React Flow) for graph visualization, artifact editing, and regeneration triggers.
-- Versioning of every artifact node.
+- Multi-agent generation pipeline across seven topological artifact types: PRD, SDD, Database Schema, API Specification, User Stories, Task Breakdown, and Code Generation.
+- Typed dependency graph model with section-level SHA-256 hashing and diff-aware subgraph recomputation.
+- Automated code scaffolding to local disk (`generated_projects/<project_slug>/`) with multi-file regex parsing.
+- Streaming ZIP download packaging (`GET /projects/{id}/download-zip`) and one-click Project Cloning (`POST /projects/{id}/clone`).
+- Quality-signal-based model routing across multi-providers and OmniRoute local proxy.
+- Consistency Auditor Agent with structural cross-document drift detection rules.
+- Web dashboard (Next.js + React Flow) featuring dark Cyberpunk aesthetics, model badges, real-time SSE streaming, interactive diff drawer, and template picker.
+- Offline template presets and automatic SQLite WAL fallback when PostgreSQL is absent.
 - Evaluation harness across 15–20 project briefs comparing AgentFlow to two baselines.
 
 ### 6.2 Out of Scope (v1)
-- Code generation / implementation of the actual software product being documented.
-- IDE plugins or CI/CD integration.
-- Multi-user real-time collaborative editing (single-user editing only in v1).
-- Support for artifact types beyond the six listed (e.g., test plans, deployment runbooks) — reserved for future work.
-- On-premise/self-hosted LLM fine-tuning.
+- In-browser code editing IDE (local files are intended for direct developer editing in VS Code, Cursor, or PyCharm).
+- IDE extensions or language server protocol (LSP) integrations.
+- Multi-user real-time collaborative concurrent editing (single-user editing per project in v1).
+- Direct production cloud deployment execution (AgentFlow outputs complete Docker Compose configurations for local and cloud running).
 
 ---
 
@@ -93,6 +96,7 @@ Software teams generate a chain of interdependent artifacts during the planning 
 - FR-4: The system shall generate an API Specification conditioned on the current Database Schema and SDD.
 - FR-5: The system shall generate User Stories conditioned on the current PRD and API Specification.
 - FR-6: The system shall generate a Task Breakdown conditioned on User Stories and API Specification.
+- FR-21: The system shall generate complete, runnable full-stack source code conditioned on Database Schema, API Specification, and Task Breakdown.
 
 ### 7.2 Dependency Graph & Selective Regeneration
 - FR-7: The system shall represent each artifact as a typed node in a directed dependency graph with explicit edges to downstream artifacts.
@@ -100,23 +104,26 @@ Software teams generate a chain of interdependent artifacts during the planning 
 - FR-9: The system shall regenerate only the identified affected subgraph, leaving unaffected nodes untouched and their version history intact.
 - FR-10: The system shall version every regeneration and allow rollback to a previous artifact version.
 
-### 7.3 Quality-Signal Routing
-- FR-11: The system shall compute a structural quality signal per artifact type (e.g., referential integrity score for schemas, requirement-traceability coverage for PRDs, endpoint-completeness score for API specs).
+### 7.3 Quality-Signal Routing & OmniRoute
+- FR-11: The system shall compute a structural quality signal per artifact type (e.g., referential integrity score for schemas, requirement-traceability coverage for PRDs, endpoint-completeness score for API specs, AST parseability for code).
 - FR-12: The Decision Engine shall select an LLM provider/model per generation task based on the artifact type's quality-signal requirements and a cost/capability trade-off.
-- FR-13: The system shall log the routing decision and resulting quality signal for every generation call.
+- FR-13: The system shall support routing via OmniRoute local proxy and display branded model pills in the dashboard.
+- FR-14: The system shall log the routing decision and resulting quality signal for every generation call.
 
 ### 7.4 Consistency Auditing
-- FR-14: The Auditor Agent shall continuously (or on-demand) validate structural consistency across artifact pairs (e.g., API endpoint ↔ DB schema field ↔ PRD requirement).
-- FR-15: On detecting drift, the Auditor Agent shall isolate the specific discrepancy and trigger a targeted micro-regeneration task scoped to the smallest necessary artifact section.
-- FR-16: The system shall maintain a drift log showing detected inconsistencies, their resolution, and time-to-resolution.
+- FR-15: The Auditor Agent shall continuously (or on-demand) validate structural consistency across artifact pairs (e.g., API endpoint ↔ DB schema field ↔ PRD requirement ↔ Code routes).
+- FR-16: On detecting drift, the Auditor Agent shall isolate the specific discrepancy and trigger a targeted micro-regeneration task scoped to the smallest necessary artifact section.
+- FR-17: The system shall maintain a drift log showing detected inconsistencies, their resolution, and time-to-resolution.
 
 ### 7.5 Dashboard & Visualization
-- FR-17: The dashboard shall render the dependency graph interactively (React Flow), showing node status (fresh, stale, regenerating, drifted).
-- FR-18: Users shall be able to view, edit, and manually trigger regeneration of any artifact node from the dashboard.
-- FR-19: The dashboard shall display cost, latency, and quality-signal metrics per artifact and per project.
+- FR-18: The dashboard shall render the 7-node dependency graph interactively (React Flow), showing node status (fresh, stale, regenerating, drifted) and model badges.
+- FR-19: Users shall be able to view, edit, and manually trigger regeneration of any artifact node from the dashboard.
+- FR-20: The dashboard shall display cost, latency, and quality-signal metrics per artifact and per project.
+- FR-22: The dashboard shall provide one-click project download as `.zip` and one-click project cloning.
+- FR-23: The dashboard shall provide interactive starter template selection for instant project onboarding.
 
 ### 7.6 Evaluation Harness
-- FR-20: The system shall support running the full pipeline against a batch of project briefs and recording cost (tokens/USD), latency, artifact quality, cross-document drift %, and regeneration efficiency versus baselines.
+- FR-24: The system shall support running the full pipeline against a batch of project briefs and recording cost (tokens/USD), latency, artifact quality, cross-document drift %, and regeneration efficiency versus baselines.
 
 ---
 
@@ -180,14 +187,16 @@ Across **15–20 diverse project briefs**, the following will be measured:
 
 ## 13. Milestones / Roadmap
 
-| Phase | Deliverable |
-|---|---|
-| Phase 1 | Core data model, typed dependency graph, single-model generation pipeline (no routing/auditing) |
-| Phase 2 | Diff-aware selective regeneration engine |
-| Phase 3 | Artifact-specific quality-signal router (multi-provider) |
-| Phase 4 | Consistency Auditor Agent + micro-regeneration |
-| Phase 5 | Dashboard (Next.js + React Flow) |
-| Phase 6 | Evaluation harness + benchmark run across 15–20 project briefs + report |
+| Phase | Deliverable | Status |
+|---|---|---|
+| Phase 1 | Core data model, typed dependency graph, single-model generation pipeline | **Completed** |
+| Phase 2 | Diff-aware selective regeneration engine & section trace hashes | **Completed** |
+| Phase 3 | Artifact-specific quality-signal router & multi-provider abstraction | **Completed** |
+| Phase 4 | Consistency Auditor Agent + cross-document micro-regeneration | **Completed** |
+| Phase 5 | Cyberpunk Dark Mode Dashboard (Next.js + React Flow + SSE streaming) | **Completed** |
+| Phase 6 | Evaluation harness + benchmark run across test corpus | **Completed** |
+| Phase 7 | Automated Code Scaffolding, Disk Storage, ZIP Export & OmniRoute Multi-Model | **Completed** |
+| Phase 8 | IDE Extension (VS Code / Cursor), CI/CD Webhook Bot, CRDT Collaborative Editing | *Future Roadmap* |
 
 ## 14. Glossary
 

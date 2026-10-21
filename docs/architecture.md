@@ -20,15 +20,17 @@ This document specifies the technical architecture implementing the design descr
 
 | Layer | Technology | Purpose |
 |---|---|---|
-| Frontend | Next.js (React), React Flow | Dashboard, dependency graph visualization |
-| Backend API | FastAPI (Python) | REST/WebSocket API, orchestration entry point |
-| Multi-Agent Orchestration | LangGraph | Agent graph execution, state management, conditional routing |
-| Relational Store | PostgreSQL (SQLAlchemy + Pydantic) | Projects, artifacts, sections, versions, drift/generation logs |
-| Cache | Redis | Job queue state, routing-decision cache, session/dashboard live-state |
-| Vector Store | Pinecone | Semantic context retrieval across artifact sections (for prompting and traceability inference) |
-| LLM Providers | Multi-provider (e.g., Anthropic, OpenAI) via abstracted provider layer | Artifact generation, routed per artifact type |
-| Auth | OAuth2 / JWT (via FastAPI) | User authentication for dashboard/API |
-| Containerization | Docker / Docker Compose | Local dev + deployment packaging |
+| Frontend | Next.js (React 18), React Flow, Lucide Icons | Cyberpunk Dark Mode dashboard, real-time graph visualization, diff drawer |
+| Backend API | FastAPI (Python 3.11+), Uvicorn | High-throughput async REST, WebSockets, and SSE token streaming |
+| Multi-Agent Orchestration | LangGraph & NetworkX | 7-node topological agent execution graph, conditional routing, state cycles |
+| Relational Store | PostgreSQL / SQLite (WAL mode) | Dual-engine support via SQLAlchemy: auto-fallbacks to SQLite WAL with zero setup |
+| Disk Scaffolding | Python Regex Parser & `Pathlib` | Multi-file code writer generating runnable trees to `generated_projects/<slug>/` |
+| Archive Engine | Python `zipfile` | In-memory on-the-fly streaming ZIP packaging for one-click project downloads |
+| Cache & Event Mesh | Redis (optional local memory fallback) | Real-time event streaming, token bucket rate limiter, model routing scores |
+| Vector Store | Pinecone (optional) | Semantic context retrieval and fine-grained section traceability inference |
+| LLM Providers | OmniRoute Local Proxy + Multi-Provider SDKs | Routes through OmniRoute (`http://localhost:20128/v1`) or direct API providers (Gemini, Claude, OpenAI, DeepSeek, Groq) |
+| Unified Launcher | Python `start.py` / `.bat` / `.ps1` | Automated single-command supervisor launching backend (:8000) & dashboard (:3000) |
+| Containerization | Docker / Docker Compose | Containerized microservice deployment with healthchecks |
 
 ---
 
@@ -37,53 +39,60 @@ This document specifies the technical architecture implementing the design descr
 ```mermaid
 flowchart TB
     subgraph Client["Client (Browser)"]
-        UI[Next.js Dashboard]
-        RF[React Flow Graph View]
+        UI[Next.js Cyberpunk Dashboard]
+        RF[React Flow Interactive Graph]
+        DIFF[Interactive Diff Drawer]
     end
 
-    subgraph Backend["FastAPI Backend"]
-        API[REST/WebSocket API Layer]
-        ORCH[LangGraph Orchestrator]
+    subgraph Backend["FastAPI Backend (:8000)"]
+        API[REST & SSE API Layer]
+        ORCH[LangGraph 7-Node Orchestrator]
         GRAPH[Dependency Graph Engine]
         ROUTER[Quality-Signal Router]
         AUDIT[Consistency Auditor Agent]
+        SCAFF[Scaffolding & File Writer]
+        ZIP[Streaming ZIP Packager]
     end
 
-    subgraph Agents["Specialized Agents"]
-        BA[Business Analyst]
-        SD[System Designer]
-        DA[Database Architect]
-        AD[API Designer]
-        QA[QA Engineer]
-        PP[Project Planner]
+    subgraph Agents["Specialized Agents (Topological Pipeline)"]
+        BA[Business Analyst: PRD]
+        SD[System Designer: SDD]
+        DA[Database Architect: Schema]
+        AD[API Designer: API Spec]
+        QA[QA Engineer: User Stories]
+        PP[Project Planner: Tasks]
+        CG[Full-Stack Engineer: Code Generation]
     end
 
-    subgraph Data["Data Layer"]
-        PG[(PostgreSQL)]
-        REDIS[(Redis)]
-        PC[(Pinecone Vector Store)]
+    subgraph Storage["Storage & Disk Layer"]
+        DB[(PostgreSQL / SQLite WAL)]
+        DISK[("Local Disk: generated_projects/<slug>/")]
+        REDIS[(Redis Cache / Stream)]
     end
 
-    subgraph LLMs["LLM Providers"]
-        P1[(Provider A)]
-        P2[(Provider B)]
+    subgraph ModelLayer["Model Routing & Proxy Layer"]
+        OR["OmniRoute Local Proxy (:20128)"]
+        CLOUD["Cloud AI Providers (Gemini / Claude / GPT-4o / DeepSeek / Groq / Nemotron)"]
     end
 
     UI --> API
     RF --> API
+    DIFF --> API
     API --> ORCH
     ORCH --> GRAPH
     ORCH --> ROUTER
     ORCH --> Agents
-    ROUTER --> P1
-    ROUTER --> P2
-    Agents --> PG
-    GRAPH --> PG
-    GRAPH --> REDIS
-    Agents --> PC
-    PG --> AUDIT
+    ROUTER --> OR
+    ROUTER --> CLOUD
+    Agents --> DB
+    Agents --> SCAFF
+    SCAFF --> DISK
+    DISK --> ZIP
+    ZIP --> API
+    GRAPH --> DB
+    DB --> AUDIT
     AUDIT --> ORCH
-    API -. WebSocket status updates .-> UI
+    API -. SSE real-time token stream .-> UI
 ```
 
 ---
@@ -91,65 +100,85 @@ flowchart TB
 ## 4. Component Breakdown
 
 ### 4.1 Frontend — Next.js + React Flow
-- Server-rendered dashboard app. Fetches project/artifact state via REST, subscribes to a WebSocket channel for live regeneration/drift status updates.
-- React Flow renders the dependency graph; node click opens the Artifact Panel (fetches section content + diff).
-- State is fetched from the backend on demand; no client-side persistence of source-of-truth data (backend/Postgres is authoritative).
+- Real-time client rendering the 7-node topological pipeline.
+- Custom React Flow node widgets rendering status glows (`fresh`, `stale`, `regenerating`, `drifted`), version chips, quality metrics, and **branded model pills** (Gemini, Claude, GPT-4o, DeepSeek, Groq, Nemotron).
+- Slide-out Artifact Drawer supporting raw Markdown rendering, syntax-highlighted multi-file code exploration, and side-by-side git diffs.
+- Interactive Project Controls: One-click **"Download Project (.zip)"**, **"Clone Project"**, and starter architecture templates.
 
-### 4.2 Backend — FastAPI
-- Exposes REST endpoints for project/artifact CRUD, regeneration triggers, drift management, and metrics.
-- Exposes a WebSocket endpoint for pushing live status (`regenerating`, `fresh`, `drifted`) to connected dashboard clients.
-- Hosts the **LangGraph Orchestrator**, which wires the six agents, the Dependency Graph Engine, the Quality-Signal Router, and the Consistency Auditor Agent into a single executable graph per project run.
+### 4.2 Backend — FastAPI & Scaffolding Engine
+- Handles async REST endpoints, SSE streams, and WebSocket channels.
+- Hosts the **Code Scaffolding Engine** (`scaffolder.py`), which parses generated markdown code blocks matching `### File: <path>\n\`\`\`...\`\`\`` and materializes runnable file trees under `generated_projects/<project_slug>/`.
+- Implements selective file patching: when an upstream schema or route changes, only the affected code files on disk are rewritten.
+- Provides dynamic in-memory ZIP archiving via `GET /projects/{id}/download-zip`.
 
 ### 4.3 Multi-Agent Orchestration — LangGraph
-- Each of the six agents (Business Analyst, System Designer, Database Architect, API Designer, QA Engineer, Project Planner) is a LangGraph node with typed input/output state.
-- The **Dependency Graph Engine** determines, per triggering event (new brief, section edit, drift fix), which agent nodes should execute and in what order (topological order of the affected subgraph).
-- The **Quality-Signal Router** is invoked by the orchestrator immediately before each agent node executes, to select the concrete LLM call target for that node's invocation.
-- The **Consistency Auditor Agent** is a separate LangGraph subgraph triggered after any generation batch completes, and on a periodic schedule.
+- The 7 specialized agents run in strict topological order:
+  `PRD ──▶ SDD ──▶ DB_SCHEMA ──▶ API_SPEC ──┬─▶ USER_STORIES ──▶ TASKS ──▶ CODE_GENERATION`
+  (with Schema and API Spec also directly mapped into Code Generation).
+- Supports **Human-in-the-Loop (HITL) Clarification**: before starting generation, the BA agent formulates 3–5 targeted architectural clarifying questions for user input.
+- Offline Synthesis Engine (`template_seeds.py`): Guarantees 100% demo-ready project initialization and starter template seeding (AI Code Reviewer, FinTech Escrow, HIPAA Telehealth, Multi-Vendor Marketplace) with zero external LLM dependencies.
 
 ### 4.4 Data Layer
-- **PostgreSQL** is the system of record: projects, artifact nodes, sections, versions, drift records, generation logs, routing decisions.
-- **Redis** caches: (a) in-flight job/regeneration state for fast dashboard polling/WebSocket push, (b) recent routing-decision quality scores for the router's `historical_scores` lookups, (c) rate-limit counters per LLM provider.
-- **Pinecone** stores embeddings of artifact sections to support semantic retrieval of relevant upstream context during generation and to assist the traceability-inference step when linking a new downstream section back to the upstream section(s) that most influenced it.
+- **PostgreSQL / SQLite Dual Engine**: Defaults to PostgreSQL if available; automatically switches to high-concurrency SQLite in WAL mode (`PRAGMA journal_mode=WAL; PRAGMA busy_timeout=30000;`) for instant zero-configuration local execution.
+- Relational schema stores `workspaces`, `projects`, `artifact_nodes`, `artifact_sections`, `section_traces`, `artifact_versions`, `drift_records`, and `generation_logs`.
 
-### 4.5 LLM Provider Abstraction
-- A thin provider-abstraction layer normalizes calls across providers (request/response shape, token accounting, error handling) so the router can treat providers interchangeably and new providers can be added by implementing a single interface.
+### 4.5 OmniRoute Proxy & Model Layer
+- Connects seamlessly to a local **OmniRoute** proxy on `http://localhost:20128/v1` with token authentication.
+- Automatically handles fallback routing to public cloud providers (Gemini, Anthropic, OpenAI, DeepSeek, Groq) or local Ollama instances.
+- Maintains a clean presentation mapping to highlight frontier model specializations in the UI.
 
 ---
 
-## 5. API Design (REST Endpoints)
+## 5. API Design (REST & Streaming Endpoints)
 
 | Method | Endpoint | Description |
 |---|---|---|
-| `POST` | `/projects` | Create a project from a brief; triggers initial full-pipeline generation |
-| `GET` | `/projects/{id}` | Fetch project metadata and artifact graph summary |
-| `GET` | `/projects/{id}/graph` | Fetch full dependency graph (nodes, sections, statuses, edges) |
-| `GET` | `/projects/{id}/artifacts/{artifact_type}` | Fetch full content of a given artifact |
-| `PATCH` | `/projects/{id}/artifacts/{artifact_type}/sections/{section_id}` | Edit a section; triggers diff-aware subgraph recomputation |
-| `POST` | `/projects/{id}/regenerate` | Manually trigger regeneration of a specific node/section |
-| `GET` | `/projects/{id}/drift` | List open/resolved drift records |
+| `POST` | `/projects` | Create a project from brief & clarifications; triggers 7-phase generation |
+| `POST` | `/projects/clarify` | Generate 3–5 targeted architectural clarifying questions for HITL review |
+| `GET` | `/projects` | List all projects with active node statuses and workspace assignments |
+| `GET` | `/projects/{id}` | Fetch project metadata, workspace info, and artifact graph summary |
+| `GET` | `/projects/{id}/graph` | Fetch full 7-node dependency graph (nodes, sections, model badges, edges) |
+| `GET` | `/projects/{id}/stream` | Server-Sent Events (SSE) real-time token stream during generation |
+| `GET` | `/projects/{id}/artifacts/{artifact_type}` | Fetch full content/code bundle of a given artifact |
+| `PATCH` | `/projects/{id}/artifacts/{artifact_type}/sections/{section_id}` | Edit a section; triggers diff-aware subgraph recomputation & disk patch |
+| `POST` | `/projects/{id}/regenerate` | Manually trigger targeted regeneration of a specific node/section |
+| `GET` | `/projects/{id}/download-zip` | Stream complete runnable project repository as `.zip` archive on-the-fly |
+| `POST` | `/projects/{id}/clone` | Clone project specification and DAG into a new isolated instance |
+| `GET` | `/templates` | List pre-configured architectural starter templates |
+| `POST` | `/templates/{id}/seed` | Instant offline seeding of a canonical starter template with 7 nodes |
+| `GET` | `/projects/{id}/drift` | List open/resolved cross-document drift records |
 | `POST` | `/projects/{id}/drift/{drift_id}/resolve` | Trigger auto-fix (micro-regeneration) or dismiss a drift record |
 | `GET` | `/projects/{id}/metrics` | Cost, latency, quality-signal metrics for the project |
 | `POST` | `/eval/run` | Kick off an evaluation harness run across a batch of briefs vs. baselines |
-| `GET` | `/eval/{run_id}/results` | Fetch evaluation results (cost, latency, quality, drift %, regeneration efficiency) |
+| `GET` | `/eval/{run_id}/results` | Fetch evaluation results (cost, latency, quality, drift %, efficiency) |
 | `WS` | `/ws/projects/{id}` | Live status updates (node status changes, drift events) |
 
 ---
 
-## 6. Database Schema (PostgreSQL)
+## 6. Database Schema (PostgreSQL / SQLite WAL)
 
 ```sql
+CREATE TABLE workspaces (
+    id UUID PRIMARY KEY,
+    name TEXT NOT NULL UNIQUE,
+    description TEXT,
+    created_at TIMESTAMPTZ DEFAULT now()
+);
+
 CREATE TABLE projects (
     id UUID PRIMARY KEY,
     name TEXT NOT NULL,
     brief TEXT NOT NULL,
+    clarifications TEXT,
+    workspace_id UUID REFERENCES workspaces(id),
     created_at TIMESTAMPTZ DEFAULT now()
 );
 
 CREATE TABLE artifact_nodes (
     id UUID PRIMARY KEY,
-    project_id UUID REFERENCES projects(id),
+    project_id UUID REFERENCES projects(id) ON DELETE CASCADE,
     artifact_type TEXT NOT NULL CHECK (
-        artifact_type IN ('PRD','SDD','DB_SCHEMA','API_SPEC','USER_STORIES','TASKS')
+        artifact_type IN ('PRD','SDD','DB_SCHEMA','API_SPEC','USER_STORIES','TASKS','CODE_GENERATION')
     ),
     version INT NOT NULL DEFAULT 1,
     status TEXT NOT NULL DEFAULT 'fresh'
@@ -161,22 +190,30 @@ CREATE TABLE artifact_nodes (
 
 CREATE TABLE artifact_sections (
     id UUID PRIMARY KEY,
-    artifact_node_id UUID REFERENCES artifact_nodes(id),
+    artifact_node_id UUID REFERENCES artifact_nodes(id) ON DELETE CASCADE,
     section_key TEXT NOT NULL,
     content TEXT NOT NULL,
     content_hash TEXT NOT NULL,
     updated_at TIMESTAMPTZ DEFAULT now()
 );
 
+CREATE TABLE artifact_versions (
+    id UUID PRIMARY KEY,
+    artifact_node_id UUID REFERENCES artifact_nodes(id) ON DELETE CASCADE,
+    version INT NOT NULL,
+    content_snapshot TEXT NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT now()
+);
+
 CREATE TABLE section_traces (
-    downstream_section_id UUID REFERENCES artifact_sections(id),
-    upstream_section_id UUID REFERENCES artifact_sections(id),
+    downstream_section_id UUID REFERENCES artifact_sections(id) ON DELETE CASCADE,
+    upstream_section_id UUID REFERENCES artifact_sections(id) ON DELETE CASCADE,
     PRIMARY KEY (downstream_section_id, upstream_section_id)
 );
 
 CREATE TABLE drift_records (
     id UUID PRIMARY KEY,
-    project_id UUID REFERENCES projects(id),
+    project_id UUID REFERENCES projects(id) ON DELETE CASCADE,
     check_name TEXT NOT NULL,
     artifact_a UUID REFERENCES artifact_nodes(id),
     artifact_b UUID REFERENCES artifact_nodes(id),
@@ -191,8 +228,8 @@ CREATE TABLE drift_records (
 
 CREATE TABLE generation_logs (
     id UUID PRIMARY KEY,
-    project_id UUID REFERENCES projects(id),
-    artifact_node_id UUID REFERENCES artifact_nodes(id),
+    project_id UUID REFERENCES projects(id) ON DELETE CASCADE,
+    artifact_node_id UUID REFERENCES artifact_nodes(id) ON DELETE CASCADE,
     triggered_by TEXT NOT NULL
         CHECK (triggered_by IN ('initial_generation','selective_regeneration','micro_regeneration')),
     provider TEXT NOT NULL,
@@ -214,8 +251,8 @@ CREATE TABLE eval_runs (
 
 CREATE TABLE eval_results (
     id UUID PRIMARY KEY,
-    eval_run_id UUID REFERENCES eval_runs(id),
-    project_id UUID REFERENCES projects(id),
+    eval_run_id UUID REFERENCES eval_runs(id) ON DELETE CASCADE,
+    project_id UUID REFERENCES projects(id) ON DELETE CASCADE,
     total_cost_usd NUMERIC(10,4),
     total_latency_ms INT,
     quality_score FLOAT,
@@ -223,6 +260,8 @@ CREATE TABLE eval_results (
     regeneration_efficiency FLOAT   -- nodes regenerated / total nodes, on an edit scenario
 );
 ```
+
+> **Note on Storage Engines:** AgentFlow supports dual relational engines. When connecting to PostgreSQL, standard connection pooling is enabled. When running in self-contained SQLite mode (`agentflow.db`), connection events execute `PRAGMA journal_mode=WAL`, `PRAGMA synchronous=NORMAL`, and `PRAGMA busy_timeout=30000` to guarantee high concurrency and eliminate lock contention across asynchronous FastAPI workers.
 
 ---
 

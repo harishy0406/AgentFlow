@@ -18,26 +18,31 @@ This document describes the internal design of AgentFlow: how the multi-agent pi
 
 ## 2. System Overview
 
-AgentFlow consists of five cooperating subsystems:
+AgentFlow consists of six cooperating subsystems:
 
-1. **Agent Layer** — Six specialized LLM-backed agents, one per artifact type, orchestrated via LangGraph.
-2. **Dependency Graph Engine** — Maintains the typed graph of artifacts, computes diffs, and determines the minimal regeneration subgraph on each edit.
-3. **Quality-Signal Decision Engine** — Scores artifact-type-specific structural signals and routes each generation call to the most suitable LLM provider.
-4. **Consistency Auditor Agent** — Continuously validates cross-artifact structural consistency and triggers micro-regeneration on drift.
-5. **Dashboard** — Next.js + React Flow client for visualizing the graph, artifact state, and metrics.
+1. **Agent Layer** — Seven specialized LLM-backed agents, one per topological artifact stage (including full-stack Code Generation), orchestrated via LangGraph.
+2. **Dependency Graph Engine** — Maintains the 7-node typed graph of artifacts, computes SHA-256 section hashes, and determines the minimal regeneration subgraph on each edit.
+3. **Quality-Signal Decision Engine & OmniRoute Router** — Evaluates structural quality signals and routes generations through multi-provider APIs or a local **OmniRoute proxy**, featuring an intelligent multi-model presentation layer.
+4. **Consistency Auditor Agent** — Continuously validates cross-artifact and code structural consistency, triggering micro-regeneration on drift.
+5. **Local Scaffolding & Packaging Engine** — Parses multi-file markdown code blocks and writes runnable application trees directly to `generated_projects/<slug>/`, supporting selective file patching and on-the-fly streaming ZIP downloads.
+6. **Cyberpunk Dashboard** — High-performance Next.js + React Flow client featuring interactive graph exploration, real-time SSE token streaming, branded model pills, and starter templates.
 
 ```mermaid
 flowchart LR
     U[User Edit / New Brief] --> DG[Dependency Graph Engine]
-    DG -->|affected subgraph| AL[Agent Layer]
-    AL -->|generation request| QR[Quality-Signal Router]
-    QR -->|routes to| LLM1[(LLM Provider A)]
-    QR -->|routes to| LLM2[(LLM Provider B)]
-    AL --> ART[(Artifact Store - Postgres)]
+    DG -->|affected subgraph| AL[Agent Layer: 7 Agents]
+    AL -->|generation request| QR[Quality-Signal Router & OmniRoute]
+    QR -->|routes to| LLM1[(OmniRoute / Gemini / Claude)]
+    QR -->|routes to| LLM2[(GPT-4o / DeepSeek / Groq)]
+    AL --> ART[(Artifact Store - Postgres/SQLite)]
+    AL --> SCAFF[Scaffolding Engine: Local Disk]
+    SCAFF --> DISK[("generated_projects/<slug>/")]
+    SCAFF --> ZIP[Streaming ZIP Export]
     ART --> CA[Consistency Auditor Agent]
     CA -->|drift found| DG
-    ART --> DASH[Dashboard - Next.js/React Flow]
+    ART --> DASH[Dashboard - Cyber Next.js/React Flow]
     CA --> DASH
+    ZIP --> DASH
 ```
 
 ---
@@ -48,10 +53,11 @@ flowchart LR
 |---|---|---|---|
 | **Business Analyst** | PRD | Project brief | Extract goals, requirements, user personas, scope from raw brief |
 | **System Designer** | SDD | PRD | Translate requirements into system components, modules, data flow |
-| **Database Architect** | Database Schema | SDD | Derive entities, relationships, referential integrity constraints |
+| **Database Architect** | Database Schema | SDD | Derive entities, relationships, referential integrity constraints (DDL) |
 | **API Designer** | API Specification | SDD + Database Schema | Derive endpoints, request/response contracts, mapped to schema fields |
 | **QA Engineer** (User Stories) | User Stories | PRD + API Specification | Derive testable user-facing stories traceable to requirements |
 | **Project Planner** | Task Breakdown | User Stories + API Specification | Decompose stories into actionable engineering tasks |
+| **Full-Stack Software Engineer** | Code Generation | DB Schema + API Spec + Tasks | Synthesize complete, runnable multi-file project repositories |
 
 Each agent is implemented as a LangGraph node with:
 - A **typed input contract** (Pydantic model of its upstream dependencies).
@@ -64,12 +70,12 @@ Each agent is implemented as a LangGraph node with:
 
 ### 4.1 Graph Schema
 
-The dependency graph is fixed at the **type level** (six artifact types, five directed edges) but instantiated per project with **node-level granularity** below the artifact-type level — each artifact is further decomposed into addressable **sections** (e.g., a PRD has requirement sections; a Database Schema has per-table sections) so that regeneration can be scoped below "regenerate the whole document."
+The dependency graph is fixed at the **type level** (seven artifact types, directed DAG edges) but instantiated per project with **node-level granularity** below the artifact-type level — each artifact is further decomposed into addressable **sections** (e.g., a PRD has requirement sections; a Database Schema has per-table sections; Code Generation has per-file modules) so that regeneration can be scoped below "regenerate the whole document."
 
 ```
-PRD ──▶ SDD ──▶ DatabaseSchema ──▶ APISpec ──┬─▶ UserStories ──▶ TaskBreakdown
-                                              │
-                       PRD ─────────────────┘   (API Spec + PRD → User Stories)
+PRD ──▶ SDD ──▶ DatabaseSchema ──▶ APISpec ──┬─▶ UserStories ──▶ TaskBreakdown ──▶ CodeGeneration
+                  │                  │                                                   ▲
+                  └──────────────────┴───────────────────────────────────────────────────┘
 ```
 
 Node record:
@@ -77,7 +83,9 @@ Node record:
 class ArtifactNode(BaseModel):
     id: UUID
     project_id: UUID
-    artifact_type: Literal["PRD", "SDD", "DB_SCHEMA", "API_SPEC", "USER_STORIES", "TASKS"]
+    artifact_type: Literal[
+        "PRD", "SDD", "DB_SCHEMA", "API_SPEC", "USER_STORIES", "TASKS", "CODE_GENERATION"
+    ]
     sections: list[ArtifactSection]
     version: int
     status: Literal["fresh", "stale", "regenerating", "drifted"]
@@ -138,6 +146,7 @@ This is the mechanism that gives AgentFlow its core novelty over MetaGPT/ChatDev
 | API Specification | Endpoint/method contract completeness | % of endpoints with fully specified request/response schemas mapped to DB fields |
 | User Stories | Requirement traceability | % of user stories linked back to a PRD requirement |
 | Task Breakdown | Story coverage | % of user stories decomposed into at least one task with acceptance criteria |
+| Code Generation | AST Parseability & Route Completeness | % of specified API endpoints implemented in controllers and valid syntax/imports |
 
 ### 5.2 Decision Engine
 
@@ -160,9 +169,24 @@ def route(artifact_type: str, context_size: int, historical_scores: dict) -> Rou
     return RoutingDecision(...)
 ```
 
-- `score_candidate` combines: (a) the model's **historical quality-signal performance** on this artifact type (tracked per provider over past generations in this project and across the evaluation corpus), and (b) **cost per token** for that provider, to produce a quality-per-dollar ranking.
+- `score_candidate` combines: (a) the model's **historical quality-signal performance** on this artifact type, and (b) **cost per token** for that provider, to produce a quality-per-dollar ranking.
 - Routing decisions and resulting quality-signal scores are logged (`RoutingDecision` + measured post-hoc signal) to continuously improve `historical_scores`.
-- The router is designed to be provider-agnostic: adding a new LLM provider only requires registering it in `PROVIDER_REGISTRY` with its cost table.
+
+### 5.3 OmniRoute Local Proxy & Multi-Model Presentation Layer
+
+AgentFlow integrates with **OmniRoute** (`http://localhost:20128/v1`), an intelligent local model routing daemon. When OmniRoute is active, calls route dynamically through local offline or cloud backends without requiring individual third-party provider keys.
+
+To provide clear developer transparency into which frontier model archetype specializes in each artifact, AgentFlow implements a multi-model presentation mapping (`ARTIFACT_DISPLAY_MODELS`):
+
+| Artifact Type | Primary Display Model | Architectural Specialization |
+|---|---|---|
+| **PRD** | `Google Gemini 2.0 Flash` | High-throughput long-context requirement analysis & scope extraction |
+| **SDD** | `Claude 3.5 Sonnet (Anthropic)` | Nuanced systems architecture, component topology, and data flow modeling |
+| **DB_SCHEMA** | `OpenAI GPT-4o` | Complex relational DDL, referential integrity constraints, and indexing |
+| **API_SPEC** | `DeepSeek V3` | Precise OpenAPI / Swagger REST contract generation and type schemas |
+| **USER_STORIES** | `Groq (Llama 3.3 70B)` | High-speed persona reasoning, acceptance criteria, and edge test cases |
+| **TASKS** | `NVIDIA Nemotron 70B` | Structured task decomposition, work estimation, and sprint packaging |
+| **CODE_GENERATION** | `Claude 3.5 Sonnet (Anthropic)` | Multi-file production code synthesis, ORM models, routes, Docker & tests |
 
 ---
 
@@ -179,6 +203,8 @@ The Auditor runs a fixed set of **cross-artifact structural checks**, each scope
 | Endpoint-requirement mapping | API Specification ↔ PRD | An API endpoint has no PRD requirement justifying it (or vice versa) |
 | Story traceability | User Stories ↔ PRD | A user story doesn't trace to any requirement |
 | Task coverage | Task Breakdown ↔ User Stories | A user story has zero associated tasks |
+| Route controller coverage | API Specification ↔ Code Generation | An API endpoint in OpenAPI has no corresponding route handler in code |
+| Model schema mapping | Database Schema ↔ Code Generation | A DDL column or table is missing from backend ORM models |
 
 ### 6.2 Drift Detection & Micro-Regeneration Flow
 
@@ -202,9 +228,9 @@ sequenceDiagram
     end
 ```
 
-- The Auditor runs automatically after every regeneration event (event-driven) and additionally on a periodic sweep (configurable interval) to catch drift from manual edits.
+- The Auditor runs automatically after every regeneration event (event-driven) and additionally on a periodic sweep to catch drift from manual edits.
 - Drift records are surfaced on the dashboard with severity and one-click "auto-fix" (trigger micro-regeneration) or "dismiss" (human override).
-- Micro-regeneration is scoped to the **smallest necessary section**, not the whole artifact, keeping the auditor's fixes cheap and structurally consistent with the selective-regeneration philosophy of the graph engine.
+- Micro-regeneration is scoped to the **smallest necessary section**, not the whole artifact, keeping fixes fast and deterministic.
 
 ---
 
@@ -247,11 +273,13 @@ class GenerationLog(BaseModel):
 ## 8. UI / UX Design
 
 **Dashboard (Next.js + React Flow):**
-- **Graph View** — Nodes = artifact types (and expandable to section-level), colored by status (`fresh` = green, `stale` = amber, `regenerating` = blue/pulsing, `drifted` = red). Edges show dependency direction and highlight the "affected subgraph" during an active regeneration.
-- **Artifact Panel** — Side panel showing the full content of a selected artifact/section, with inline diff view against the previous version.
+- **Graph View** — Nodes represent the 7 topological artifact stages, colored by status (`fresh` = green, `stale` = amber, `regenerating` = blue/pulsing, `drifted` = red). Edges show dependency direction and highlight the active regeneration path.
+- **Model Badges** — Each node prominently renders a branded model pill (e.g., `Claude 3.5 Sonnet`, `Gemini 2.0 Flash`, `OpenAI GPT-4o`, `DeepSeek V3`, `Groq`, `Nemotron`) with custom brand colors and icons.
+- **Artifact Drawer & Code Explorer** — Interactive slide-out panel displaying Markdown specifications or file trees with syntax-highlighted code and inline diff views.
+- **Export & Cloning** — One-click **"📥 Download Project (.zip)"** button streaming the runnable repository, and **"📋 Clone Project"** for duplicating existing specs into new workspaces.
+- **Starter Template Selector** — Instant one-click presets for AI Code Reviewer, FinTech Escrow API, HIPAA Telehealth Suite, and Multi-Vendor Marketplace.
 - **Drift Panel** — List of open `DriftRecord`s with severity, affected artifacts, and "Auto-fix" / "Dismiss" actions.
-- **Metrics Panel** — Per-project and per-artifact cost, latency, and quality-signal charts; comparison toggle against baseline runs (for the evaluation harness use case).
-- **Brief Intake** — A simple form to submit a new project brief and kick off initial full-pipeline generation.
+- **Metrics Panel** — Real-time cost, latency, quality-signal gauges, and baseline evaluation comparison charts.
 
 ---
 
