@@ -856,6 +856,13 @@ html, body {
   box-sizing: border-box;
 }
 
+.navbar-brand-group {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
 .navbar-brand {
   display: flex;
   align-items: center;
@@ -924,6 +931,116 @@ html, body {
   line-height: 1.2;
   white-space: nowrap;
   flex-shrink: 0;
+}
+
+/* Navbar Mode Switcher: Demo / Live */
+.mode-toggle-group {
+  display: inline-flex;
+  align-items: center;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  padding: 2px;
+  border-radius: 20px;
+  gap: 2px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  transition: border-color 0.15s ease, background 0.15s ease;
+  user-select: none;
+  flex-shrink: 0;
+}
+
+.mode-toggle-group:hover {
+  border-color: var(--border-hover);
+}
+
+.mode-toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 24px;
+  padding: 0 9px;
+  border-radius: 14px;
+  font-family: var(--font-sans);
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  background: transparent;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+  white-space: nowrap;
+  line-height: 1;
+  outline: none;
+  user-select: none;
+}
+
+.mode-toggle-btn:hover {
+  color: var(--text-primary);
+  background: var(--bg-hover);
+}
+
+.mode-toggle-btn.active {
+  color: var(--text-primary);
+  background: var(--bg-card);
+  font-weight: 600;
+  border-color: var(--border);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
+}
+
+.mode-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  display: inline-block;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.mode-dot.demo {
+  background: #64748b;
+}
+
+.mode-toggle-btn.active .mode-dot.demo {
+  background: #38bdf8;
+  box-shadow: 0 0 8px rgba(56, 189, 248, 0.7);
+}
+
+.mode-dot.live {
+  background: #64748b;
+}
+
+.mode-toggle-btn.active .mode-dot.live {
+  background: var(--terminal-green);
+  box-shadow: 0 0 8px rgba(0, 255, 102, 0.85);
+  animation: modeLivePulse 2s infinite ease-in-out;
+}
+
+@keyframes modeLivePulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+    box-shadow: 0 0 8px rgba(0, 255, 102, 0.85);
+  }
+  50% {
+    opacity: 0.6;
+    transform: scale(0.85);
+    box-shadow: 0 0 3px rgba(0, 255, 102, 0.4);
+  }
+}
+
+[data-theme="light"] .mode-toggle-group {
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+}
+
+[data-theme="light"] .mode-toggle-btn.active {
+  background: #ffffff;
+  color: #0f172a;
+  border-color: rgba(0, 0, 0, 0.08);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+[data-theme="light"] .mode-toggle-btn.active .mode-dot.live {
+  background: #15803d;
+  box-shadow: 0 0 6px rgba(21, 128, 61, 0.6);
 }
 
 .navbar-links {

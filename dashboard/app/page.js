@@ -399,6 +399,7 @@ export default function Home() {
   // SaaS Navigation & Theme state
   const [saasTab, setSaasTab] = useState("home"); // 'home' | 'studio' | 'features' | 'workflow' | 'pricing' | 'docs' | 'download' | 'about'
   const [theme, setTheme] = useState("dark");
+  const [systemMode, setSystemMode] = useState("demo"); // 'demo' | 'live'
   const [scanlines, setScanlines] = useState(false);
   const [terminalInput, setTerminalInput] = useState("");
   const [terminalLogs, setTerminalLogs] = useState([
@@ -423,6 +424,10 @@ export default function Home() {
       const saved = localStorage.getItem("agentflow_theme");
       if (saved === "light" || saved === "dark") {
         setTheme(saved);
+      }
+      const savedMode = localStorage.getItem("agentflow_system_mode");
+      if (savedMode === "demo" || savedMode === "live") {
+        setSystemMode(savedMode);
       }
     } catch (e) { }
   }, []);
@@ -496,6 +501,14 @@ export default function Home() {
     setToast({ message, type });
     setTimeout(() => setToast(null), 3000);
   }, []);
+
+  const handleModeChange = useCallback((newMode) => {
+    setSystemMode(newMode);
+    try {
+      localStorage.setItem("agentflow_system_mode", newMode);
+    } catch (e) { }
+    showToast(`Mode switched to ${newMode === "live" ? "Live Execution" : "Demo Simulation"}`, "info");
+  }, [showToast]);
 
   const [refreshingArtifacts, setRefreshingArtifacts] = useState(false);
 
@@ -773,6 +786,19 @@ export default function Home() {
       keywords: "theme mode toggle dark light appearance color"
     },
     {
+      id: "action-mode-toggle",
+      title: systemMode === "demo" ? "Switch to Live Execution Mode" : "Switch to Demo Simulation Mode",
+      category: "Quick Action",
+      icon: systemMode === "demo" ? "⚡" : "🧪",
+      badge: "Mode",
+      action: () => {
+        const nextMode = systemMode === "demo" ? "live" : "demo";
+        handleModeChange(nextMode);
+        setShowCommandPalette(false);
+      },
+      keywords: "demo live mode toggle execution simulated switch"
+    },
+    {
       id: "action-run-audit",
       title: "Trigger Security Shield Vulnerability Audit",
       category: "Quick Action",
@@ -859,7 +885,7 @@ export default function Home() {
       },
       keywords: "about team story mission architecture philosophy"
     }
-  ], [theme, currentProject, showToast]);
+  ], [theme, systemMode, currentProject, showToast, handleModeChange]);
 
   const filteredCommandItems = useMemo(() => {
     if (!commandSearch.trim()) return commandPaletteItems;
@@ -1647,10 +1673,42 @@ export default function Home() {
           </div>
         )}
 
-        <div className="navbar-brand" onClick={() => setSaasTab("home")}>
-          <img src="/logo.png" alt="AgentFlow Logo" className="brand-logo-img" />
-          <h1>AgentFlow</h1>
-          <span className="navbar-version">v0.8</span>
+        <div className="navbar-brand-group">
+          <div className="navbar-brand" onClick={() => setSaasTab("home")}>
+            <img src="/logo.png" alt="AgentFlow Logo" className="brand-logo-img" />
+            <h1>AgentFlow</h1>
+            <span className="navbar-version">v0.8</span>
+          </div>
+
+          {/* Mode Switcher: Demo / Live */}
+          <div className="mode-toggle-group" role="group" aria-label="Execution Mode">
+            <button
+              type="button"
+              className={`mode-toggle-btn ${systemMode === "demo" ? "active" : ""}`}
+              onClick={(e) => {
+                e.stopPropagation();
+                handleModeChange("demo");
+              }}
+              title="Demo Mode: Simulated workflow execution with presets"
+              aria-pressed={systemMode === "demo"}
+            >
+              <span className="mode-dot demo" />
+              <span>Demo</span>
+            </button>
+            <button
+              type="button"
+              className={`mode-toggle-btn ${systemMode === "live" ? "active" : ""}`}
+              onClick={(e) => {
+                e.stopPropagation();
+                handleModeChange("live");
+              }}
+              title="Live Mode: Real-time LLM API execution"
+              aria-pressed={systemMode === "live"}
+            >
+              <span className="mode-dot live" />
+              <span>Live</span>
+            </button>
+          </div>
         </div>
 
         {/* Global SaaS Navigation Links */}
