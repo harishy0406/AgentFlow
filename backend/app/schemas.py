@@ -382,13 +382,17 @@ class ProjectChatModifyInput(BaseModel):
 
 
 class ProjectChatModifyOut(BaseModel):
-    project_id: UUID
-    status: str  # success, no_change, error
+    project_id: str
+    status: str = "success"  # success, no_change, error
     target_artifact: str
     target_section_id: str
     target_section_key: str
     diff_summary: str
     explanation: str
+    message: str = ""
+    previous_section_content: Optional[str] = None
+    updated_section_content: Optional[str] = None
+    cascaded_downstream_artifacts: List[str] = []
     regenerated_artifacts: List[str] = []
     routing_decisions: List[Dict[str, Any]] = []
     rescaffolded_files_count: int = 0
@@ -931,7 +935,8 @@ class ProjectChatModifyOut(BaseModel):
     target_section_key: str
     diff_summary: str
     explanation: str
-    message: str
+    message: str = ""
+    previous_section_content: Optional[str] = None
     updated_section_content: Optional[str] = None
     cascaded_downstream_artifacts: List[str] = []
     regenerated_artifacts: List[str] = []

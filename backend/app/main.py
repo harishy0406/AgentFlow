@@ -1388,7 +1388,7 @@ def list_section_versions(
     versions = (
         db.query(models.ArtifactVersion)
         .filter(models.ArtifactVersion.section_id == section_id)
-        .order_by(models.ArtifactVersion.version.desc())
+        .order_by(models.ArtifactVersion.created_at.desc(), models.ArtifactVersion.version.desc())
         .all()
     )
     return versions

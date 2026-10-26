@@ -141,7 +141,8 @@ def _openai_factory(model_name: str) -> BaseChatModel:
         return MockChatModel(model_name=model_name)
     try:
         from langchain_openai import ChatOpenAI
-        return ChatOpenAI(model=model_name, temperature=0)
+        timeout = float(os.getenv("LLM_TIMEOUT_SECONDS", "5.0"))
+        return ChatOpenAI(model=model_name, temperature=0, timeout=timeout, max_retries=1)
     except Exception:
         return MockChatModel(model_name=model_name)
 
@@ -151,7 +152,8 @@ def _anthropic_factory(model_name: str) -> BaseChatModel:
         return MockChatModel(model_name=model_name)
     try:
         from langchain_anthropic import ChatAnthropic
-        return ChatAnthropic(model=model_name, temperature=0)
+        timeout = float(os.getenv("LLM_TIMEOUT_SECONDS", "5.0"))
+        return ChatAnthropic(model=model_name, temperature=0, timeout=timeout, max_retries=1)
     except Exception:
         return MockChatModel(model_name=model_name)
 
@@ -177,13 +179,14 @@ def _create_openai_compatible_factory(
         resolved_base_url = os.getenv(f"{provider_name.upper()}_BASE_URL", base_url)
         try:
             from langchain_openai import ChatOpenAI
+            timeout = float(os.getenv("LLM_TIMEOUT_SECONDS", "5.0"))
             return ChatOpenAI(
                 model=model_name,
                 base_url=resolved_base_url,
                 api_key=api_key,
                 temperature=0,
-                max_retries=2,
-                timeout=45.0,
+                max_retries=1,
+                timeout=timeout,
             )
         except Exception:
             return MockChatModel(model_name=f"{provider_name}:{model_name}")
