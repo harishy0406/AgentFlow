@@ -66,6 +66,22 @@ def print_banner():
     log(banner)
 
 
+_lock_socket = None
+
+def acquire_single_instance_lock():
+    """Ensures only one instance of start.py runs at any time."""
+    global _lock_socket
+    _lock_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    try:
+        _lock_socket.bind(("127.0.0.1", 49876))
+        _lock_socket.listen(1)
+        return True
+    except socket.error:
+        log(f"\n{RED}{BOLD}[Error] Another instance of AgentFlow (start.py) is already running!{RESET}")
+        log(f"{YELLOW}Please close the other running terminal before starting a new instance.{RESET}\n")
+        sys.exit(1)
+
+
 def is_port_in_use(port: int) -> bool:
     """Check if a network port is currently listening."""
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
@@ -82,13 +98,17 @@ def free_port(port: int):
         try:
             cmd = f'powershell -Command "Get-NetTCPConnection -LocalPort {port} -ErrorAction SilentlyContinue | Select-Object -ExpandProperty OwningProcess -Unique"'
             output = subprocess.check_output(cmd, shell=True).decode().strip()
+            current_pid = os.getpid()
             for line in output.splitlines():
                 pid = line.strip()
-                if pid and pid.isdigit():
+                if pid and pid.isdigit() and int(pid) > 0 and int(pid) != current_pid:
                     subprocess.run(["taskkill", "/F", "/T", "/PID", pid], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         except Exception:
             pass
-    time.sleep(1)
+    for _ in range(15):
+        if not is_port_in_use(port):
+            break
+        time.sleep(0.3)
 
 
 def get_python_executable():
@@ -160,10 +180,15 @@ def kill_process_tree(proc):
 
 def cleanup(signum=None, frame=None):
     """Graceful shutdown handler for Ctrl+C."""
-    global shutting_down
+    global shutting_down, _lock_socket
     if shutting_down:
         return
     shutting_down = True
+    if _lock_socket:
+        try:
+            _lock_socket.close()
+        except Exception:
+            pass
     log(f"\n\n{YELLOW}{BOLD}[AgentFlow] Shutting down all services...{RESET}")
     for proc in processes:
         kill_process_tree(proc)
@@ -202,6 +227,7 @@ def ensure_static_assets():
 
 
 def main():
+    acquire_single_instance_lock()
     signal.signal(signal.SIGINT, cleanup)
     signal.signal(signal.SIGTERM, cleanup)
 
@@ -251,7 +277,14 @@ def main():
         env["NODE_OPTIONS"] = "--max-old-space-size=4096"
         env["PORT"] = "3000"
         env["NEXT_TELEMETRY_DISABLED"] = "1"
-        cmd = [npm_exe, "run", "dev"]
+
+        node_exe = shutil.which("node.exe") if os.name == "nt" else shutil.which("node")
+        next_bin = DASHBOARD_DIR / "node_modules" / "next" / "dist" / "bin" / "next"
+        if node_exe and next_bin.exists():
+            cmd = [node_exe, str(next_bin), "dev"]
+        else:
+            cmd = [npm_exe, "run", "dev"]
+
         proc = subprocess.Popen(
             cmd,
             cwd=str(DASHBOARD_DIR),

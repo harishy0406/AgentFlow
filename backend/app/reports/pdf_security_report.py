@@ -154,6 +154,7 @@ class NumberedSecurityReportCanvas(canvas.Canvas):
     theme_mode: str = "dark"
     security_grade: str = "A+"
     overall_score: int = 100
+    pdf_title: str = "AgentFlow Security Report"
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -164,6 +165,11 @@ class NumberedSecurityReportCanvas(canvas.Canvas):
         self._startPage()
 
     def save(self):
+        doc_title = getattr(self, "pdf_title", "AgentFlow Security Report")
+        self.setTitle(doc_title)
+        self.setAuthor("AgentFlow")
+        self.setSubject("Executive Security Assessment & Threat Audit")
+        self.setCreator("AgentFlow Security Shield")
         num_pages = len(self._saved_page_states)
         for state in self._saved_page_states:
             self.__dict__.update(state)
@@ -294,12 +300,14 @@ def generate_project_security_report_pdf(
     scanned_count = audit.get("scanned_artifacts_count", 5)
 
     # Set canvas properties
+    doc_title = f"{project.name} - AgentFlow Security Report" if (project and getattr(project, "name", None)) else "AgentFlow Security Report"
     class DynamicSecurityCanvas(NumberedSecurityReportCanvas):
         pass
     DynamicSecurityCanvas.project_name = project.name
     DynamicSecurityCanvas.theme_mode = theme_mode
     DynamicSecurityCanvas.security_grade = security_grade
     DynamicSecurityCanvas.overall_score = overall_score
+    DynamicSecurityCanvas.pdf_title = doc_title
 
     # Document setup: Letter landscape (792 x 612 pt)
     buf = io.BytesIO()
@@ -310,6 +318,10 @@ def generate_project_security_report_pdf(
         rightMargin=36,
         topMargin=46,
         bottomMargin=36,
+        title=doc_title,
+        author="AgentFlow",
+        subject="Executive Security Assessment & Threat Audit",
+        creator="AgentFlow Security Shield",
     )
     doc.theme_mode = theme_mode
 

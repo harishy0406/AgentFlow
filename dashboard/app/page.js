@@ -385,7 +385,7 @@ export default function Home() {
   const [chatMessages, setChatMessages] = useState([]);
   const [chatInput, setChatInput] = useState("");
   const [chatLoading, setChatLoading] = useState(false);
-  const [copilotMode, setCopilotMode] = useState("qa"); // 'qa' | 'modify'
+  const [copilotMode, setCopilotMode] = useState("modify"); // 'qa' | 'modify' (default to modify for direct change engine)
   const [modifyTargetArtifact, setModifyTargetArtifact] = useState("AUTO");
   const [apiTestResults, setApiTestResults] = useState({});
   const chatMessagesEndRef = useRef(null);
@@ -1470,19 +1470,25 @@ export default function Home() {
     }
   };
 
-  const handleSendCopilotMessage = async (textToSend) => {
+  const handleSendCopilotMessage = async (textToSend, forceModify = null, explicitTarget = null) => {
     const text = (textToSend !== undefined ? textToSend : chatInput).trim();
     if (!text || chatLoading || !currentProject) return;
     setChatInput("");
     setChatLoading(true);
-    const isModify = copilotMode === "modify";
+    const isModify = forceModify !== null ? forceModify : (copilotMode === "modify");
+    if (forceModify) {
+      setCopilotMode("modify");
+    }
     setChatMessages((prev) => [...prev, { role: "user", text, isModify }]);
     try {
       if (isModify) {
+        const targetToUse = explicitTarget !== null
+          ? (explicitTarget === "AUTO" || explicitTarget === "ALL" ? null : explicitTarget)
+          : (modifyTargetArtifact === "AUTO" ? null : modifyTargetArtifact);
         const res = await chatModifyProject(
           currentProject.id,
           text,
-          modifyTargetArtifact === "AUTO" ? null : modifyTargetArtifact
+          targetToUse
         );
         setChatMessages((prev) => [
           ...prev,
@@ -1491,10 +1497,14 @@ export default function Home() {
             isModify: true,
             text: res.explanation,
             target_artifact: res.target_artifact,
+            target_section_id: res.target_section_id,
             target_section_key: res.target_section_key,
             regenerated_artifacts: res.regenerated_artifacts,
             rescaffolded_files_count: res.rescaffolded_files_count,
             diff_summary: res.diff_summary,
+            previous_section_content: res.previous_section_content,
+            updated_section_content: res.updated_section_content,
+            show_diff: true,
           },
         ]);
         // Refresh project artifacts and code files
@@ -3285,7 +3295,7 @@ export default function Home() {
                         Architecture Graph
                       </button>
                       <button className={`tab ${activeTab === "artifacts" ? "active" : ""}`} onClick={() => setActiveTab("artifacts")} disabled={!currentProject}>
-                        Artifacts
+                        Artifacts &amp; Docs
                       </button>
                       <button
                         className={`tab ${activeTab === "code" ? "active" : ""}`}
@@ -4505,20 +4515,20 @@ export default function Home() {
                                 >
                                   {(copilotMode === "modify"
                                     ? [
-                                        "Add an audit_logs table to the DB Schema with user_id, action, timestamp",
-                                        "Add OAuth Google Login endpoint /api/v1/auth/google to API Spec",
-                                        "Add 2FA Two-Factor Authentication requirement to PRD",
-                                        "Update SDD architecture to use Redis session caching",
+                                        { prompt: "Add an audit_logs table to the DB Schema with user_id, action, timestamp", icon: "🗄️", target: "DB_SCHEMA" },
+                                        { prompt: "Add OAuth Google Login endpoint /api/v1/auth/google to API Spec", icon: "🌐", target: "API_SPEC" },
+                                        { prompt: "Add 2FA Two-Factor Authentication requirement to PRD", icon: "📋", target: "PRD" },
+                                        { prompt: "Update SDD architecture to use Redis session caching", icon: "⚡", target: "SDD" },
                                       ]
                                     : [
-                                        "Explain the system architecture and 7-stage DAG flow",
-                                        "List all database tables, columns, and foreign keys",
-                                        "What are the main REST API endpoints and response codes?",
-                                        "Summarize the technical tasks required for implementation",
+                                        { prompt: "Explain the system architecture and 7-stage DAG flow", icon: "🗺️", target: "ALL" },
+                                        { prompt: "List all database tables, columns, and foreign keys", icon: "🗄️", target: "DB_SCHEMA" },
+                                        { prompt: "What are the main REST API endpoints and response codes?", icon: "🌐", target: "API_SPEC" },
+                                        { prompt: "Summarize the technical tasks required for implementation", icon: "📋", target: "TASKS" },
                                       ]
-                                  ).map((s) => (
+                                  ).map((item) => (
                                     <button
-                                      key={s}
+                                      key={item.prompt}
                                       type="button"
                                       className="btn btn-secondary btn-sm"
                                       style={{
@@ -4530,12 +4540,21 @@ export default function Home() {
                                         border: "1px solid var(--border)",
                                         display: "flex",
                                         alignItems: "flex-start",
-                                        gap: 6,
+                                        gap: 8,
                                       }}
-                                      onClick={() => handleSendCopilotMessage(s)}
+                                      onClick={() => {
+                                        if (copilotMode === "modify") {
+                                          setModifyTargetArtifact(item.target === "ALL" ? "AUTO" : item.target);
+                                        }
+                                        handleSendCopilotMessage(
+                                          item.prompt,
+                                          copilotMode === "modify",
+                                          item.target === "ALL" ? null : item.target
+                                        );
+                                      }}
                                     >
-                                      <span style={{ color: copilotMode === "modify" ? "var(--accent-green)" : "var(--accent-blue)" }}>›</span>
-                                      <span>{s}</span>
+                                      <span>{item.icon}</span>
+                                      <span>{item.prompt}</span>
                                     </button>
                                   ))}
                                 </div>
@@ -4658,6 +4677,78 @@ export default function Home() {
                                         }}
                                       >
                                         {msg.diff_summary}
+                                      </div>
+                                    )}
+
+                                    {/* Action Buttons: View Diff & Open in Docs History */}
+                                    <div style={{ marginTop: 10, display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+                                      {msg.previous_section_content && msg.updated_section_content && (
+                                        <button
+                                          type="button"
+                                          className={`btn btn-secondary btn-sm ${msg.show_diff ? "active" : ""}`}
+                                          style={{ fontSize: 11, padding: "3px 10px" }}
+                                          onClick={() => {
+                                            setChatMessages((prev) =>
+                                              prev.map((m, i) => (i === idx ? { ...m, show_diff: !m.show_diff } : m))
+                                            );
+                                          }}
+                                        >
+                                          {msg.show_diff ? "✕ Hide Visual Diff" : "🔍 View Changes Diff"}
+                                        </button>
+                                      )}
+
+                                      {msg.target_artifact && (
+                                        <button
+                                          type="button"
+                                          className="btn btn-secondary btn-sm"
+                                          style={{
+                                            fontSize: 11,
+                                            padding: "3px 10px",
+                                            color: "var(--accent-blue)",
+                                            borderColor: "rgba(0, 153, 255, 0.4)",
+                                            display: "inline-flex",
+                                            alignItems: "center",
+                                            gap: 4,
+                                          }}
+                                          onClick={async () => {
+                                            setActiveTab("artifacts");
+                                            if (msg.target_artifact) {
+                                              setActiveArtifactType(msg.target_artifact);
+                                            }
+                                            if (msg.target_section_id) {
+                                              try {
+                                                const hist = await getSectionVersions(msg.target_section_id);
+                                                setSectionVersions(hist);
+                                                setHistorySectionId(msg.target_section_id);
+                                                if (hist && hist.length > 0) {
+                                                  setDiffTargetSnapshot(hist[0]);
+                                                }
+                                              } catch (e) {
+                                                console.error(e);
+                                              }
+                                            }
+                                            showToast(`Opened ${msg.target_artifact} (${msg.target_section_key}) in Version History`, "info");
+                                          }}
+                                        >
+                                          📄 Open in Docs &amp; Version History ↗
+                                        </button>
+                                      )}
+                                    </div>
+
+                                    {/* Inline Diff Viewer in AI Chat */}
+                                    {msg.show_diff && msg.previous_section_content && msg.updated_section_content && (
+                                      <div style={{ marginTop: 10 }}>
+                                        <DiffViewer
+                                          oldContent={msg.previous_section_content}
+                                          newContent={msg.updated_section_content}
+                                          oldLabel="Previous Version"
+                                          newLabel="AI Updated Version"
+                                          onClose={() => {
+                                            setChatMessages((prev) =>
+                                              prev.map((m, i) => (i === idx ? { ...m, show_diff: false } : m))
+                                            );
+                                          }}
+                                        />
                                       </div>
                                     )}
                                   </div>
@@ -4853,7 +4944,7 @@ export default function Home() {
                 {/* Tab: Artifacts (Phase 2 + 5 — Full Implementation) */}
                 {activeTab === "artifacts" && currentProject && (
                   <div className="card">
-                    <h2 className="card-title">Artifacts & Section Editor</h2>
+                    <h2 className="card-title">Artifacts &amp; Specs Docs (Version History)</h2>
                     <p style={{ color: "var(--text-muted)", fontSize: 13, marginBottom: 16 }}>
                       Select an artifact below to inspect sections, perform edits that trigger selective regeneration, or rollback to previous versions.
                     </p>

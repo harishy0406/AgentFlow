@@ -158,6 +158,7 @@ class NumberedSlideCanvas(canvas.Canvas):
     """
     project_name: str = "AgentFlow Blueprint"
     theme_mode: str = "dark"
+    pdf_title: str = "AgentFlow Presentation Deck"
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -168,6 +169,11 @@ class NumberedSlideCanvas(canvas.Canvas):
         self._startPage()
 
     def save(self):
+        doc_title = getattr(self, "pdf_title", "AgentFlow Presentation Deck")
+        self.setTitle(doc_title)
+        self.setAuthor("AgentFlow")
+        self.setSubject("Executive Software Architectural Specification & Blueprint")
+        self.setCreator("AgentFlow Autonomous Platform")
         num_pages = len(self._saved_page_states)
         for state in self._saved_page_states:
             self.__dict__.update(state)
@@ -444,10 +450,12 @@ def generate_project_presentation_pdf(project_id: str, db: Session, theme: str =
     is_light = (theme_mode == "light")
 
     # Set canvas project name & theme
+    doc_title = f"{project.name} - AgentFlow Presentation Deck" if (project and getattr(project, "name", None)) else "AgentFlow Presentation Deck"
     class DynamicSlideCanvas(NumberedSlideCanvas):
         pass
     DynamicSlideCanvas.project_name = project.name
     DynamicSlideCanvas.theme_mode = theme_mode
+    DynamicSlideCanvas.pdf_title = doc_title
 
     # Fetch artifacts
     nodes = {node.artifact_type: node for node in project.artifact_nodes}
@@ -487,15 +495,20 @@ def generate_project_presentation_pdf(project_id: str, db: Session, theme: str =
     # Metrics
     generated_count = len(project.artifact_nodes)
     artifact_completion_pct = round((generated_count / 7) * 100, 1) if generated_count > 0 else 100.0
-    quality_scores = [n.quality_signal_score for n in project.artifact_nodes if n.quality_signal_score is not None]
-    avg_quality = round((sum(quality_scores) / len(quality_scores)) if quality_scores else 0.95, 2)
+    quality_scores = []
+    for n in project.artifact_nodes:
+        if n.quality_signal_score is not None:
+            val = float(n.quality_signal_score)
+            normalized = val / 100.0 if val > 1.0 else val
+            quality_scores.append(normalized)
+    avg_quality = (sum(quality_scores) / len(quality_scores)) if quality_scores else 0.95
     drifts_count = db.query(DriftRecord).filter(DriftRecord.project_id == target_id, DriftRecord.status == "open").count()
     consistency_pct = max(0.0, round(100.0 - (drifts_count * 15.0), 1))
 
     overall_score = round(
         (artifact_completion_pct * 0.40)
         + (consistency_pct * 0.35)
-        + (min(avg_quality * 100, 100.0) * 0.25),
+        + (min(avg_quality * 100.0, 100.0) * 0.25),
         1
     )
     if overall_score >= 85:
@@ -537,6 +550,10 @@ def generate_project_presentation_pdf(project_id: str, db: Session, theme: str =
         rightMargin=36,
         topMargin=42,
         bottomMargin=38,
+        title=doc_title,
+        author="AgentFlow",
+        subject="Executive Software Architectural Specification & Blueprint",
+        creator="AgentFlow Autonomous Platform",
     )
 
     styles = getSampleStyleSheet()
@@ -685,30 +702,89 @@ def generate_project_presentation_pdf(project_id: str, db: Session, theme: str =
     story.append(dates_table)
     story.append(Spacer(1, 10))
 
-    # Key Metadata Cards (3 columns)
+    # Key Metadata Cards (3 columns) - card-based layout without horizontal innergrid lines
+    meta_label_style = ParagraphStyle(
+        "MetaLabel",
+        parent=body_style,
+        fontName="Helvetica-Bold",
+        fontSize=8.5,
+        leading=11,
+        textColor=tcolor("#94A3B8"),
+        spaceAfter=0,
+    )
+    meta_val_blue = ParagraphStyle(
+        "MetaValBlue",
+        parent=body_style,
+        fontName="Helvetica-Bold",
+        fontSize=18,
+        leading=22,
+        textColor=tcolor("#38BDF8"),
+        spaceAfter=0,
+    )
+    meta_val_green = ParagraphStyle(
+        "MetaValGreen",
+        parent=body_style,
+        fontName="Helvetica-Bold",
+        fontSize=18,
+        leading=22,
+        textColor=tcolor("#34D399"),
+        spaceAfter=0,
+    )
+    meta_val_purple = ParagraphStyle(
+        "MetaValPurple",
+        parent=body_style,
+        fontName="Helvetica-Bold",
+        fontSize=18,
+        leading=22,
+        textColor=tcolor("#A78BFA"),
+        spaceAfter=0,
+    )
+    meta_sub_style = ParagraphStyle(
+        "MetaSub",
+        parent=body_style,
+        fontName="Helvetica",
+        fontSize=8.5,
+        leading=11,
+        textColor=tcolor("#E2E8F0"),
+        spaceAfter=0,
+    )
+
     meta_data = [
         [
-            Paragraph("<font color='#94A3B8'><b>SYSTEM READINESS</b></font>", body_style),
-            Paragraph("<font color='#94A3B8'><b>ARTIFACT GRAPH</b></font>", body_style),
-            Paragraph("<font color='#94A3B8'><b>ACTIVE CONSISTENCY</b></font>", body_style),
-        ],
-        [
-            Paragraph(f"<font size=18 color='#38BDF8'><b>{overall_score}% READY</b></font>", body_style),
-            Paragraph(f"<font size=18 color='#34D399'><b>{max(generated_count, 7)} / 7 Generated</b></font>", body_style),
-            Paragraph(f"<font size=18 color='#A78BFA'><b>{drifts_count} Open Drifts</b></font>", body_style),
-        ],
-        [
-            Paragraph(f"<font color='#E2E8F0'>Status: <b>{readiness_status.upper()}</b></font>", body_style),
-            Paragraph("<font color='#E2E8F0'>Topological DAG Complete</font>", body_style),
-            Paragraph("<font color='#E2E8F0'>AST &amp; Schema Verified</font>", body_style),
+            [
+                Paragraph("<b>SYSTEM READINESS</b>", meta_label_style),
+                Spacer(1, 4),
+                Paragraph(f"<b>{overall_score:.1f}% READY</b>", meta_val_blue),
+                Spacer(1, 4),
+                Paragraph(f"Status: <b>{readiness_status.upper()}</b>", meta_sub_style),
+            ],
+            [
+                Paragraph("<b>ARTIFACT GRAPH</b>", meta_label_style),
+                Spacer(1, 4),
+                Paragraph(f"<b>{max(generated_count, 7)} / 7 Generated</b>", meta_val_green),
+                Spacer(1, 4),
+                Paragraph("Topological DAG Complete", meta_sub_style),
+            ],
+            [
+                Paragraph("<b>ACTIVE CONSISTENCY</b>", meta_label_style),
+                Spacer(1, 4),
+                Paragraph(f"<b>{drifts_count} Open Drifts</b>", meta_val_purple),
+                Spacer(1, 4),
+                Paragraph("AST &amp; Schema Verified", meta_sub_style),
+            ],
         ]
     ]
     meta_table = Table(meta_data, colWidths=[240, 240, 240])
     meta_table.setStyle(TableStyle([
         ("BACKGROUND", (0, 0), (-1, -1), tcolor("#121826")),
         ("BOX", (0, 0), (-1, -1), 1, tcolor("#26334D")),
-        ("INNERGRID", (0, 0), (-1, -1), 0.5, tcolor("#1E293B")),
-        ("PADDING", (0, 0), (-1, -1), 10),
+        ("LINEBEFORE", (1, 0), (1, 0), 1, tcolor("#26334D")),
+        ("LINEBEFORE", (2, 0), (2, 0), 1, tcolor("#26334D")),
+        ("TOPPADDING", (0, 0), (-1, -1), 10),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 10),
+        ("LEFTPADDING", (0, 0), (-1, -1), 12),
+        ("RIGHTPADDING", (0, 0), (-1, -1), 12),
+        ("VALIGN", (0, 0), (-1, -1), "TOP"),
     ]))
     story.append(meta_table)
     story.append(PageBreak())
@@ -812,10 +888,12 @@ def generate_project_presentation_pdf(project_id: str, db: Session, theme: str =
     def _score_for(art_type: str) -> str:
         node = nodes.get(art_type)
         if not node:
-            return "95%"
-        if node.quality_signal_score:
-            return f"{round(node.quality_signal_score * 100)}%"
-        return "98%"
+            return "95.00%"
+        if node.quality_signal_score is not None:
+            val = float(node.quality_signal_score)
+            score = val if val > 1.0 else (val * 100.0)
+            return f"{score:.2f}%"
+        return "98.00%"
 
     health_rows = [
         [
