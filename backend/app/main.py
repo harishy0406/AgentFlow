@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Depends, HTTPException, Query, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, Depends, HTTPException, Query, WebSocket, WebSocketDisconnect, Body
 from fastapi.responses import Response, PlainTextResponse, StreamingResponse
 from sqlalchemy.orm import Session
 from sqlalchemy import func
@@ -525,7 +525,15 @@ def get_project_health(project_id: UUID, db: Session = Depends(get_db)):
     generated_count = len(nodes)
     artifact_completion_pct = round((generated_count / total_expected) * 100, 1)
 
-    quality_scores = [n.quality_signal_score for n in nodes if n.quality_signal_score is not None]
+    quality_scores = []
+    for n in nodes:
+        if n.quality_signal_score is not None:
+            v = float(n.quality_signal_score)
+            while v > 100.0:
+                v /= 100.0
+            if v > 1.0:
+                v /= 100.0
+            quality_scores.append(v)
     avg_quality = round((sum(quality_scores) / len(quality_scores)) if quality_scores else 0.85, 2)
 
     open_drifts = (
@@ -857,12 +865,17 @@ def export_project_specifications(
     for node in project.artifact_nodes:
         md_parts.append(f"- [{node.artifact_type.replace('_', ' ')} (v{node.version})](#{node.artifact_type.lower()})")
 
-    for node in project.artifact_nodes:
+        q_raw = float(node.quality_signal_score) if node.quality_signal_score is not None else 0.85
+        while q_raw > 100.0:
+            q_raw /= 100.0
+        if q_raw <= 1.0:
+            q_raw *= 100.0
+        q_label = f"{q_raw:.1f}%" if q_raw % 1 != 0 else f"{int(q_raw)}%"
         md_parts.extend([
             "\n---\n",
             f"<a id='{node.artifact_type.lower()}'></a>",
             f"## {node.artifact_type.replace('_', ' ')} (v{node.version})",
-            f"*Status: {node.status} • Quality: {int((node.quality_signal_score or 0.85)*100)}% • Model: {node.generated_by_model or 'claude-3-haiku'}*\n"
+            f"*Status: {node.status} • Quality: {q_label} • Model: {node.generated_by_model or 'claude-3-haiku'}*\n"
         ])
         for sec in sorted(node.sections, key=lambda s: s.section_key):
             md_parts.append(sec.content)
@@ -2738,6 +2751,94 @@ def download_project_blueprint_markdown(
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to download blueprint markdown: {str(e)}")
+
+
+# ---------------------------------------------------------------------------
+# Phase 17: DevOps Platform Integrations & Tool Connectors
+# ---------------------------------------------------------------------------
+
+from .agents.devops_tools import (
+    get_default_tools,
+    configure_tool,
+    test_tool_connection,
+    trigger_tool_execution,
+)
+
+
+@app.get("/projects/{project_id}/devops-tools")
+def get_project_devops_tools_endpoint(
+    project_id: UUID,
+    db: Session = Depends(get_db)
+):
+    """
+    Returns configured DevOps platform connections (GitHub, Jenkins, Ansible, Terraform),
+    including connection health, latency, credentials, and live execution logs.
+    """
+    project = db.query(models.Project).filter(models.Project.id == project_id).first()
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    tools = get_default_tools(str(project.id), project.name)
+    return {
+        "status": "success",
+        "project_id": str(project.id),
+        "project_name": project.name,
+        "tools_count": len(tools),
+        "tools": tools,
+    }
+
+
+@app.post("/projects/{project_id}/devops-tools/{tool_id}/configure")
+def configure_project_devops_tool_endpoint(
+    project_id: UUID,
+    tool_id: str,
+    payload: Dict[str, Any] = Body(...),
+    db: Session = Depends(get_db)
+):
+    """
+    Saves updated configuration fields for a specific DevOps platform tool.
+    """
+    project = db.query(models.Project).filter(models.Project.id == project_id).first()
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    result = configure_tool(str(project.id), project.name, tool_id.lower().strip(), payload)
+    return result
+
+
+@app.post("/projects/{project_id}/devops-tools/{tool_id}/test")
+def test_project_devops_tool_endpoint(
+    project_id: UUID,
+    tool_id: str,
+    db: Session = Depends(get_db)
+):
+    """
+    Executes a live health check and latency ping against the selected DevOps platform.
+    """
+    project = db.query(models.Project).filter(models.Project.id == project_id).first()
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    result = test_tool_connection(str(project.id), project.name, tool_id.lower().strip())
+    return result
+
+
+@app.post("/projects/{project_id}/devops-tools/{tool_id}/trigger")
+def trigger_project_devops_tool_endpoint(
+    project_id: UUID,
+    tool_id: str,
+    payload: Optional[Dict[str, Any]] = Body(default=None),
+    db: Session = Depends(get_db)
+):
+    """
+    Triggers remote workflow dispatch, Jenkins build, Ansible playbook run, or Terraform plan.
+    """
+    project = db.query(models.Project).filter(models.Project.id == project_id).first()
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    result = trigger_tool_execution(str(project.id), project.name, tool_id.lower().strip(), payload)
+    return result
 
 
 

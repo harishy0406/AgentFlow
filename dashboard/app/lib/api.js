@@ -570,4 +570,32 @@ export function getBlueprintDownloadUrl(projectId) {
   return `${API_BASE}/projects/${projectId}/download-blueprint-markdown`;
 }
 
+// ---------------------------------------------------------------------------
+// DevOps Platform Integrations & Tool Connectors
+// ---------------------------------------------------------------------------
+
+export async function getProjectDevopsTools(projectId) {
+  return request(`/projects/${projectId}/devops-tools`);
+}
+
+export async function configureProjectDevopsTool(projectId, toolId, config) {
+  return request(`/projects/${projectId}/devops-tools/${toolId}/configure`, {
+    method: "POST",
+    body: JSON.stringify(config),
+  });
+}
+
+export async function testProjectDevopsTool(projectId, toolId) {
+  return request(`/projects/${projectId}/devops-tools/${toolId}/test`, {
+    method: "POST",
+  });
+}
+
+export async function triggerProjectDevopsTool(projectId, toolId, payload = {}) {
+  return request(`/projects/${projectId}/devops-tools/${toolId}/trigger`, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
 

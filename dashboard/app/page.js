@@ -72,6 +72,10 @@ import {
   getSeedJsonDownloadUrl,
   getBlueprintMarkdown,
   getBlueprintDownloadUrl,
+  getProjectDevopsTools,
+  configureProjectDevopsTool,
+  testProjectDevopsTool,
+  triggerProjectDevopsTool,
 } from "./lib/api";
 
 function RadialGauge({ value = 0, size = 110, strokeWidth = 10, label = "", color = "#00FF66", subtext = "" }) {
@@ -124,6 +128,19 @@ const DAG_GENERATION_STAGES = [
   { id: "USER_STORIES", label: "User Stories & Tasks", agent: "Project Planner", model: "NVIDIA Nemotron 70B", icon: "🔨", desc: "Decomposing features into Gherkin acceptance criteria and engineering task DAG..." },
   { id: "CODE_GENERATION", label: "Source Code & Scaffolding", agent: "Dev Fleet", model: "Claude 3.5 Sonnet (Anthropic)", icon: "🚀", desc: "Scaffolding executable FastAPI repository, data models, and test suites..." }
 ];
+
+function formatQualityPct(score) {
+  if (score == null || score === "" || isNaN(score)) return "—";
+  let s = Number(score);
+  if (s <= 0) return "0%";
+  while (s > 100) {
+    s = s / 100;
+  }
+  if (s <= 1.0) {
+    s = s * 100;
+  }
+  return s % 1 === 0 ? `${s.toFixed(0)}%` : `${s.toFixed(1)}%`;
+}
 
 function renderModelBadge(modelName) {
   if (!modelName) return <span style={{ color: "var(--text-secondary)", fontSize: 11 }}>Claude 3.5 Sonnet</span>;
@@ -329,6 +346,16 @@ export default function Home() {
   const [showBlueprintModal, setShowBlueprintModal] = useState(false);
   const [blueprintCopied, setBlueprintCopied] = useState(false);
 
+  // DevOps Platform Connections (Tools) state
+  const [devopsTools, setDevopsTools] = useState([]);
+  const [devopsToolsLoading, setDevopsToolsLoading] = useState(false);
+  const [selectedToolForConfig, setSelectedToolForConfig] = useState(null);
+  const [toolConfigDraft, setToolConfigDraft] = useState({});
+  const [toolTestingId, setToolTestingId] = useState(null);
+  const [toolTriggeringId, setToolTriggeringId] = useState(null);
+  const [toolSaving, setToolSaving] = useState(false);
+  const [toolSearchQuery, setToolSearchQuery] = useState("");
+
   const downloadTextFile = (filename, text, mime = "text/plain") => {
     const blob = new Blob([text], { type: mime });
     const url = URL.createObjectURL(blob);
@@ -434,7 +461,7 @@ export default function Home() {
 
   // Global Modal body scroll locking & Escape key close listener (UI break fix for modal double-scrolling)
   useEffect(() => {
-    const hasOpenModal = showDeckPreviewModal || showGraphqlModal || showSeedModal || showBlueprintModal || showSecurityPdfModal;
+    const hasOpenModal = showDeckPreviewModal || showGraphqlModal || showSeedModal || showBlueprintModal || showSecurityPdfModal || Boolean(selectedToolForConfig);
     if (!hasOpenModal) return;
     const prevOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
@@ -445,6 +472,7 @@ export default function Home() {
         setShowSeedModal(false);
         setShowBlueprintModal(false);
         setShowSecurityPdfModal(false);
+        setSelectedToolForConfig(null);
       }
     };
     window.addEventListener("keydown", handleKeyDown);
@@ -452,7 +480,7 @@ export default function Home() {
       document.body.style.overflow = prevOverflow;
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, [showDeckPreviewModal, showGraphqlModal, showSeedModal, showBlueprintModal, showSecurityPdfModal]);
+  }, [showDeckPreviewModal, showGraphqlModal, showSeedModal, showBlueprintModal, showSecurityPdfModal, selectedToolForConfig]);
 
   // Close tools dropdown when clicking outside
   useEffect(() => {
@@ -549,6 +577,74 @@ export default function Home() {
       setRefreshingArtifacts(false);
     }
   }, [currentProject, showToast]);
+
+  const handleLoadDevopsTools = useCallback(async (projectId) => {
+    const pid = projectId || currentProject?.id;
+    if (!pid) return;
+    setDevopsToolsLoading(true);
+    try {
+      const res = await getProjectDevopsTools(pid);
+      setDevopsTools(res.tools || []);
+    } catch (err) {
+      showToast(err.message || "Failed to load DevOps tools", "error");
+    } finally {
+      setDevopsToolsLoading(false);
+    }
+  }, [currentProject, showToast]);
+
+  useEffect(() => {
+    if (activeTab === "tools" && currentProject && devopsTools.length === 0 && !devopsToolsLoading) {
+      handleLoadDevopsTools(currentProject.id);
+    }
+  }, [activeTab, currentProject, devopsTools.length, devopsToolsLoading, handleLoadDevopsTools]);
+
+  const handleTestDevopsTool = useCallback(async (toolId) => {
+    if (!currentProject) return;
+    setToolTestingId(toolId);
+    try {
+      const res = await testProjectDevopsTool(currentProject.id, toolId);
+      showToast(res.message || `Connected to ${toolId} successfully`, "success");
+      await handleLoadDevopsTools(currentProject.id);
+    } catch (err) {
+      showToast(err.message || `Failed to test ${toolId} connection`, "error");
+    } finally {
+      setToolTestingId(null);
+    }
+  }, [currentProject, handleLoadDevopsTools, showToast]);
+
+  const handleTriggerDevopsTool = useCallback(async (toolId) => {
+    if (!currentProject) return;
+    setToolTriggeringId(toolId);
+    try {
+      const res = await triggerProjectDevopsTool(currentProject.id, toolId);
+      showToast(res.message || `Triggered ${toolId} execution successfully`, "success");
+      await handleLoadDevopsTools(currentProject.id);
+    } catch (err) {
+      showToast(err.message || `Failed to trigger ${toolId}`, "error");
+    } finally {
+      setToolTriggeringId(null);
+    }
+  }, [currentProject, handleLoadDevopsTools, showToast]);
+
+  const handleOpenConfigModal = useCallback((tool) => {
+    setSelectedToolForConfig(tool);
+    setToolConfigDraft({ ...(tool.config || {}) });
+  }, []);
+
+  const handleSaveToolConfig = useCallback(async () => {
+    if (!currentProject || !selectedToolForConfig) return;
+    setToolSaving(true);
+    try {
+      const res = await configureProjectDevopsTool(currentProject.id, selectedToolForConfig.id, toolConfigDraft);
+      showToast(res.message || `Configured ${selectedToolForConfig.name} successfully`, "success");
+      setSelectedToolForConfig(null);
+      await handleLoadDevopsTools(currentProject.id);
+    } catch (err) {
+      showToast(err.message || "Failed to save configuration", "error");
+    } finally {
+      setToolSaving(false);
+    }
+  }, [currentProject, selectedToolForConfig, toolConfigDraft, handleLoadDevopsTools, showToast]);
 
   // Global Quick-Action Command Palette (Ctrl+K / Cmd+K)
   const [showCommandPalette, setShowCommandPalette] = useState(false);
@@ -3193,12 +3289,12 @@ export default function Home() {
                       Quality &amp; Analysis
                     </button>
                     <button
-                      className={`nav-group-btn ${["devops", "api-sandbox", "sdks", "webhooks-apm", "changelog-cloudops"].includes(activeTab)
+                      className={`nav-group-btn ${["devops", "api-sandbox", "sdks", "webhooks-apm", "changelog-cloudops", "tools"].includes(activeTab)
                           ? "active"
                           : ""
                         }`}
                       onClick={async () => {
-                        if (!["devops", "api-sandbox", "sdks", "webhooks-apm", "changelog-cloudops"].includes(activeTab)) {
+                        if (!["devops", "api-sandbox", "sdks", "webhooks-apm", "changelog-cloudops", "tools"].includes(activeTab)) {
                           setActiveTab("devops");
                           if (currentProject) {
                             setCicdLoading(true);
@@ -3416,7 +3512,7 @@ export default function Home() {
                   )}
 
                   {/* DevOps & Integrations Tabs */}
-                  {["devops", "api-sandbox", "sdks", "webhooks-apm", "changelog-cloudops"].includes(activeTab) && (
+                  {["devops", "api-sandbox", "sdks", "webhooks-apm", "changelog-cloudops", "tools"].includes(activeTab) && (
                     <>
                       <button
                         className={`tab ${activeTab === "devops" ? "active" : ""}`}
@@ -3541,6 +3637,18 @@ export default function Home() {
                         disabled={!currentProject}
                       >
                         Changelog &amp; CloudOps
+                      </button>
+                      <button
+                        className={`tab ${activeTab === "tools" ? "active" : ""}`}
+                        onClick={async () => {
+                          setActiveTab("tools");
+                          if (currentProject) {
+                            handleLoadDevopsTools(currentProject.id);
+                          }
+                        }}
+                        disabled={!currentProject}
+                      >
+                        Tools
                       </button>
                     </>
                   )}
@@ -5039,7 +5147,7 @@ export default function Home() {
                                 Version: <strong>v{currentArt.version}</strong> • Quality:{" "}
                                 <strong>
                                   {currentArt.quality_signal_score != null
-                                    ? `${(currentArt.quality_signal_score * 100).toFixed(0)}%`
+                                    ? formatQualityPct(currentArt.quality_signal_score)
                                     : "N/A"}
                                 </strong>{" "}
                                 • Model: {renderModelBadge(currentArt.generated_by_model)}
@@ -6271,7 +6379,7 @@ export default function Home() {
                               <td style={{ padding: "8px 12px", textAlign: "center" }}>v{a.version}</td>
                               <td style={{ padding: "8px 12px", textAlign: "center" }}>
                                 {a.quality_signal_score != null
-                                  ? `${(a.quality_signal_score * 100).toFixed(0)}%`
+                                  ? formatQualityPct(a.quality_signal_score)
                                   : "—"}
                               </td>
                               <td style={{ padding: "8px 12px", textAlign: "center" }}>
@@ -6357,7 +6465,7 @@ export default function Home() {
                                 </td>
                                 <td style={{ padding: "8px 12px", textAlign: "center" }}>
                                   {run.avg_quality_score != null
-                                    ? `${(run.avg_quality_score * 100).toFixed(0)}%`
+                                    ? formatQualityPct(run.avg_quality_score)
                                     : "—"}
                                 </td>
                                 <td style={{ padding: "8px 12px", textAlign: "center" }}>
@@ -10559,6 +10667,602 @@ export default function Home() {
                             </div>
                           </div>
                         )}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Tab: DevOps Platform Connections & Toolchain */}
+                {activeTab === "tools" && currentProject && (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+                    {/* Header Bar */}
+                    <div
+                      className="card"
+                      style={{
+                        padding: "20px 24px",
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                        flexWrap: "wrap",
+                        gap: 16,
+                        background: "linear-gradient(135deg, rgba(16, 185, 129, 0.05), rgba(56, 189, 248, 0.05))",
+                        border: "1px solid var(--border)",
+                      }}
+                    >
+                      <div>
+                        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                          <span style={{ fontSize: 24 }}>🛠️</span>
+                          <h2 style={{ fontSize: 18, fontWeight: 700, margin: 0, color: "var(--text-primary)" }}>
+                            DevOps Platform Connections
+                          </h2>
+                          <span className="badge badge-primary" style={{ fontSize: 11 }}>
+                            Production Toolchain
+                          </span>
+                        </div>
+                        <p style={{ margin: "6px 0 0 0", fontSize: 13, color: "var(--text-secondary)" }}>
+                          Manage external integrations, inspect live execution logs, and trigger CI/CD pipelines across GitHub, Jenkins, Ansible, and Terraform.
+                        </p>
+                      </div>
+
+                      <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+                        <div style={{ position: "relative" }}>
+                          <input
+                            type="text"
+                            placeholder="Filter platforms..."
+                            value={toolSearchQuery}
+                            onChange={(e) => setToolSearchQuery(e.target.value)}
+                            style={{
+                              padding: "6px 12px",
+                              fontSize: 12,
+                              background: "var(--bg-primary)",
+                              border: "1px solid var(--border)",
+                              borderRadius: 6,
+                              color: "var(--text-primary)",
+                              width: 170,
+                            }}
+                          />
+                          {toolSearchQuery && (
+                            <button
+                              onClick={() => setToolSearchQuery("")}
+                              style={{
+                                position: "absolute",
+                                right: 8,
+                                top: "50%",
+                                transform: "translateY(-50%)",
+                                background: "none",
+                                border: "none",
+                                color: "var(--text-muted)",
+                                cursor: "pointer",
+                                fontSize: 12,
+                              }}
+                            >
+                              ✕
+                            </button>
+                          )}
+                        </div>
+
+                        <button
+                          className="btn btn-secondary btn-sm"
+                          onClick={() => handleLoadDevopsTools(currentProject.id)}
+                          disabled={devopsToolsLoading}
+                          title="Refresh status from backend"
+                          style={{ display: "inline-flex", alignItems: "center", gap: 6 }}
+                        >
+                          <span style={{ display: "inline-block", transform: devopsToolsLoading ? "rotate(180deg)" : "none", transition: "transform 0.4s" }}>🔄</span>
+                          {devopsToolsLoading ? "Refreshing..." : "Refresh"}
+                        </button>
+
+                        <button
+                          className="btn btn-secondary btn-sm"
+                          onClick={async () => {
+                            if (!devopsTools || devopsTools.length === 0) return;
+                            showToast("Testing all platform connections...", "info");
+                            for (const t of devopsTools) {
+                              try {
+                                await testProjectDevopsTool(currentProject.id, t.id);
+                              } catch (_) {}
+                            }
+                            await handleLoadDevopsTools(currentProject.id);
+                            showToast("Completed platform health check!", "success");
+                          }}
+                          disabled={devopsToolsLoading}
+                          style={{ display: "inline-flex", alignItems: "center", gap: 6 }}
+                        >
+                          ⚡ Test All
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Platform Cards Grid */}
+                    {devopsToolsLoading && devopsTools.length === 0 ? (
+                      <div style={{ padding: 60, textAlign: "center", color: "var(--text-muted)" }}>
+                        <div style={{ fontSize: 24, marginBottom: 8 }}>⏳</div>
+                        Loading connected DevOps platforms...
+                      </div>
+                    ) : (
+                      <div
+                        style={{
+                          display: "grid",
+                          gridTemplateColumns: "repeat(auto-fit, minmax(480px, 1fr))",
+                          gap: 20,
+                        }}
+                      >
+                        {devopsTools
+                          .filter((t) => {
+                            if (!toolSearchQuery) return true;
+                            const q = toolSearchQuery.toLowerCase();
+                            return (
+                              t.name.toLowerCase().includes(q) ||
+                              t.category.toLowerCase().includes(q) ||
+                              (t.summary && t.summary.toLowerCase().includes(q))
+                            );
+                          })
+                          .map((tool) => (
+                            <div
+                              key={tool.id}
+                              className="card"
+                              style={{
+                                padding: 20,
+                                display: "flex",
+                                flexDirection: "column",
+                                justifyContent: "space-between",
+                                background: "var(--bg-surface)",
+                                border: "1px solid var(--border)",
+                                borderRadius: 10,
+                                transition: "border-color 0.2s, box-shadow 0.2s",
+                              }}
+                            >
+                              <div>
+                                {/* Card Header */}
+                                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12 }}>
+                                  <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                                    <div
+                                      style={{
+                                        width: 42,
+                                        height: 42,
+                                        borderRadius: 8,
+                                        background: `${tool.badge_color || "#10B981"}20`,
+                                        border: `1px solid ${tool.badge_color || "#10B981"}50`,
+                                        display: "flex",
+                                        alignItems: "center",
+                                        justifyContent: "center",
+                                        fontSize: 22,
+                                      }}
+                                    >
+                                      {tool.icon || "⚙️"}
+                                    </div>
+                                    <div>
+                                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                                        <h3 style={{ fontSize: 16, fontWeight: 700, margin: 0, color: "var(--text-primary)" }}>
+                                          {tool.name}
+                                        </h3>
+                                        <span
+                                          style={{
+                                            fontSize: 10,
+                                            fontWeight: 600,
+                                            padding: "2px 8px",
+                                            borderRadius: 12,
+                                            textTransform: "uppercase",
+                                            letterSpacing: "0.05em",
+                                            background:
+                                              tool.status === "connected" || tool.status === "ready" || tool.status === "synced"
+                                                ? "rgba(16, 185, 129, 0.15)"
+                                                : "rgba(245, 158, 11, 0.15)",
+                                            color:
+                                              tool.status === "connected" || tool.status === "ready" || tool.status === "synced"
+                                                ? "#10B981"
+                                                : "#F59E0B",
+                                            border: `1px solid ${
+                                              tool.status === "connected" || tool.status === "ready" || tool.status === "synced"
+                                                ? "rgba(16, 185, 129, 0.3)"
+                                                : "rgba(245, 158, 11, 0.3)"
+                                            }`,
+                                          }}
+                                        >
+                                          ● {tool.status}
+                                        </span>
+                                      </div>
+                                      <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 2 }}>
+                                        {tool.category}
+                                      </div>
+                                    </div>
+                                  </div>
+
+                                  <div style={{ textAlign: "right", fontSize: 11, color: "var(--text-muted)" }}>
+                                    <div>⚡ {tool.latency_ms || 32}ms</div>
+                                    <div style={{ marginTop: 2 }}>Sync: {tool.last_sync || "Just now"}</div>
+                                  </div>
+                                </div>
+
+                                {/* Summary */}
+                                <p style={{ fontSize: 12, color: "var(--text-secondary)", lineHeight: 1.5, marginBottom: 14 }}>
+                                  {tool.summary}
+                                </p>
+
+                                {/* Active Config Quick Preview */}
+                                <div
+                                  style={{
+                                    display: "flex",
+                                    flexWrap: "wrap",
+                                    gap: 6,
+                                    marginBottom: 16,
+                                    fontSize: 11,
+                                    fontFamily: "var(--font-mono)",
+                                  }}
+                                >
+                                  {tool.config &&
+                                    Object.entries(tool.config)
+                                      .slice(0, 3)
+                                      .map(([k, v]) => (
+                                        <div
+                                          key={k}
+                                          style={{
+                                            padding: "3px 8px",
+                                            borderRadius: 4,
+                                            background: "var(--bg-secondary)",
+                                            border: "1px solid var(--border)",
+                                            color: "var(--text-muted)",
+                                            maxWidth: 220,
+                                            overflow: "hidden",
+                                            textOverflow: "ellipsis",
+                                            whiteSpace: "nowrap",
+                                          }}
+                                          title={`${k}: ${String(v)}`}
+                                        >
+                                          <span style={{ color: "var(--text-secondary)" }}>{k}:</span>{" "}
+                                          <span style={{ color: "var(--terminal-green)" }}>
+                                            {typeof v === "boolean" ? (v ? "true" : "false") : String(v).replace(/^https?:\/\//, "")}
+                                          </span>
+                                        </div>
+                                      ))}
+                                </div>
+
+                                {/* Terminal Log Section */}
+                                <div style={{ marginBottom: 16 }}>
+                                  <div
+                                    style={{
+                                      display: "flex",
+                                      justifyContent: "space-between",
+                                      alignItems: "center",
+                                      marginBottom: 6,
+                                      fontSize: 11,
+                                      fontWeight: 600,
+                                      color: "var(--text-muted)",
+                                      textTransform: "uppercase",
+                                      letterSpacing: "0.05em",
+                                    }}
+                                  >
+                                    <span>Activity &amp; Execution Log</span>
+                                    <span>{tool.logs?.length || 0} events</span>
+                                  </div>
+
+                                  <div
+                                    style={{
+                                      background: "#080c14",
+                                      border: "1px solid var(--border)",
+                                      borderRadius: 6,
+                                      overflow: "hidden",
+                                    }}
+                                  >
+                                    {/* Terminal Header */}
+                                    <div
+                                      style={{
+                                        display: "flex",
+                                        alignItems: "center",
+                                        justifyContent: "space-between",
+                                        padding: "6px 10px",
+                                        background: "rgba(255, 255, 255, 0.03)",
+                                        borderBottom: "1px solid rgba(255, 255, 255, 0.06)",
+                                        fontSize: 11,
+                                        fontFamily: "var(--font-mono)",
+                                        color: "var(--text-muted)",
+                                      }}
+                                    >
+                                      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                                        <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#EF4444" }} />
+                                        <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#F59E0B" }} />
+                                        <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#10B981" }} />
+                                        <span style={{ marginLeft: 6 }}>agentflow@{tool.id}:~</span>
+                                      </div>
+                                      <span style={{ fontSize: 10 }}>live stream</span>
+                                    </div>
+
+                                    {/* Terminal Content */}
+                                    <div
+                                      style={{
+                                        padding: "10px 12px",
+                                        maxHeight: 140,
+                                        overflowY: "auto",
+                                        fontFamily: "var(--font-mono)",
+                                        fontSize: 11,
+                                        lineHeight: 1.6,
+                                      }}
+                                    >
+                                      {tool.logs && tool.logs.length > 0 ? (
+                                        tool.logs.map((log, lidx) => {
+                                          let color = "var(--text-secondary)";
+                                          if (log.level === "SUCCESS") color = "#10B981";
+                                          else if (log.level === "INFO") color = "#38BDF8";
+                                          else if (log.level === "WARNING") color = "#F59E0B";
+                                          else if (log.level === "ERROR") color = "#EF4444";
+
+                                          return (
+                                            <div key={lidx} style={{ display: "flex", gap: 8, marginBottom: 3 }}>
+                                              <span style={{ color: "var(--text-muted)", fontSize: 10, flexShrink: 0 }}>
+                                                {log.timestamp ? log.timestamp.split(" ")[1] || log.timestamp : ""}
+                                              </span>
+                                              <span style={{ color, wordBreak: "break-word" }}>
+                                                {log.message}
+                                              </span>
+                                            </div>
+                                          );
+                                        })
+                                      ) : (
+                                        <div style={{ color: "var(--text-muted)", fontStyle: "italic" }}>
+                                          No recent execution activity logged.
+                                        </div>
+                                      )}
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+
+                              {/* Card Action Footer */}
+                              <div
+                                style={{
+                                  display: "flex",
+                                  justifyContent: "space-between",
+                                  alignItems: "center",
+                                  paddingTop: 12,
+                                  borderTop: "1px solid var(--border)",
+                                  marginTop: 8,
+                                }}
+                              >
+                                <button
+                                  className="btn btn-secondary btn-sm"
+                                  onClick={() => handleTestDevopsTool(tool.id)}
+                                  disabled={toolTestingId === tool.id}
+                                  style={{ fontSize: 11, display: "inline-flex", alignItems: "center", gap: 5 }}
+                                >
+                                  {toolTestingId === tool.id ? "Testing..." : "🔌 Test Ping"}
+                                </button>
+
+                                <div style={{ display: "flex", gap: 8 }}>
+                                  <button
+                                    className="btn btn-secondary btn-sm"
+                                    onClick={() => handleTriggerDevopsTool(tool.id)}
+                                    disabled={toolTriggeringId === tool.id}
+                                    style={{ fontSize: 11, display: "inline-flex", alignItems: "center", gap: 5 }}
+                                    title="Trigger a new sync or test execution run on this platform"
+                                  >
+                                    {toolTriggeringId === tool.id ? "Running..." : "⚡ Run Job"}
+                                  </button>
+
+                                  <button
+                                    className="btn btn-primary btn-sm"
+                                    onClick={() => handleOpenConfigModal(tool)}
+                                    style={{
+                                      fontSize: 11,
+                                      fontWeight: 600,
+                                      display: "inline-flex",
+                                      alignItems: "center",
+                                      gap: 5,
+                                    }}
+                                  >
+                                    ⚙ Configure
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                      </div>
+                    )}
+
+                    {/* DevOps Platform Connection Configuration Modal */}
+                    {selectedToolForConfig && (
+                      <div
+                        style={{
+                          position: "fixed",
+                          top: 0,
+                          left: 0,
+                          right: 0,
+                          bottom: 0,
+                          background: "rgba(0, 0, 0, 0.85)",
+                          backdropFilter: "blur(8px)",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          zIndex: 1000,
+                          padding: 20,
+                        }}
+                        onClick={() => setSelectedToolForConfig(null)}
+                      >
+                        <div
+                          style={{
+                            background: "var(--bg-surface)",
+                            border: "1px solid var(--border)",
+                            borderRadius: 12,
+                            width: "100%",
+                            maxWidth: 580,
+                            maxHeight: "90vh",
+                            overflowY: "auto",
+                            padding: 24,
+                            boxShadow: "0 20px 50px rgba(0, 0, 0, 0.6)",
+                          }}
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          {/* Modal Header */}
+                          <div
+                            style={{
+                              display: "flex",
+                              justifyContent: "space-between",
+                              alignItems: "center",
+                              paddingBottom: 16,
+                              borderBottom: "1px solid var(--border)",
+                              marginBottom: 18,
+                            }}
+                          >
+                            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                              <div
+                                style={{
+                                  width: 36,
+                                  height: 36,
+                                  borderRadius: 8,
+                                  background: `${selectedToolForConfig.badge_color || "#10B981"}20`,
+                                  display: "flex",
+                                  alignItems: "center",
+                                  justifyContent: "center",
+                                  fontSize: 20,
+                                }}
+                              >
+                                {selectedToolForConfig.icon || "⚙️"}
+                              </div>
+                              <div>
+                                <h3 style={{ fontSize: 16, fontWeight: 700, margin: 0, color: "var(--text-primary)" }}>
+                                  Configure {selectedToolForConfig.name}
+                                </h3>
+                                <p style={{ margin: "2px 0 0 0", fontSize: 11, color: "var(--text-muted)" }}>
+                                  {selectedToolForConfig.category}
+                                </p>
+                              </div>
+                            </div>
+                            <button
+                              onClick={() => setSelectedToolForConfig(null)}
+                              style={{
+                                background: "none",
+                                border: "none",
+                                color: "var(--text-muted)",
+                                fontSize: 18,
+                                cursor: "pointer",
+                                padding: 4,
+                              }}
+                            >
+                              ✕
+                            </button>
+                          </div>
+
+                          {/* Modal Body Form */}
+                          <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+                            <div
+                              style={{
+                                padding: "10px 14px",
+                                borderRadius: 6,
+                                background: "var(--bg-secondary)",
+                                border: "1px solid var(--border)",
+                                fontSize: 12,
+                                color: "var(--text-secondary)",
+                                lineHeight: 1.5,
+                              }}
+                            >
+                              Enter your connection parameters below. Credentials are used solely for artifact synchronization and remote pipeline execution.
+                            </div>
+
+                            {selectedToolForConfig.fields &&
+                              selectedToolForConfig.fields.map((field) => (
+                                <div key={field.key} style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                                  {field.type === "checkbox" ? (
+                                    <label
+                                      style={{
+                                        display: "flex",
+                                        alignItems: "center",
+                                        gap: 10,
+                                        cursor: "pointer",
+                                        fontSize: 13,
+                                        color: "var(--text-primary)",
+                                        padding: "6px 0",
+                                      }}
+                                    >
+                                      <input
+                                        type="checkbox"
+                                        checked={Boolean(toolConfigDraft[field.key])}
+                                        onChange={(e) =>
+                                          setToolConfigDraft((prev) => ({
+                                            ...prev,
+                                            [field.key]: e.target.checked,
+                                          }))
+                                        }
+                                        style={{ accentColor: "var(--accent-green)", width: 16, height: 16 }}
+                                      />
+                                      <span>{field.label}</span>
+                                    </label>
+                                  ) : (
+                                    <>
+                                      <label style={{ fontSize: 12, fontWeight: 600, color: "var(--text-secondary)" }}>
+                                        {field.label}
+                                      </label>
+                                      <input
+                                        type={field.type === "password" ? "password" : "text"}
+                                        placeholder={field.placeholder || ""}
+                                        value={toolConfigDraft[field.key] ?? ""}
+                                        onChange={(e) =>
+                                          setToolConfigDraft((prev) => ({
+                                            ...prev,
+                                            [field.key]: e.target.value,
+                                          }))
+                                        }
+                                        style={{
+                                          padding: "8px 12px",
+                                          fontSize: 12,
+                                          fontFamily: "var(--font-mono)",
+                                          background: "var(--bg-primary)",
+                                          border: "1px solid var(--border)",
+                                          borderRadius: 6,
+                                          color: "var(--text-primary)",
+                                          outline: "none",
+                                        }}
+                                      />
+                                    </>
+                                  )}
+                                </div>
+                              ))}
+                          </div>
+
+                          {/* Modal Footer */}
+                          <div
+                            style={{
+                              display: "flex",
+                              justifyContent: "space-between",
+                              alignItems: "center",
+                              paddingTop: 18,
+                              borderTop: "1px solid var(--border)",
+                              marginTop: 20,
+                            }}
+                          >
+                            <button
+                              className="btn btn-secondary btn-sm"
+                              onClick={async () => {
+                                try {
+                                  const res = await testProjectDevopsTool(currentProject.id, selectedToolForConfig.id);
+                                  showToast(res.message || "Test handshake successful!", "success");
+                                } catch (err) {
+                                  showToast(err.message || "Test failed", "error");
+                                }
+                              }}
+                              style={{ fontSize: 11 }}
+                            >
+                              🔌 Test Connection
+                            </button>
+
+                            <div style={{ display: "flex", gap: 10 }}>
+                              <button
+                                className="btn btn-secondary btn-sm"
+                                onClick={() => setSelectedToolForConfig(null)}
+                                style={{ fontSize: 11 }}
+                              >
+                                Cancel
+                              </button>
+
+                              <button
+                                className="btn btn-primary btn-sm"
+                                onClick={handleSaveToolConfig}
+                                disabled={toolSaving}
+                                style={{ fontSize: 11, fontWeight: 600 }}
+                              >
+                                {toolSaving ? "Saving..." : "💾 Save Configuration"}
+                              </button>
+                            </div>
+                          </div>
+                        </div>
                       </div>
                     )}
                   </div>
