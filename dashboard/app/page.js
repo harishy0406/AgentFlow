@@ -176,55 +176,125 @@ function renderDevopsToolIcon(tool, size = 24) {
   return <span style={{ fontSize: size }}>{tool.icon || "⚙️"}</span>;
 }
 
+function renderModelLogo(modelName, size = 16) {
+  if (!modelName) return null;
+  const lower = String(modelName).toLowerCase();
+
+  let iconSrc = null;
+  let altText = "Model";
+
+  if (lower.includes("gemini") || lower.includes("google")) {
+    iconSrc = "/icons/gemini.svg";
+    altText = "Google Gemini";
+  } else if (lower.includes("claude") || lower.includes("anthropic") || lower.includes("sonnet") || lower.includes("haiku") || lower.includes("opus")) {
+    iconSrc = "/icons/claude.svg";
+    altText = "Anthropic Claude";
+  } else if (lower.includes("gpt") || lower.includes("openai") || lower.includes("o1") || lower.includes("o3")) {
+    iconSrc = "/icons/openai.svg";
+    altText = "OpenAI";
+  } else if (lower.includes("deepseek")) {
+    iconSrc = "/icons/deepseek.svg";
+    altText = "DeepSeek";
+  } else if (lower.includes("groq")) {
+    iconSrc = "/icons/groq.svg";
+    altText = "Groq";
+  } else if (lower.includes("nvidia") || lower.includes("nemotron")) {
+    iconSrc = "/icons/nvidia.svg";
+    altText = "NVIDIA";
+  } else if (lower.includes("llama") || lower.includes("meta")) {
+    iconSrc = "/icons/meta.svg";
+    altText = "Meta Llama";
+  } else if (lower.includes("auto") || lower.includes("best-coding") || lower.includes("hybrid") || lower.includes("agentflow")) {
+    iconSrc = "/icons/auto.svg";
+    altText = "Auto Router";
+  } else {
+    iconSrc = "/icons/auto.svg";
+    altText = "AI Model";
+  }
+
+  return (
+    <img
+      src={iconSrc}
+      alt={altText}
+      width={size}
+      height={size}
+      style={{
+        width: size,
+        height: size,
+        objectFit: "contain",
+        display: "inline-block",
+        verticalAlign: "middle",
+        flexShrink: 0,
+        filter: "drop-shadow(0 1px 2px rgba(0,0,0,0.4))",
+      }}
+    />
+  );
+}
+
 function renderModelBadge(modelName) {
-  if (!modelName) return <span style={{ color: "var(--text-secondary)", fontSize: 11 }}>Claude 3.5 Sonnet</span>;
-  const lower = modelName.toLowerCase();
+  if (!modelName) modelName = "Claude 3.5 Sonnet";
+  const lower = String(modelName).toLowerCase();
   
   if (lower.includes("gemini") || lower.includes("google")) {
     return (
-      <span style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "2px 8px", borderRadius: 6, fontSize: 11, fontWeight: 600, background: "rgba(59, 130, 246, 0.12)", color: "#60A5FA", border: "1px solid rgba(59, 130, 246, 0.3)" }}>
-        <span>🔵</span> {modelName}
+      <span style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "2px 8px", borderRadius: 6, fontSize: 11, fontWeight: 600, background: "rgba(59, 130, 246, 0.12)", color: "#60A5FA", border: "1px solid rgba(59, 130, 246, 0.3)" }}>
+        {renderModelLogo(modelName, 14)}
+        <span>{modelName}</span>
       </span>
     );
   }
-  if (lower.includes("claude") || lower.includes("anthropic") || lower.includes("sonnet") || lower.includes("haiku")) {
+  if (lower.includes("claude") || lower.includes("anthropic") || lower.includes("sonnet") || lower.includes("haiku") || lower.includes("opus")) {
     return (
-      <span style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "2px 8px", borderRadius: 6, fontSize: 11, fontWeight: 600, background: "rgba(168, 85, 247, 0.12)", color: "#C084FC", border: "1px solid rgba(168, 85, 247, 0.3)" }}>
-        <span>🟣</span> {modelName}
+      <span style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "2px 8px", borderRadius: 6, fontSize: 11, fontWeight: 600, background: "rgba(168, 85, 247, 0.12)", color: "#C084FC", border: "1px solid rgba(168, 85, 247, 0.3)" }}>
+        {renderModelLogo(modelName, 14)}
+        <span>{modelName}</span>
       </span>
     );
   }
-  if (lower.includes("gpt") || lower.includes("openai")) {
+  if (lower.includes("gpt") || lower.includes("openai") || lower.includes("o1") || lower.includes("o3")) {
     return (
-      <span style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "2px 8px", borderRadius: 6, fontSize: 11, fontWeight: 600, background: "rgba(16, 185, 129, 0.12)", color: "#34D399", border: "1px solid rgba(16, 185, 129, 0.3)" }}>
-        <span>🟢</span> {modelName}
+      <span style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "2px 8px", borderRadius: 6, fontSize: 11, fontWeight: 600, background: "rgba(16, 185, 129, 0.12)", color: "#34D399", border: "1px solid rgba(16, 185, 129, 0.3)" }}>
+        {renderModelLogo(modelName, 14)}
+        <span>{modelName}</span>
       </span>
     );
   }
   if (lower.includes("deepseek")) {
     return (
-      <span style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "2px 8px", borderRadius: 6, fontSize: 11, fontWeight: 600, background: "rgba(14, 165, 233, 0.12)", color: "#38BDF8", border: "1px solid rgba(14, 165, 233, 0.3)" }}>
-        <span>🔷</span> {modelName}
+      <span style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "2px 8px", borderRadius: 6, fontSize: 11, fontWeight: 600, background: "rgba(14, 165, 233, 0.12)", color: "#38BDF8", border: "1px solid rgba(14, 165, 233, 0.3)" }}>
+        {renderModelLogo(modelName, 14)}
+        <span>{modelName}</span>
       </span>
     );
   }
-  if (lower.includes("groq") || lower.includes("llama")) {
+  if (lower.includes("groq")) {
     return (
-      <span style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "2px 8px", borderRadius: 6, fontSize: 11, fontWeight: 600, background: "rgba(249, 115, 22, 0.12)", color: "#FB923C", border: "1px solid rgba(249, 115, 22, 0.3)" }}>
-        <span>🟠</span> {modelName}
+      <span style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "2px 8px", borderRadius: 6, fontSize: 11, fontWeight: 600, background: "rgba(249, 115, 22, 0.12)", color: "#FB923C", border: "1px solid rgba(249, 115, 22, 0.3)" }}>
+        {renderModelLogo(modelName, 14)}
+        <span>{modelName}</span>
       </span>
     );
   }
   if (lower.includes("nvidia") || lower.includes("nemotron")) {
     return (
-      <span style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "2px 8px", borderRadius: 6, fontSize: 11, fontWeight: 600, background: "rgba(118, 185, 0, 0.12)", color: "#84CC16", border: "1px solid rgba(118, 185, 0, 0.3)" }}>
-        <span>⚡</span> {modelName}
+      <span style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "2px 8px", borderRadius: 6, fontSize: 11, fontWeight: 600, background: "rgba(118, 185, 0, 0.12)", color: "#84CC16", border: "1px solid rgba(118, 185, 0, 0.3)" }}>
+        {renderModelLogo(modelName, 14)}
+        <span>{modelName}</span>
+      </span>
+    );
+  }
+  if (lower.includes("llama") || lower.includes("meta")) {
+    return (
+      <span style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "2px 8px", borderRadius: 6, fontSize: 11, fontWeight: 600, background: "rgba(6, 104, 225, 0.12)", color: "#60A5FA", border: "1px solid rgba(6, 104, 225, 0.3)" }}>
+        {renderModelLogo(modelName, 14)}
+        <span>{modelName}</span>
       </span>
     );
   }
   return (
-    <span style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "2px 8px", borderRadius: 6, fontSize: 11, fontWeight: 600, background: "rgba(148, 163, 184, 0.12)", color: "#CBD5E1", border: "1px solid rgba(148, 163, 184, 0.3)" }}>
-      <span>🤖</span> {modelName}
+    <span style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "2px 8px", borderRadius: 6, fontSize: 11, fontWeight: 600, background: "rgba(148, 163, 184, 0.12)", color: "#CBD5E1", border: "1px solid rgba(148, 163, 184, 0.3)" }}>
+      {renderModelLogo(modelName, 14)}
+      <span>{modelName}</span>
     </span>
   );
 }
@@ -6375,7 +6445,36 @@ export default function Home() {
                                 padding: "10px 12px",
                               }}
                             >
-                              <div style={{ fontSize: 12, fontWeight: 700, color: "var(--text-primary)" }}>{m.model_name}</div>
+                              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+                                <div
+                                  style={{
+                                    width: 24,
+                                    height: 24,
+                                    borderRadius: 6,
+                                    background: "rgba(255, 255, 255, 0.05)",
+                                    border: "1px solid var(--border)",
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                    flexShrink: 0,
+                                  }}
+                                >
+                                  {renderModelLogo(m.model_name, 16)}
+                                </div>
+                                <div
+                                  style={{
+                                    fontSize: 12,
+                                    fontWeight: 700,
+                                    color: "var(--text-primary)",
+                                    overflow: "hidden",
+                                    textOverflow: "ellipsis",
+                                    whiteSpace: "nowrap",
+                                  }}
+                                  title={m.model_name}
+                                >
+                                  {m.model_name}
+                                </div>
+                              </div>
                               <div style={{ fontSize: 11, color: "var(--text-secondary)", marginTop: 4 }}>
                                 {m.calls_count} calls • {m.total_tokens.toLocaleString()} tokens
                               </div>
