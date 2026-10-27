@@ -142,6 +142,40 @@ function formatQualityPct(score) {
   return s % 1 === 0 ? `${s.toFixed(0)}%` : `${s.toFixed(1)}%`;
 }
 
+function renderDevopsToolIcon(tool, size = 24) {
+  if (!tool) return null;
+  const toolId = (tool.id || "").toLowerCase();
+
+  let iconSrc = null;
+  if (toolId === "github") iconSrc = "/icons/github.svg";
+  else if (toolId === "jenkins") iconSrc = "/icons/jenkins.svg";
+  else if (toolId === "ansible") iconSrc = "/icons/ansible.svg";
+  else if (toolId === "terraform") iconSrc = "/icons/terraform.svg";
+  else if (tool.icon && (tool.icon.startsWith("/") || tool.icon.startsWith("http"))) {
+    iconSrc = tool.icon;
+  }
+
+  if (iconSrc) {
+    return (
+      <img
+        src={iconSrc}
+        alt={tool.name || toolId}
+        width={size}
+        height={size}
+        style={{
+          width: size,
+          height: size,
+          objectFit: "contain",
+          display: "block",
+          filter: "drop-shadow(0 2px 4px rgba(0,0,0,0.3))",
+        }}
+      />
+    );
+  }
+
+  return <span style={{ fontSize: size }}>{tool.icon || "⚙️"}</span>;
+}
+
 function renderModelBadge(modelName) {
   if (!modelName) return <span style={{ color: "var(--text-secondary)", fontSize: 11 }}>Claude 3.5 Sonnet</span>;
   const lower = modelName.toLowerCase();
@@ -10827,9 +10861,10 @@ export default function Home() {
                                         alignItems: "center",
                                         justifyContent: "center",
                                         fontSize: 22,
+                                        padding: 6,
                                       }}
                                     >
-                                      {tool.icon || "⚙️"}
+                                      {renderDevopsToolIcon(tool, 26)}
                                     </div>
                                     <div>
                                       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -11113,9 +11148,10 @@ export default function Home() {
                                   alignItems: "center",
                                   justifyContent: "center",
                                   fontSize: 20,
+                                  padding: 5,
                                 }}
                               >
-                                {selectedToolForConfig.icon || "⚙️"}
+                                {renderDevopsToolIcon(selectedToolForConfig, 22)}
                               </div>
                               <div>
                                 <h3 style={{ fontSize: 16, fontWeight: 700, margin: 0, color: "var(--text-primary)" }}>
