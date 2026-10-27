@@ -899,7 +899,8 @@ def seed_template_project(
     base_time = datetime.now(timezone.utc) - timedelta(minutes=15)
 
     for idx, art_type in enumerate(TOPOLOGICAL_ORDER):
-        q_score = quality_map.get(art_type, 94.0)
+        q_raw = float(quality_map.get(art_type, 0.94))
+        q_score = (q_raw / 100.0) if q_raw > 1.0 else q_raw
         node = models.ArtifactNode(
             project_id=project.id,
             artifact_type=art_type,
