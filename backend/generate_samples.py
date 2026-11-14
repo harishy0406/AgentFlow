@@ -16,7 +16,10 @@ from app.agents.template_seeds import get_template_definition
 try:
     import pymupdf as fitz
 except ImportError:
-    import fitz  # PyMuPDF fallback
+    try:
+        import fitz
+    except ImportError:
+        fitz = None
 
 def main():
     Base.metadata.create_all(bind=engine)
@@ -39,6 +42,13 @@ def main():
             "template_key": "ai_code_reviewer",
             "pdf_name": "ai_code_reviewer_architectural_deck.pdf",
             "img_prefix": "ai_reviewer_slide"
+        },
+        {
+            "name": "Phone Pe",
+            "brief": "Build an ultra-high-throughput UPI & Digital Payments platform modeled after Phone Pe. Features NPCI UPI 2.0 switch connectivity, dynamic & static BharatQR/UPI QR code generation, Virtual Payment Address (VPA) resolution (@phonepe, @ybl), multi-bank account linking with NPCI MPIN verification, instant peer-to-peer (P2P) and peer-to-merchant (P2M) settlement, dual-entry wallet ledger with ACID guarantees, real-time fraud anomaly scoring, soundbox audio notification webhooks, and merchant auto-settlement.",
+            "template_key": "phonepe_payments",
+            "pdf_name": "phone_pe_architectural_deck.pdf",
+            "img_prefix": "phone_pe_slide"
         }
     ]
 
@@ -112,14 +122,17 @@ def main():
         pdf_bytes = pdf_bytes_dark
 
         # Render slides to PNG
-        doc = fitz.open(stream=pdf_bytes, filetype="pdf")
-        print(f"Total slides: {len(doc)}")
-        for page_idx in range(len(doc)):
-            page = doc[page_idx]
-            pix = page.get_pixmap(dpi=150)
-            img_path = output_dir / f"{item['img_prefix']}_{page_idx + 1}.png"
-            pix.save(str(img_path))
-        print(f"Exported {len(doc)} slide images for {item['name']}")
+        if fitz is not None:
+            doc = fitz.open(stream=pdf_bytes, filetype="pdf")
+            print(f"Total slides: {len(doc)}")
+            for page_idx in range(len(doc)):
+                page = doc[page_idx]
+                pix = page.get_pixmap(dpi=150)
+                img_path = output_dir / f"{item['img_prefix']}_{page_idx + 1}.png"
+                pix.save(str(img_path))
+            print(f"Exported {len(doc)} slide images for {item['name']}")
+        else:
+            print(f"PDF presentation generated for {item['name']} (PyMuPDF optional slide render skipped)")
 
     print("\nAll sample PDFs and slide images successfully generated!")
 

@@ -6,7 +6,8 @@ Provides comprehensive, production-grade 18-30 file codebases for:
 2. FinTech Escrow API (FinTech & Payments)
 3. HIPAA Telehealth Suite (Healthcare & MedTech)
 4. Multi-Vendor Marketplace (E-Commerce & Retail)
-5. Custom Dynamic Project Synthesis
+5. Phone Pe UPI & Digital Payments (FinTech & UPI)
+6. Custom Dynamic Project Synthesis
 
 Each codebase includes backend (models, schemas, services, API routes, config, db),
 frontend components, unit/integration tests, Docker files, and configs.
@@ -2392,7 +2393,1019 @@ Multi-merchant product catalog with cart reservation locks and automated settlem
 
 
 # ==============================================================================
-# 5. Dynamic Custom Project Synthesis Helper
+# 5. Phone Pe UPI & Digital Payments Code Bundle (28+ files)
+# ==============================================================================
+PHONEPE_PAYMENTS_BUNDLE = '''### File: backend/app/__init__.py
+```python
+"""Phone Pe UPI & Digital Payments Core Engine Package."""
+__version__ = "1.0.0"
+```
+
+### File: backend/app/main.py
+```python
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from contextlib import asynccontextmanager
+
+from .config import settings
+from .database import engine, Base
+from .api.v1.router import api_v1_router
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    Base.metadata.create_all(bind=engine)
+    yield
+
+
+app = FastAPI(
+    title=settings.PROJECT_NAME,
+    version=settings.VERSION,
+    description="Ultra-High-Throughput UPI 2.0 Payments Switch, BharatQR Generator & Merchant Soundbox Engine",
+    lifespan=lifespan,
+)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+app.include_router(api_v1_router, prefix="/api/v1")
+
+
+@app.get("/health", tags=["Health"])
+def health():
+    return {
+        "status": "healthy",
+        "service": "phonepe-payments-engine",
+        "upi_switch": "connected",
+        "switch_version": "NPCI_UPI_2.0",
+        "active_handles": ["@phonepe", "@ybl", "@axl", "@ibl"],
+        "version": settings.VERSION,
+    }
+
+
+@app.get("/metrics", tags=["Metrics"])
+def metrics():
+    return {
+        "peak_tps_capacity": settings.PEAK_TPS_TARGET,
+        "current_tps": 4820,
+        "success_rate_pct": 99.88,
+        "p99_latency_ms": 285,
+        "settlement_status": "instant_t0",
+    }
+```
+
+### File: backend/app/config.py
+```python
+import os
+from pydantic import BaseModel
+
+
+class Settings(BaseModel):
+    PROJECT_NAME: str = "Phone Pe UPI & Payments Gateway"
+    VERSION: str = "1.0.0"
+    DATABASE_URL: str = os.getenv("DATABASE_URL", "postgresql://phonepe:secret@localhost:5432/phonepe_db")
+    REDIS_URL: str = os.getenv("REDIS_URL", "redis://localhost:6379/0")
+    NPCI_SWITCH_URL: str = os.getenv("NPCI_SWITCH_URL", "https://switch.npci.org.in/upi2")
+    SOUNDBOX_WEBHOOK_SECRET: str = os.getenv("SOUNDBOX_WEBHOOK_SECRET", "phonepe-soundbox-secret-key")
+    DEFAULT_CURRENCY: str = "INR"
+    MAX_DAILY_UPI_LIMIT_INR: float = 100000.0
+    PEAK_TPS_TARGET: int = 15000
+
+
+settings = Settings()
+```
+
+### File: backend/app/database.py
+```python
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker, declarative_base
+from .config import settings
+
+db_url = settings.DATABASE_URL
+if "sqlite" in db_url or "localhost" in db_url:
+    try:
+        engine = create_engine(db_url, pool_pre_ping=True)
+        engine.connect()
+    except Exception:
+        db_url = "sqlite:///./phonepe_local.db"
+        engine = create_engine(db_url, connect_args={"check_same_thread": False})
+else:
+    engine = create_engine(db_url, pool_pre_ping=True)
+
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+Base = declarative_base()
+
+
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+```
+
+### File: backend/app/models/__init__.py
+```python
+from .upi import User, BankAccount, VpaHandle, UpiTransaction, MerchantProfile
+from .ledger import WalletAccount, LedgerJournal, LedgerPosting
+from .soundbox import SoundboxDevice, SoundboxAlert
+
+__all__ = [
+    "User",
+    "BankAccount",
+    "VpaHandle",
+    "UpiTransaction",
+    "MerchantProfile",
+    "WalletAccount",
+    "LedgerJournal",
+    "LedgerPosting",
+    "SoundboxDevice",
+    "SoundboxAlert",
+]
+```
+
+### File: backend/app/models/upi.py
+```python
+import uuid
+from datetime import datetime, timezone
+from sqlalchemy import Column, String, Integer, BigInteger, Float, Boolean, ForeignKey, DateTime
+from ..database import Base
+
+
+class User(Base):
+    __tablename__ = "users"
+
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    phone_number = Column(String(20), unique=True, nullable=False)
+    full_name = Column(String(150), nullable=False)
+    kyc_status = Column(String(50), default="verified")
+    mpin_hash = Column(String(128), nullable=False)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+
+
+class BankAccount(Base):
+    __tablename__ = "bank_accounts"
+
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    user_id = Column(String(36), ForeignKey("users.id"), nullable=False)
+    bank_name = Column(String(100), nullable=False)
+    ifsc_code = Column(String(11), nullable=False)
+    masked_acc_num = Column(String(20), nullable=False)
+    acc_type = Column(String(20), default="savings")
+    is_primary = Column(Boolean, default=True)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+
+
+class VpaHandle(Base):
+    __tablename__ = "vpa_handles"
+
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    user_id = Column(String(36), ForeignKey("users.id"), nullable=False)
+    vpa_address = Column(String(100), unique=True, nullable=False)
+    bank_account_id = Column(String(36), ForeignKey("bank_accounts.id"), nullable=True)
+    is_primary = Column(Boolean, default=True)
+    is_active = Column(Boolean, default=True)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+
+
+class MerchantProfile(Base):
+    __tablename__ = "merchant_profiles"
+
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    user_id = Column(String(36), ForeignKey("users.id"), nullable=False)
+    business_name = Column(String(200), nullable=False)
+    merchant_vpa = Column(String(100), unique=True, nullable=False)
+    mcc_code = Column(String(10), default="5411")
+    soundbox_device_id = Column(String(50), nullable=True)
+    instant_settlement = Column(Boolean, default=True)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+
+
+class UpiTransaction(Base):
+    __tablename__ = "upi_transactions"
+
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    txn_ref = Column(String(50), unique=True, nullable=False)
+    upi_rrn = Column(String(12), unique=True, nullable=False)
+    payer_vpa = Column(String(100), nullable=False)
+    payee_vpa = Column(String(100), nullable=False)
+    amount_paise = Column(BigInteger, nullable=False)
+    status = Column(String(30), default="SUCCESS")
+    payment_mode = Column(String(20), default="UPI_QR")
+    note = Column(String(255), default="Payment via Phone Pe")
+    npci_response_code = Column(String(10), default="00")
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+```
+
+### File: backend/app/models/ledger.py
+```python
+import uuid
+from datetime import datetime, timezone
+from sqlalchemy import Column, String, BigInteger, DateTime
+from ..database import Base
+
+
+class WalletAccount(Base):
+    __tablename__ = "wallet_accounts"
+
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    user_id = Column(String(36), nullable=False)
+    vpa_address = Column(String(100), unique=True, nullable=False)
+    balance_paise = Column(BigInteger, default=500000)
+    currency = Column(String(3), default="INR")
+    status = Column(String(20), default="active")
+    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+
+
+class LedgerJournal(Base):
+    __tablename__ = "ledger_journals"
+
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    txn_ref = Column(String(50), nullable=False)
+    description = Column(String(255), nullable=False)
+    total_amount_paise = Column(BigInteger, nullable=False)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+
+
+class LedgerPosting(Base):
+    __tablename__ = "ledger_postings"
+
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    journal_id = Column(String(36), nullable=False)
+    account_vpa = Column(String(100), nullable=False)
+    direction = Column(String(10), nullable=False)
+    amount_paise = Column(BigInteger, nullable=False)
+    balance_after_paise = Column(BigInteger, nullable=False)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+```
+
+### File: backend/app/models/soundbox.py
+```python
+import uuid
+from datetime import datetime, timezone
+from sqlalchemy import Column, String, Float, Boolean, DateTime
+from ..database import Base
+
+
+class SoundboxDevice(Base):
+    __tablename__ = "soundbox_devices"
+
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    device_sn = Column(String(50), unique=True, nullable=False)
+    merchant_id = Column(String(36), nullable=False)
+    sim_status = Column(String(20), default="online")
+    battery_level_pct = Column(Float, default=95.0)
+    firmware_version = Column(String(20), default="v3.4.1")
+    is_active = Column(Boolean, default=True)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+
+
+class SoundboxAlert(Base):
+    __tablename__ = "soundbox_alerts"
+
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    device_sn = Column(String(50), nullable=False)
+    merchant_id = Column(String(36), nullable=False)
+    txn_ref = Column(String(50), nullable=False)
+    amount_inr = Column(Float, nullable=False)
+    voice_script = Column(String(255), nullable=False)
+    language = Column(String(10), default="hi")
+    status = Column(String(20), default="DISPATCHED")
+    sent_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+```
+
+### File: backend/app/schemas/__init__.py
+```python
+from .upi import (
+    VpaValidateRequest,
+    VpaValidateResponse,
+    BharatQrGenerateRequest,
+    BharatQrGenerateResponse,
+    UpiPayRequest,
+    UpiPayResponse,
+    UpiTxnStatusResponse,
+)
+from .ledger import WalletBalanceResponse, WalletTopupRequest
+from .soundbox import SoundboxAlertRequest, SoundboxAlertResponse
+
+__all__ = [
+    "VpaValidateRequest",
+    "VpaValidateResponse",
+    "BharatQrGenerateRequest",
+    "BharatQrGenerateResponse",
+    "UpiPayRequest",
+    "UpiPayResponse",
+    "UpiTxnStatusResponse",
+    "WalletBalanceResponse",
+    "WalletTopupRequest",
+    "SoundboxAlertRequest",
+    "SoundboxAlertResponse",
+]
+```
+
+### File: backend/app/schemas/upi.py
+```python
+from pydantic import BaseModel, Field
+from typing import Optional
+
+
+class VpaValidateRequest(BaseModel):
+    vpa: str = Field(..., example="merchant@phonepe")
+
+
+class VpaValidateResponse(BaseModel):
+    vpa: str
+    is_valid: bool
+    account_holder_name: str
+    bank_handle: str
+    verified_merchant: bool
+
+
+class BharatQrGenerateRequest(BaseModel):
+    merchant_vpa: str = Field(..., example="store@phonepe")
+    merchant_name: str = Field(..., example="Sharma General Store")
+    amount_inr: Optional[float] = Field(None, example=450.0)
+    note: Optional[str] = Field("Grocery Payment", example="Grocery Payment")
+
+
+class BharatQrGenerateResponse(BaseModel):
+    qr_payload: str
+    upi_intent_uri: str
+    merchant_vpa: str
+    merchant_name: str
+    amount_inr: Optional[float]
+    svg_qr_preview: str
+
+
+class UpiPayRequest(BaseModel):
+    payer_vpa: str = Field(..., example="rahul@ybl")
+    payee_vpa: str = Field(..., example="store@phonepe")
+    amount_inr: float = Field(..., gt=0, example=450.0)
+    mpin: str = Field(..., min_length=4, max_length=6, example="1234")
+    note: Optional[str] = Field("Store Purchase", example="Store Purchase")
+
+
+class UpiPayResponse(BaseModel):
+    txn_ref: str
+    upi_rrn: str
+    status: str
+    payer_vpa: str
+    payee_vpa: str
+    amount_inr: float
+    message: str
+    timestamp: str
+    soundbox_alert_triggered: bool
+
+
+class UpiTxnStatusResponse(BaseModel):
+    txn_ref: str
+    upi_rrn: str
+    status: str
+    amount_inr: float
+    payer_vpa: str
+    payee_vpa: str
+    created_at: str
+```
+
+### File: backend/app/schemas/ledger.py
+```python
+from pydantic import BaseModel, Field
+
+
+class WalletBalanceResponse(BaseModel):
+    vpa: str
+    balance_inr: float
+    currency: str
+    status: str
+
+
+class WalletTopupRequest(BaseModel):
+    vpa: str = Field(..., example="rahul@ybl")
+    amount_inr: float = Field(..., gt=0, example=2000.0)
+```
+
+### File: backend/app/schemas/soundbox.py
+```python
+from pydantic import BaseModel, Field
+from typing import Optional
+
+
+class SoundboxAlertRequest(BaseModel):
+    device_sn: str = Field(..., example="SBOX-PHPE-8849")
+    merchant_id: str = Field(..., example="merchant-4412")
+    amount_inr: float = Field(..., example=450.0)
+    language: Optional[str] = Field("hi", example="hi")
+
+
+class SoundboxAlertResponse(BaseModel):
+    alert_id: str
+    device_sn: str
+    voice_script: str
+    status: str
+    dispatched_at: str
+```
+
+### File: backend/app/services/upi_engine.py
+```python
+import uuid
+import re
+import random
+from typing import Dict, Any
+
+
+SUPPORTED_HANDLES = ["@phonepe", "@ybl", "@axl", "@ibl", "@paytm", "@okaxis", "@okhdfcbank", "@sbi"]
+
+
+def validate_vpa(vpa: str) -> Dict[str, Any]:
+    vpa = (vpa or "").strip().lower()
+    if not vpa or "@" not in vpa:
+        return {"vpa": vpa, "is_valid": False, "account_holder_name": "Unknown", "bank_handle": "", "verified_merchant": False}
+
+    username, handle = vpa.split("@", 1)
+    handle = f"@{handle}"
+    is_valid = bool(re.match(r"^[a-zA-Z0-9.\-_]{3,}$", username)) and handle in SUPPORTED_HANDLES
+
+    is_merchant = "merchant" in username or "store" in username or "shop" in username or handle == "@phonepe"
+    name = f"{username.replace('.', ' ').replace('_', ' ').title()}" if is_valid else "Invalid VPA"
+
+    return {
+        "vpa": vpa,
+        "is_valid": is_valid,
+        "account_holder_name": name,
+        "bank_handle": handle,
+        "verified_merchant": is_merchant,
+    }
+
+
+def generate_bharat_qr_payload(merchant_vpa: str, merchant_name: str, amount: float = None, note: str = "Payment") -> Dict[str, Any]:
+    txn_ref = f"PHPE{random.randint(100000000000, 999999999999)}"
+    amt_param = f"&am={amount:.2f}" if amount and amount > 0 else ""
+    upi_uri = f"upi://pay?pa={merchant_vpa}&pn={merchant_name.replace(' ', '%20')}&mc=5411&tr={txn_ref}&tn={note.replace(' ', '%20')}&cu=INR{amt_param}"
+
+    svg_preview = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200"><rect width="200" height="200" fill="#ffffff" rx="12"/><rect x="20" y="20" width="40" height="40" fill="#5f259f"/><rect x="28" y="28" width="24" height="24" fill="#ffffff"/><rect x="34" y="34" width="12" height="12" fill="#5f259f"/><rect x="140" y="20" width="40" height="40" fill="#5f259f"/><rect x="148" y="28" width="24" height="24" fill="#ffffff"/><rect x="154" y="34" width="12" height="12" fill="#5f259f"/><rect x="20" y="140" width="40" height="40" fill="#5f259f"/><rect x="28" y="148" width="24" height="24" fill="#ffffff"/><rect x="34" y="154" width="12" height="12" fill="#5f259f"/><circle cx="100" cy="100" r="14" fill="#5f259f"/><text x="100" y="105" font-family="Arial" font-size="12" font-weight="bold" fill="#ffffff" text-anchor="middle">Pe</text></svg>'
+
+    return {
+        "qr_payload": upi_uri,
+        "upi_intent_uri": upi_uri,
+        "merchant_vpa": merchant_vpa,
+        "merchant_name": merchant_name,
+        "amount_inr": amount,
+        "svg_qr_preview": svg_preview,
+    }
+```
+
+### File: backend/app/services/ledger_service.py
+```python
+from datetime import datetime, timezone
+from sqlalchemy.orm import Session
+from ..models.ledger import WalletAccount, LedgerJournal, LedgerPosting
+
+
+def get_or_create_wallet(db: Session, vpa: str, initial_inr: float = 5000.0) -> WalletAccount:
+    wallet = db.query(WalletAccount).filter(WalletAccount.vpa_address == vpa).first()
+    if not wallet:
+        wallet = WalletAccount(
+            user_id="usr_" + vpa.replace("@", "_").replace(".", "_"),
+            vpa_address=vpa,
+            balance_paise=int(initial_inr * 100),
+            currency="INR",
+        )
+        db.add(wallet)
+        db.commit()
+        db.refresh(wallet)
+    return wallet
+
+
+def transfer_funds(db: Session, payer_vpa: str, payee_vpa: str, amount_inr: float, txn_ref: str, note: str = ""):
+    amount_paise = int(amount_inr * 100)
+    payer_wallet = get_or_create_wallet(db, payer_vpa)
+    payee_wallet = get_or_create_wallet(db, payee_vpa)
+
+    if payer_wallet.balance_paise < amount_paise:
+        raise ValueError(f"Insufficient funds in wallet: current balance ₹{payer_wallet.balance_paise / 100:.2f}")
+
+    payer_wallet.balance_paise -= amount_paise
+    payer_wallet.updated_at = datetime.now(timezone.utc)
+
+    payee_wallet.balance_paise += amount_paise
+    payee_wallet.updated_at = datetime.now(timezone.utc)
+
+    journal = LedgerJournal(
+        txn_ref=txn_ref,
+        description=f"UPI Payment from {payer_vpa} to {payee_vpa}: {note}",
+        total_amount_paise=amount_paise,
+    )
+    db.add(journal)
+    db.flush()
+
+    debit_entry = LedgerPosting(
+        journal_id=journal.id,
+        account_vpa=payer_vpa,
+        direction="DEBIT",
+        amount_paise=amount_paise,
+        balance_after_paise=payer_wallet.balance_paise,
+    )
+    credit_entry = LedgerPosting(
+        journal_id=journal.id,
+        account_vpa=payee_vpa,
+        direction="CREDIT",
+        amount_paise=amount_paise,
+        balance_after_paise=payee_wallet.balance_paise,
+    )
+    db.add(debit_entry)
+    db.add(credit_entry)
+    db.commit()
+
+    return {
+        "payer_balance_inr": payer_wallet.balance_paise / 100,
+        "payee_balance_inr": payee_wallet.balance_paise / 100,
+    }
+```
+
+### File: backend/app/services/soundbox_service.py
+```python
+import uuid
+from datetime import datetime, timezone
+from sqlalchemy.orm import Session
+from ..models.soundbox import SoundboxAlert
+
+
+VOICE_TEMPLATES = {
+    "hi": "Phone Pe par {amount:.0f} rupaye prapt hue",
+    "en": "Received {amount:.0f} rupees on Phone Pe",
+    "ta": "Phone Pe il {amount:.0f} roobai petrathu",
+    "te": "Phone Pe lo {amount:.0f} roopayalu andukonabadinavi",
+    "kn": "Phone Pe nalli {amount:.0f} roopayi sweekarisalagide",
+    "mr": "Phone Pe var {amount:.0f} rupaye prapt jhale",
+}
+
+
+def dispatch_soundbox_alert(db: Session, merchant_id: str, amount_inr: float, txn_ref: str, lang: str = "hi"):
+    template = VOICE_TEMPLATES.get(lang, VOICE_TEMPLATES["hi"])
+    script = template.format(amount=amount_inr)
+
+    alert = SoundboxAlert(
+        device_sn="SBOX-PHPE-8849",
+        merchant_id=merchant_id,
+        txn_ref=txn_ref,
+        amount_inr=amount_inr,
+        voice_script=script,
+        language=lang,
+        status="BROADCAST_SUCCESS",
+        sent_at=datetime.now(timezone.utc),
+    )
+    db.add(alert)
+    db.commit()
+    db.refresh(alert)
+
+    return {
+        "alert_id": alert.id,
+        "voice_script": script,
+        "status": "DISPATCHED",
+        "audio_rendered": True,
+    }
+```
+
+### File: backend/app/services/fraud_engine.py
+```python
+def check_fraud_risk(payer_vpa: str, amount_inr: float) -> dict:
+    if amount_inr > 100000.0:
+        return {"allowed": False, "reason": "Transaction exceeds standard RBI UPI daily limit of ₹100,000"}
+    if "scam" in payer_vpa or "bot" in payer_vpa:
+        return {"allowed": False, "reason": "VPA flagged under NPCI anomaly blacklist"}
+    return {"allowed": True, "risk_score": 0.02}
+```
+
+### File: backend/app/api/v1/router.py
+```python
+from fastapi import APIRouter
+from .endpoints import upi, wallet, soundbox
+
+api_v1_router = APIRouter()
+api_v1_router.include_router(upi.router, prefix="/upi", tags=["UPI Core"])
+api_v1_router.include_router(wallet.router, prefix="/wallet", tags=["Wallet & Ledger"])
+api_v1_router.include_router(soundbox.router, prefix="/soundbox", tags=["Merchant Soundbox"])
+```
+
+### File: backend/app/api/v1/endpoints/upi.py
+```python
+import random
+from datetime import datetime, timezone
+from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy.orm import Session
+
+from ...database import get_db
+from ...models.upi import UpiTransaction
+from ...schemas.upi import (
+    VpaValidateRequest,
+    VpaValidateResponse,
+    BharatQrGenerateRequest,
+    BharatQrGenerateResponse,
+    UpiPayRequest,
+    UpiPayResponse,
+    UpiTxnStatusResponse,
+)
+from ...services.upi_engine import validate_vpa, generate_bharat_qr_payload
+from ...services.ledger_service import transfer_funds
+from ...services.soundbox_service import dispatch_soundbox_alert
+from ...services.fraud_engine import check_fraud_risk
+
+router = APIRouter()
+
+
+@router.post("/vpa/validate", response_model=VpaValidateResponse)
+def validate_vpa_endpoint(req: VpaValidateRequest):
+    res = validate_vpa(req.vpa)
+    return res
+
+
+@router.post("/qr/generate", response_model=BharatQrGenerateResponse)
+def generate_qr_endpoint(req: BharatQrGenerateRequest):
+    payload = generate_bharat_qr_payload(
+        merchant_vpa=req.merchant_vpa,
+        merchant_name=req.merchant_name,
+        amount=req.amount_inr,
+        note=req.note or "UPI Payment",
+    )
+    return payload
+
+
+@router.post("/pay", response_model=UpiPayResponse)
+def pay_upi_endpoint(req: UpiPayRequest, db: Session = Depends(get_db)):
+    risk = check_fraud_risk(req.payer_vpa, req.amount_inr)
+    if not risk["allowed"]:
+        raise HTTPException(status_code=400, detail=risk["reason"])
+
+    val_payer = validate_vpa(req.payer_vpa)
+    val_payee = validate_vpa(req.payee_vpa)
+    if not val_payer["is_valid"]:
+        raise HTTPException(status_code=400, detail="Invalid payer VPA address")
+    if not val_payee["is_valid"]:
+        raise HTTPException(status_code=400, detail="Invalid payee VPA address")
+
+    txn_ref = f"PHPE{random.randint(100000000000, 999999999999)}"
+    upi_rrn = f"{random.randint(400000000000, 499999999999)}"
+
+    try:
+        transfer_funds(db, req.payer_vpa, req.payee_vpa, req.amount_inr, txn_ref, req.note)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+    txn = UpiTransaction(
+        txn_ref=txn_ref,
+        upi_rrn=upi_rrn,
+        payer_vpa=req.payer_vpa,
+        payee_vpa=req.payee_vpa,
+        amount_paise=int(req.amount_inr * 100),
+        status="SUCCESS",
+        payment_mode="UPI_QR" if val_payee["verified_merchant"] else "P2P",
+        note=req.note,
+        npci_response_code="00",
+    )
+    db.add(txn)
+    db.commit()
+
+    soundbox_alert = False
+    if val_payee["verified_merchant"]:
+        dispatch_soundbox_alert(db, "merch_" + req.payee_vpa.split("@")[0], req.amount_inr, txn_ref)
+        soundbox_alert = True
+
+    return {
+        "txn_ref": txn_ref,
+        "upi_rrn": upi_rrn,
+        "status": "SUCCESS",
+        "payer_vpa": req.payer_vpa,
+        "payee_vpa": req.payee_vpa,
+        "amount_inr": req.amount_inr,
+        "message": f"Transferred ₹{req.amount_inr:.2f} successfully to {val_payee['account_holder_name']}",
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "soundbox_alert_triggered": soundbox_alert,
+    }
+
+
+@router.get("/transactions/{txn_ref}", response_model=UpiTxnStatusResponse)
+def get_transaction_status(txn_ref: str, db: Session = Depends(get_db)):
+    txn = db.query(UpiTransaction).filter(UpiTransaction.txn_ref == txn_ref).first()
+    if not txn:
+        raise HTTPException(status_code=404, detail="Transaction not found")
+    return {
+        "txn_ref": txn.txn_ref,
+        "upi_rrn": txn.upi_rrn,
+        "status": txn.status,
+        "amount_inr": txn.amount_paise / 100,
+        "payer_vpa": txn.payer_vpa,
+        "payee_vpa": txn.payee_vpa,
+        "created_at": txn.created_at.isoformat() if txn.created_at else "",
+    }
+```
+
+### File: backend/app/api/v1/endpoints/wallet.py
+```python
+from fastapi import APIRouter, Depends
+from sqlalchemy.orm import Session
+
+from ...database import get_db
+from ...schemas.ledger import WalletBalanceResponse, WalletTopupRequest
+from ...services.ledger_service import get_or_create_wallet
+
+router = APIRouter()
+
+
+@router.get("/{vpa}/balance", response_model=WalletBalanceResponse)
+def get_wallet_balance(vpa: str, db: Session = Depends(get_db)):
+    wallet = get_or_create_wallet(db, vpa)
+    return {
+        "vpa": wallet.vpa_address,
+        "balance_inr": wallet.balance_paise / 100,
+        "currency": wallet.currency,
+        "status": wallet.status,
+    }
+
+
+@router.post("/topup", response_model=WalletBalanceResponse)
+def topup_wallet(req: WalletTopupRequest, db: Session = Depends(get_db)):
+    wallet = get_or_create_wallet(db, req.vpa)
+    wallet.balance_paise += int(req.amount_inr * 100)
+    db.commit()
+    db.refresh(wallet)
+    return {
+        "vpa": wallet.vpa_address,
+        "balance_inr": wallet.balance_paise / 100,
+        "currency": wallet.currency,
+        "status": wallet.status,
+    }
+```
+
+### File: backend/app/api/v1/endpoints/soundbox.py
+```python
+from fastapi import APIRouter, Depends
+from sqlalchemy.orm import Session
+from ...database import get_db
+from ...schemas.soundbox import SoundboxAlertRequest, SoundboxAlertResponse
+from ...services.soundbox_service import dispatch_soundbox_alert
+
+router = APIRouter()
+
+
+@router.post("/alert", response_model=SoundboxAlertResponse)
+def trigger_soundbox_alert(req: SoundboxAlertRequest, db: Session = Depends(get_db)):
+    res = dispatch_soundbox_alert(db, req.merchant_id, req.amount_inr, "MANUAL_TEST", req.language or "hi")
+    return {
+        "alert_id": res["alert_id"],
+        "device_sn": req.device_sn,
+        "voice_script": res["voice_script"],
+        "status": res["status"],
+        "dispatched_at": "now",
+    }
+```
+
+### File: backend/tests/__init__.py
+```python
+"""Phone Pe Test Suite Package."""
+```
+
+### File: backend/tests/test_upi_engine.py
+```python
+from app.services.upi_engine import validate_vpa, generate_bharat_qr_payload
+from app.services.fraud_engine import check_fraud_risk
+
+
+def test_vpa_validation():
+    valid = validate_vpa("sharma.general@phonepe")
+    assert valid["is_valid"] is True
+    assert valid["bank_handle"] == "@phonepe"
+    assert valid["verified_merchant"] is True
+
+    invalid = validate_vpa("invalid-handle@randombank")
+    assert invalid["is_valid"] is False
+
+
+def test_qr_generation():
+    qr = generate_bharat_qr_payload("merchant@phonepe", "Sharma Sweets", 250.0, "Sweets Box")
+    assert "upi://pay" in qr["upi_intent_uri"]
+    assert "am=250.00" in qr["upi_intent_uri"]
+    assert "<svg" in qr["svg_qr_preview"]
+
+
+def test_fraud_limits():
+    risk = check_fraud_risk("user@ybl", 150000.0)
+    assert risk["allowed"] is False
+    assert "limit" in risk["reason"].lower()
+```
+
+### File: backend/tests/test_ledger.py
+```python
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
+from app.database import Base
+from app.services.ledger_service import get_or_create_wallet, transfer_funds
+
+engine = create_engine("sqlite:///:memory:")
+TestingSessionLocal = sessionmaker(bind=engine)
+Base.metadata.create_all(bind=engine)
+
+
+def test_double_entry_transfer():
+    db = TestingSessionLocal()
+    payer = get_or_create_wallet(db, "payer@ybl", 1000.0)
+    payee = get_or_create_wallet(db, "merchant@phonepe", 500.0)
+
+    res = transfer_funds(db, "payer@ybl", "merchant@phonepe", 200.0, "TEST_TXN_001", "Dinner")
+    assert res["payer_balance_inr"] == 800.0
+    assert res["payee_balance_inr"] == 700.0
+    db.close()
+```
+
+### File: docker/Dockerfile
+```dockerfile
+FROM python:3.11-slim
+WORKDIR /app
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+COPY . .
+EXPOSE 8000
+CMD ["uvicorn", "backend.app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+```
+
+### File: docker/docker-compose.yml
+```yaml
+version: '3.8'
+services:
+  phonepe-api:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=postgresql://phonepe:secret@postgres:5432/phonepe_db
+      - REDIS_URL=redis://redis:6379/0
+      - NPCI_SWITCH_URL=https://switch.npci.org.in/upi2
+    depends_on:
+      - postgres
+      - redis
+
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: phonepe
+      POSTGRES_PASSWORD: secret
+      POSTGRES_DB: phonepe_db
+    ports:
+      - "5432:5432"
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+```
+
+### File: .env.example
+```ini
+DATABASE_URL=postgresql://phonepe:secret@localhost:5432/phonepe_db
+REDIS_URL=redis://localhost:6379/0
+NPCI_SWITCH_URL=https://switch.npci.org.in/upi2
+SOUNDBOX_WEBHOOK_SECRET=phonepe-soundbox-secret-key
+DEFAULT_CURRENCY=INR
+MAX_DAILY_UPI_LIMIT_INR=100000.0
+```
+
+### File: .gitignore
+```gitignore
+__pycache__/
+*.pyc
+*.db
+.env
+dist/
+node_modules/
+.pytest_cache/
+```
+
+### File: requirements.txt
+```text
+fastapi>=0.110.0
+uvicorn[standard]>=0.28.0
+pydantic>=2.6.0
+sqlalchemy>=2.0.28
+pytest>=8.0.0
+httpx>=0.27.0
+```
+
+### File: frontend/src/PaymentWidget.jsx
+```jsx
+import React, { useState } from "react";
+
+export default function PhonePePaymentWidget() {
+  const [payerVpa, setPayerVpa] = useState("rahul@ybl");
+  const [payeeVpa, setPayeeVpa] = useState("store@phonepe");
+  const [amount, setAmount] = useState(500);
+  const [status, setStatus] = useState(null);
+  const [soundboxVoice, setSoundboxVoice] = useState(null);
+  const [loading, setLoading] = useState(false);
+
+  const handlePay = async () => {
+    setLoading(true);
+    setStatus(null);
+    try {
+      const res = await fetch("http://localhost:8000/api/v1/upi/pay", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          payer_vpa: payerVpa,
+          payee_vpa: payeeVpa,
+          amount_inr: parseFloat(amount),
+          mpin: "1234",
+          note: "Store Payment",
+        }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setStatus({ type: "success", text: `Paid ₹${amount} successfully! RRN: ${data.upi_rrn}` });
+        if (data.soundbox_alert_triggered) {
+          setSoundboxVoice(`🔊 "Phone Pe par ₹${amount} prapt hue!"`);
+        }
+      } else {
+        setStatus({ type: "error", text: data.detail || "Payment Failed" });
+      }
+    } catch (e) {
+      setStatus({ type: "error", text: "Network Error: Ensure API is running" });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div style={{ maxWidth: 420, margin: "20px auto", padding: 24, borderRadius: 16, background: "#1a102f", color: "#fff", border: "1px solid #5f259f", fontFamily: "sans-serif" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }}>
+        <div style={{ width: 36, height: 36, borderRadius: "50%", background: "#5f259f", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 900 }}>Pe</div>
+        <div>
+          <h3 style={{ margin: 0, fontSize: 18 }}>Phone Pe UPI Payment</h3>
+          <span style={{ fontSize: 11, color: "#a78bfa" }}>Instant Bank Transfer (NPCI Switch 2.0)</span>
+        </div>
+      </div>
+
+      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+        <div>
+          <label style={{ fontSize: 12, color: "#9ca3af" }}>Payer VPA</label>
+          <input value={payerVpa} onChange={(e) => setPayerVpa(e.target.value)} style={{ width: "100%", padding: 10, borderRadius: 8, background: "#2d1b4e", border: "1px solid #5f259f", color: "#fff" }} />
+        </div>
+        <div>
+          <label style={{ fontSize: 12, color: "#9ca3af" }}>Merchant Payee VPA</label>
+          <input value={payeeVpa} onChange={(e) => setPayeeVpa(e.target.value)} style={{ width: "100%", padding: 10, borderRadius: 8, background: "#2d1b4e", border: "1px solid #5f259f", color: "#fff" }} />
+        </div>
+        <div>
+          <label style={{ fontSize: 12, color: "#9ca3af" }}>Amount (₹ INR)</label>
+          <input type="number" value={amount} onChange={(e) => setAmount(e.target.value)} style={{ width: "100%", padding: 10, borderRadius: 8, background: "#2d1b4e", border: "1px solid #5f259f", color: "#fff", fontSize: 18, fontWeight: 700 }} />
+        </div>
+        <button onClick={handlePay} disabled={loading} style={{ background: "#5f259f", color: "#fff", padding: "12px 20px", borderRadius: 8, border: "none", fontSize: 16, fontWeight: 700, cursor: "pointer", transition: "all 0.2s" }}>
+          {loading ? "Processing via NPCI..." : `Pay ₹${amount}`}
+        </button>
+      </div>
+
+      {status && (
+        <div style={{ marginTop: 16, padding: 12, borderRadius: 8, background: status.type === "success" ? "rgba(16, 185, 129, 0.2)" : "rgba(239, 68, 68, 0.2)", color: status.type === "success" ? "#34d399" : "#f87171" }}>
+          {status.text}
+        </div>
+      )}
+
+      {soundboxVoice && (
+        <div style={{ marginTop: 12, padding: 10, borderRadius: 8, background: "#3b1e6d", border: "1px dashed #a78bfa", color: "#e9d5ff", fontSize: 13, display: "flex", alignItems: "center", gap: 8 }}>
+          <span>📢</span>
+          <strong>Soundbox Broadcast:</strong> {soundboxVoice}
+        </div>
+      )}
+    </div>
+  );
+}
+```
+
+### File: README.md
+```markdown
+# Phone Pe
+
+High-throughput UPI 2.0 payments platform modeled after Phone Pe with BharatQR generation, VPA resolution, double-entry wallet ledger, and Soundbox audio alert notifications.
+
+## Quick Start
+```bash
+pip install -r requirements.txt
+uvicorn backend.app.main:app --reload
+```
+
+## Running Tests
+```bash
+pytest backend/tests/
+```
+```
+'''
+
+
+# ==============================================================================
+# 6. Dynamic Custom Project Synthesis Helper
 # ==============================================================================
 def generate_custom_bundle(project_name: str, slug: str) -> str:
     """Generates an 18-file modular architecture for custom project briefs."""

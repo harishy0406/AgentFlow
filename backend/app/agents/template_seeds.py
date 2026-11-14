@@ -1,11 +1,12 @@
 """
 Template Seed Data Engine — AgentFlow Starter Architecture Presets
 
-Provides complete, pre-configured seed definitions for all 4 starter templates:
+Provides complete, pre-configured seed definitions for all 5 starter templates:
 1. AI Code Reviewer (DevOps & AI)
 2. FinTech Escrow API (FinTech & Payments)
 3. HIPAA Telehealth Suite (Healthcare & MedTech)
 4. Multi-Vendor Marketplace (E-Commerce & Retail)
+5. Phone Pe (FinTech & UPI)
 
 Also includes dynamic project synthesis for custom briefs to guarantee
 100% offline, demo-ready project initialization without external LLM dependencies.
@@ -24,6 +25,7 @@ from .seed_code_bundles import (
     FINTECH_ESCROW_BUNDLE,
     HEALTHCARE_TELEHEALTH_BUNDLE,
     ECOMMERCE_MARKETPLACE_BUNDLE,
+    PHONEPE_PAYMENTS_BUNDLE,
     generate_custom_bundle,
 )
 
@@ -657,6 +659,297 @@ TEMPLATE_DEFINITIONS: Dict[str, Dict[str, Any]] = {
                 "code_bundle": ECOMMERCE_MARKETPLACE_BUNDLE
             }
         }
+    },
+
+    "phonepe_payments": {
+        "id": "phonepe_payments",
+        "aliases": ["phone pe", "phonepe", "phone_pe", "upi payments", "upi payment gateway", "phonepe payments", "upi", "npci payments"],
+        "title": "Phone Pe",
+        "tag": "FinTech & UPI",
+        "workspace_name": "FinTech & Payments Group",
+        "brief": "Build an ultra-high-throughput UPI & Digital Payments platform modeled after Phone Pe. Features NPCI UPI 2.0 switch connectivity, dynamic & static BharatQR/UPI QR code generation, Virtual Payment Address (VPA) resolution (@phonepe, @ybl), multi-bank account linking with NPCI MPIN verification, instant peer-to-peer (P2P) and peer-to-merchant (P2M) settlement, dual-entry wallet ledger with ACID guarantees, real-time fraud anomaly scoring, soundbox audio notification webhooks, and merchant auto-settlement.",
+        "clarifications": "Questions:\n1. Which banking handle switches should be supported (@ybl, @axl, @ibl, NPCI UPI 2.0)?\n2. What is the peak transaction per second (TPS) target and p99 latency SLA?\n3. How should VPA resolution, bank account verification, and MPIN authentication be simulated/handled?\n4. What merchant settlement schedule, MDR commission, and Soundbox IoT webhook dispatch should be supported?\n\nAnswers:\n1. Multi-bank routing with YES Bank (@ybl), Axis Bank (@axl), and ICICI Bank (@ibl) failover switches.\n2. 15,000 TPS peak load handling with Redis cluster caching, Kafka event streaming, and < 350ms p99 settlement latency.\n3. Real-time VPA validation via NPCI Switch emulator with dual-entry ledger and cryptographic HMAC signature validation.\n4. Instant real-time merchant settlement, automated T+0 batch payouts, and low-latency audio soundbox broadcast webhooks.",
+        "quality_scores": {
+            "PRD": 98.5,
+            "SDD": 97.0,
+            "DB_SCHEMA": 99.0,
+            "API_SPEC": 97.5,
+            "USER_STORIES": 95.0,
+            "TASKS": 94.0,
+            "CODE_GENERATION": 96.5,
+        },
+        "artifacts": {
+            "PRD": {
+                "executive_summary": (
+                    "# Phone Pe — Product Requirements Document\n\n"
+                    "## Executive Summary\n"
+                    "Phone Pe is an ultra-high-throughput, mission-critical financial technology platform "
+                    "engineered for India's Unified Payments Interface (UPI 2.0) ecosystem. The platform powers instant peer-to-peer (P2P) "
+                    "and peer-to-merchant (P2M) transactions, dynamic BharatQR generation, multi-bank handle routing (@phonepe, @ybl, @axl, @ibl), "
+                    "high-concurrency double-entry ledger bookkeeping, real-time ML fraud detection, and instant merchant audio Soundbox confirmation alerts."
+                ),
+                "user_personas": (
+                    "## Target Personas\n\n"
+                    "1. **Consumer (Payer)**: Demands sub-second scan-and-pay via BharatQR or VPA transfer, zero failed debit recoveries, and seamless MPIN verification.\n"
+                    "2. **Retail Merchant**: Relies on instant Soundbox audio confirmation for customer payments in noisy retail shops, daily auto-settlement, and 0% MDR on UPI.\n"
+                    "3. **Payment Operations & Treasury**: Monitors real-time bank switch health, liquidity buffers, reconciliation mismatch queues, and automated dispute resolution.\n"
+                    "4. **Risk & Fraud Analyst**: Configures device fingerprinting rules, high-velocity transfer blocks, and automated account freezing."
+                ),
+                "functional_requirements": (
+                    "## Functional Requirements\n\n"
+                    "- **FR-1 VPA Management**: Register, resolve, and route Virtual Payment Addresses across multiple PSP banking switches (@phonepe, @ybl, @axl, @ibl).\n"
+                    "- **FR-2 BharatQR Engine**: Generate dynamic and static UPI QR codes with custom merchant parameters (MCC, amount, transaction reference).\n"
+                    "- **FR-3 High-Throughput UPI Switch**: Ingest and process 15,000+ peak TPS with sub-350ms p99 response times via asynchronous event queues.\n"
+                    "- **FR-4 Double-Entry Wallet Ledger**: Maintain strict ACID ledger accounting with paise-level precision and atomic row locking (`SELECT FOR UPDATE`).\n"
+                    "- **FR-5 Merchant Soundbox Integration**: Low-latency IoT webhook dispatch broadcasting multi-lingual audio confirmation alerts (Hindi, English, Tamil, Telugu, Kannada, Marathi).\n"
+                    "- **FR-6 Real-Time Fraud & Anomaly Guard**: ML-assisted velocity checking, suspicious device fingerprinting, and RBI daily limit enforcement (₹100,000)."
+                ),
+                "non_functional_requirements": (
+                    "## Non-Functional Requirements\n\n"
+                    "- **Latency**: P99 payment confirmation under 350ms; Soundbox alert dispatch under 800ms.\n"
+                    "- **Throughput & Scalability**: Scalable to 15,000 TPS horizontal peak load with zero dropped transactions.\n"
+                    "- **High Availability**: 99.999% uptime with automated active-active multi-bank switch failover.\n"
+                    "- **Security & Compliance**: Strict RBI guidelines, PCI-DSS Level 1 compliance, AES-256 GCM encryption at rest, and TLS 1.3 in transit."
+                )
+            },
+            "SDD": {
+                "architecture_overview": (
+                    "# Phone Pe — System Architecture\n\n"
+                    "## Transaction Processing Lifecycle\n\n"
+                    "```mermaid\n"
+                    "sequenceDiagram\n"
+                    "  autonumber\n"
+                    "  actor User as Consumer App\n"
+                    "  participant GW as API Gateway\n"
+                    "  participant UPI as UPI Switch Engine\n"
+                    "  participant NPCI as NPCI Switch Simulator\n"
+                    "  participant Ledger as Double-Entry Ledger\n"
+                    "  participant SBox as Soundbox IoT Broker\n"
+                    "  User ->> GW: Scan QR & Authorize Payment (MPIN)\n"
+                    "  GW ->> UPI: Validate VPA & Risk Score\n"
+                    "  UPI ->> NPCI: Route to Remitter & Beneficiary Bank\n"
+                    "  NPCI -->> UPI: Response Code 00 (Success, RRN generated)\n"
+                    "  UPI ->> Ledger: Atomic Debit Payer / Credit Merchant (Paise)\n"
+                    "  UPI ->> SBox: Publish Audio Alert Event (MQTT/Webhook)\n"
+                    "  SBox -->> User: Soundbox: 'Phone Pe par ₹500 prapt hue'\n"
+                    "  UPI -->> GW: Payment Confirmation + Digital Receipt\n"
+                    "  GW -->> User: Instant Success Screen\n"
+                    "```\n\n"
+                    "The system architecture employs an event-driven, decoupled microservices topology with Redis cluster caching, "
+                    "PostgreSQL 16 partitioned persistence, and Kafka/Celery async workers."
+                ),
+                "component_design": (
+                    "## Component Specifications\n\n"
+                    "1. **UPI API Gateway**: Ingress endpoint handling VPA lookup, BharatQR generation, and payment orchestration.\n"
+                    "2. **NPCI Switch Emulator**: Compliant ISO 8583 message formatting, RRN generation, and multi-bank routing.\n"
+                    "3. **Atomic Ledger Service**: Row-level locking double-entry accounting engine preventing balance drift or double-spends.\n"
+                    "4. **Soundbox IoT Broker**: Webhook and MQTT event emitter broadcasting real-time localized audio prompts.\n"
+                    "5. **Fraud Engine**: Pre-execution risk screening evaluating velocity, location, and account blacklist status."
+                ),
+                "data_persistence": (
+                    "## Data Persistence Strategy\n\n"
+                    "PostgreSQL 16 relational database with row-level locking for wallet and ledger tables. "
+                    "Redis 7.2 serves as the idempotency cache, rate limiter, and VPA handle resolver (< 2ms lookup)."
+                )
+            },
+            "DB_SCHEMA": {
+                "relational_ddl": (
+                    "-- ==========================================================================\n"
+                    "-- Phone Pe Database DDL (PostgreSQL 16)\n"
+                    "-- ==========================================================================\n\n"
+                    "CREATE TABLE IF NOT EXISTS users (\n"
+                    "    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),\n"
+                    "    phone_number VARCHAR(20) NOT NULL UNIQUE,\n"
+                    "    full_name VARCHAR(150) NOT NULL,\n"
+                    "    kyc_status VARCHAR(50) NOT NULL DEFAULT 'verified',\n"
+                    "    mpin_hash VARCHAR(128) NOT NULL,\n"
+                    "    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP\n"
+                    ");\n\n"
+                    "CREATE TABLE IF NOT EXISTS bank_accounts (\n"
+                    "    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),\n"
+                    "    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,\n"
+                    "    bank_name VARCHAR(100) NOT NULL,\n"
+                    "    ifsc_code VARCHAR(11) NOT NULL,\n"
+                    "    masked_acc_num VARCHAR(20) NOT NULL,\n"
+                    "    acc_type VARCHAR(20) NOT NULL DEFAULT 'savings',\n"
+                    "    is_primary BOOLEAN NOT NULL DEFAULT TRUE,\n"
+                    "    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP\n"
+                    ");\n\n"
+                    "CREATE TABLE IF NOT EXISTS vpa_handles (\n"
+                    "    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),\n"
+                    "    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,\n"
+                    "    vpa_address VARCHAR(100) NOT NULL UNIQUE,\n"
+                    "    bank_account_id UUID REFERENCES bank_accounts(id),\n"
+                    "    is_primary BOOLEAN NOT NULL DEFAULT TRUE,\n"
+                    "    is_active BOOLEAN NOT NULL DEFAULT TRUE,\n"
+                    "    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP\n"
+                    ");\n\n"
+                    "CREATE TABLE IF NOT EXISTS merchant_profiles (\n"
+                    "    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),\n"
+                    "    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,\n"
+                    "    business_name VARCHAR(200) NOT NULL,\n"
+                    "    merchant_vpa VARCHAR(100) NOT NULL UNIQUE,\n"
+                    "    mcc_code VARCHAR(10) NOT NULL DEFAULT '5411',\n"
+                    "    soundbox_device_id VARCHAR(50),\n"
+                    "    instant_settlement BOOLEAN NOT NULL DEFAULT TRUE,\n"
+                    "    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP\n"
+                    ");\n\n"
+                    "CREATE TABLE IF NOT EXISTS wallet_accounts (\n"
+                    "    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),\n"
+                    "    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,\n"
+                    "    vpa_address VARCHAR(100) NOT NULL UNIQUE,\n"
+                    "    balance_paise BIGINT NOT NULL DEFAULT 500000,\n"
+                    "    currency VARCHAR(3) NOT NULL DEFAULT 'INR',\n"
+                    "    status VARCHAR(20) NOT NULL DEFAULT 'active',\n"
+                    "    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP\n"
+                    ");\n\n"
+                    "CREATE TABLE IF NOT EXISTS upi_transactions (\n"
+                    "    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),\n"
+                    "    txn_ref VARCHAR(50) NOT NULL UNIQUE,\n"
+                    "    upi_rrn VARCHAR(12) NOT NULL UNIQUE,\n"
+                    "    payer_vpa VARCHAR(100) NOT NULL,\n"
+                    "    payee_vpa VARCHAR(100) NOT NULL,\n"
+                    "    amount_paise BIGINT NOT NULL,\n"
+                    "    status VARCHAR(30) NOT NULL DEFAULT 'SUCCESS',\n"
+                    "    payment_mode VARCHAR(20) NOT NULL DEFAULT 'UPI_QR',\n"
+                    "    note VARCHAR(255) DEFAULT 'Payment via Phone Pe',\n"
+                    "    npci_response_code VARCHAR(10) NOT NULL DEFAULT '00',\n"
+                    "    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP\n"
+                    ");\n\n"
+                    "CREATE TABLE IF NOT EXISTS ledger_journals (\n"
+                    "    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),\n"
+                    "    txn_ref VARCHAR(50) NOT NULL REFERENCES upi_transactions(txn_ref) ON DELETE CASCADE,\n"
+                    "    description VARCHAR(255) NOT NULL,\n"
+                    "    total_amount_paise BIGINT NOT NULL,\n"
+                    "    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP\n"
+                    ");\n\n"
+                    "CREATE TABLE IF NOT EXISTS ledger_postings (\n"
+                    "    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),\n"
+                    "    journal_id UUID NOT NULL REFERENCES ledger_journals(id) ON DELETE CASCADE,\n"
+                    "    account_vpa VARCHAR(100) NOT NULL,\n"
+                    "    direction VARCHAR(10) NOT NULL, -- 'DEBIT' or 'CREDIT'\n"
+                    "    amount_paise BIGINT NOT NULL,\n"
+                    "    balance_after_paise BIGINT NOT NULL,\n"
+                    "    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP\n"
+                    ");\n\n"
+                    "CREATE TABLE IF NOT EXISTS soundbox_alerts (\n"
+                    "    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),\n"
+                    "    device_sn VARCHAR(50) NOT NULL,\n"
+                    "    merchant_id VARCHAR(50) NOT NULL,\n"
+                    "    txn_ref VARCHAR(50) NOT NULL,\n"
+                    "    amount_inr NUMERIC(10,2) NOT NULL,\n"
+                    "    voice_script VARCHAR(255) NOT NULL,\n"
+                    "    language VARCHAR(10) NOT NULL DEFAULT 'hi',\n"
+                    "    status VARCHAR(20) NOT NULL DEFAULT 'DISPATCHED',\n"
+                    "    sent_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP\n"
+                    ");\n\n"
+                    "CREATE INDEX IF NOT EXISTS idx_users_phone ON users(phone_number);\n"
+                    "CREATE INDEX IF NOT EXISTS idx_vpa_address ON vpa_handles(vpa_address);\n"
+                    "CREATE INDEX IF NOT EXISTS idx_txn_rrn ON upi_transactions(upi_rrn);\n"
+                    "CREATE INDEX IF NOT EXISTS idx_txn_payer ON upi_transactions(payer_vpa);\n"
+                    "CREATE INDEX IF NOT EXISTS idx_txn_payee ON upi_transactions(payee_vpa);\n"
+                    "CREATE INDEX IF NOT EXISTS idx_ledger_vpa ON ledger_postings(account_vpa);"
+                ),
+                "schema_summary": (
+                    "## Relational Data Architecture\n"
+                    "Strict 3NF database schema with Paise integer precision, atomic double-entry postings, "
+                    "and optimized indexes for sub-millisecond Phone Pe transaction reconciliation."
+                )
+            },
+            "API_SPEC": {
+                "openapi_yaml": (
+                    "openapi: 3.0.3\n"
+                    "info:\n"
+                    "  title: Phone Pe API\n"
+                    "  version: 1.0.0\n"
+                    "  description: Enterprise API for Phone Pe UPI 2.0 payments, BharatQR code generation, and Soundbox notifications.\n"
+                    "paths:\n"
+                    "  /api/v1/health:\n"
+                    "    get:\n"
+                    "      summary: System Health & UPI Switch Connection\n"
+                    "      responses:\n"
+                    "        '200':\n"
+                    "          description: Service healthy and UPI switch online\n"
+                    "  /api/v1/upi/vpa/validate:\n"
+                    "    post:\n"
+                    "      summary: Validate Virtual Payment Address (VPA)\n"
+                    "      responses:\n"
+                    "        '200':\n"
+                    "          description: VPA validation result\n"
+                    "  /api/v1/upi/qr/generate:\n"
+                    "    post:\n"
+                    "      summary: Generate Dynamic BharatQR Code\n"
+                    "      responses:\n"
+                    "        '200':\n"
+                    "          description: QR code payload and SVG preview\n"
+                    "  /api/v1/upi/pay:\n"
+                    "    post:\n"
+                    "      summary: Execute Instant UPI Payment\n"
+                    "      responses:\n"
+                    "        '200':\n"
+                    "          description: Payment successful with NPCI RRN\n"
+                    "  /api/v1/upi/transactions/{txn_ref}:\n"
+                    "    get:\n"
+                    "      summary: Query Transaction Status\n"
+                    "      responses:\n"
+                    "        '200':\n"
+                    "          description: Transaction details\n"
+                    "  /api/v1/wallet/{vpa}/balance:\n"
+                    "    get:\n"
+                    "      summary: Get Wallet & Account Balance\n"
+                    "      responses:\n"
+                    "        '200':\n"
+                    "          description: Balance in INR\n"
+                    "  /api/v1/soundbox/alert:\n"
+                    "    post:\n"
+                    "      summary: Dispatch Merchant Soundbox Audio Alert\n"
+                    "      responses:\n"
+                    "        '200':\n"
+                    "          description: Audio broadcast dispatched\n"
+                )
+            },
+            "USER_STORIES": {
+                "stories_list": (
+                    "# Phone Pe — Agile User Stories\n\n"
+                    "### US-1: Instant Merchant QR Scan & Pay with Soundbox Audio Confirmation\n"
+                    "**As a** retail customer visiting a local grocery store,  \n"
+                    "**I want** to scan the merchant's BharatQR code and pay ₹450 with my UPI MPIN in under 1 second,  \n"
+                    "**So that** the store's Soundbox immediately announces 'Phone Pe par ₹450 prapt hue' and I can depart without showing my screen.\n\n"
+                    "```gherkin\n"
+                    "Scenario: Successful merchant QR payment with audio confirmation\n"
+                    "  Given a customer scans the dynamic BharatQR for 'store@phonepe'\n"
+                    "  When the customer enters a valid 4-digit MPIN and confirms payment\n"
+                    "  Then the UPI Switch debits the customer wallet ₹450.00 and credits the merchant\n"
+                    "  And an NPCI RRN 12-digit reference number is issued\n"
+                    "  And the merchant Soundbox broadcasts 'Phone Pe par ₹450 prapt hue' within 800ms\n"
+                    "```\n\n"
+                    "### US-2: Peer-to-Peer (P2P) Direct Bank Transfer via Mobile VPA\n"
+                    "**As a** Phone Pe consumer,  \n"
+                    "**I want** to send ₹2,000 to my friend's handle (`rahul@ybl`),  \n"
+                    "**So that** funds transfer directly between our linked bank accounts with zero transaction fees.\n\n"
+                    "### US-3: Real-Time Fraud & Anomaly Guard on High-Frequency Transfers\n"
+                    "**As an** AppSec and AML compliance officer,  \n"
+                    "**I want** the system to detect and throttle transaction bursts exceeding 10 transfers/min from a single VPA,  \n"
+                    "**So that** unauthorized account takeovers and automated siphon bots are blocked instantly."
+                )
+            },
+            "TASKS": {
+                "tasks_list": (
+                    "# Phone Pe — Engineering Task DAG\n\n"
+                    "- [x] **TASK-01**: Initialize FastAPI payment gateway skeleton with PostgreSQL async session pool and Redis. *(Estimate: 1 day)*\n"
+                    "- [x] **TASK-02**: Implement VPA address validation engine and handle routing for @phonepe, @ybl, @axl, @ibl. *(Estimate: 1 day)*\n"
+                    "- [x] **TASK-03**: Build BharatQR code generator conforming to NPCI UPI 2.0 specifications. *(Estimate: 1 day)*\n"
+                    "- [x] **TASK-04**: Construct ACID double-entry ledger service with atomic row locking and paise precision. *(Estimate: 2 days)*\n"
+                    "- [x] **TASK-05**: Implement NPCI Switch 2.0 simulation with 12-digit RRN generation and ISO 8583 response codes. *(Estimate: 2 days)*\n"
+                    "- [x] **TASK-06**: Integrate Merchant Soundbox IoT notification webhook dispatcher with multi-lingual audio synthesis. *(Estimate: 2 days)*\n"
+                    "- [x] **TASK-07**: Build ML-based fraud velocity check service and daily transaction limit validation. *(Estimate: 1 day)*\n"
+                    "- [x] **TASK-08**: Develop automated unit and integration test suite with high-concurrency simulation. *(Estimate: 2 days)*"
+                )
+            },
+            "CODE_GENERATION": {
+                "code_bundle": PHONEPE_PAYMENTS_BUNDLE
+            }
+        }
     }
 }
 
@@ -689,6 +982,8 @@ def get_template_definition(query: str = "", brief: str = "") -> Optional[Dict[s
             return t_def
 
     # 4. Keyword checks with specific precedence
+    if any(k in combined for k in ["phone pe", "phonepe", "upi", "vpa", "soundbox", "npci", "bharatqr"]):
+        return TEMPLATE_DEFINITIONS["phonepe_payments"]
     if any(k in combined for k in ["escrow", "fintech", "stripe connect", "dual-entry", "milestone payment"]):
         return TEMPLATE_DEFINITIONS["fintech_escrow"]
     if any(k in combined for k in ["telehealth", "hipaa", "webrtc", "clinical", "patient", "ehr", "fhir"]):

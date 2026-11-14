@@ -356,6 +356,18 @@ def list_project_templates():
                 "Inventory Locking": "Redis Distributed Lock (Redlock)",
                 "Payout Schedule": "Automated bi-weekly vendor settlements"
             }
+        ),
+        schemas.ProjectTemplateOut(
+            id="phonepe_payments",
+            title="Phone Pe",
+            category="FinTech & UPI",
+            description="Ultra-high-throughput UPI 2.0 payments switch, dynamic BharatQR generation, VPA resolution, wallet ledger, and Soundbox merchant alerts.",
+            suggested_brief="Build an ultra-high-throughput UPI & Digital Payments platform modeled after Phone Pe. Features NPCI UPI 2.0 switch connectivity, dynamic & static BharatQR/UPI QR code generation, Virtual Payment Address (VPA) resolution (@phonepe, @ybl), multi-bank account linking with NPCI MPIN verification, instant peer-to-peer (P2P) and peer-to-merchant (P2M) settlement, dual-entry wallet ledger with ACID guarantees, real-time fraud anomaly scoring, soundbox audio notification webhooks, and merchant auto-settlement.",
+            sample_clarifications={
+                "Supported Banking Switches": "YES Bank (@ybl), Axis Bank (@axl), ICICI Bank (@ibl), and NPCI UPI 2.0",
+                "Peak Concurrency": "15,000 TPS with Redis cluster and double-entry row-locking",
+                "Merchant Hardware Integration": "Soundbox audio notification webhooks with multi-lingual voice synthesis"
+            }
         )
     ]
 
