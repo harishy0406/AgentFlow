@@ -198,6 +198,12 @@ function renderModelLogo(modelName, size = 16) {
   } else if (lower.includes("groq")) {
     iconSrc = "/icons/groq.svg";
     altText = "Groq";
+  } else if (lower.includes("openrouter")) {
+    iconSrc = "/icons/openrouter.svg";
+    altText = "OpenRouter";
+  } else if (lower.includes("ollama")) {
+    iconSrc = "/icons/ollama.svg";
+    altText = "Ollama";
   } else if (lower.includes("nvidia") || lower.includes("nemotron")) {
     iconSrc = "/icons/nvidia.svg";
     altText = "NVIDIA";
@@ -270,6 +276,22 @@ function renderModelBadge(modelName) {
   if (lower.includes("groq")) {
     return (
       <span style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "2px 8px", borderRadius: 6, fontSize: 11, fontWeight: 600, background: "rgba(249, 115, 22, 0.12)", color: "#FB923C", border: "1px solid rgba(249, 115, 22, 0.3)" }}>
+        {renderModelLogo(modelName, 14)}
+        <span>{modelName}</span>
+      </span>
+    );
+  }
+  if (lower.includes("openrouter")) {
+    return (
+      <span style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "2px 8px", borderRadius: 6, fontSize: 11, fontWeight: 600, background: "rgba(99, 102, 241, 0.12)", color: "#818CF8", border: "1px solid rgba(99, 102, 241, 0.3)" }}>
+        {renderModelLogo(modelName, 14)}
+        <span>{modelName}</span>
+      </span>
+    );
+  }
+  if (lower.includes("ollama")) {
+    return (
+      <span style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "2px 8px", borderRadius: 6, fontSize: 11, fontWeight: 600, background: "rgba(241, 245, 249, 0.12)", color: "#E2E8F0", border: "1px solid rgba(241, 245, 249, 0.3)" }}>
         {renderModelLogo(modelName, 14)}
         <span>{modelName}</span>
       </span>
@@ -3840,6 +3862,13 @@ export default function Home() {
                                 title: "Multi-Vendor Marketplace",
                                 tag: "E-Commerce",
                                 brief: "Develop a multi-vendor marketplace with real-time product catalogs, distributed cart reservation locks, merchant analytics dashboards, and automated tax calculations."
+                              },
+                              {
+                                id: "phonepe_payments",
+                                icon: "📱",
+                                title: "Phone Pe",
+                                tag: "FinTech & UPI",
+                                brief: "Build an ultra-high-throughput UPI & Digital Payments platform modeled after Phone Pe. Features NPCI UPI 2.0 switch connectivity, dynamic & static BharatQR/UPI QR code generation, Virtual Payment Address (VPA) resolution (@phonepe, @ybl), multi-bank account linking with NPCI MPIN verification, instant peer-to-peer (P2P) and peer-to-merchant (P2M) settlement, dual-entry wallet ledger with ACID guarantees, real-time fraud anomaly scoring, soundbox audio notification webhooks, and merchant auto-settlement."
                               }
                             ].map((t) => {
                               const isSelected = selectedTemplate === t.id;
@@ -4174,7 +4203,11 @@ export default function Home() {
                               Active Artifact: <strong>{DAG_GENERATION_STAGES[pipelineCurrentStageIndex]?.label}</strong>
                             </span>
                             <span>
-                              Dispatched Agent: <strong style={{ color: "var(--neon-green)" }}>{DAG_GENERATION_STAGES[pipelineCurrentStageIndex]?.agent}</strong> ({DAG_GENERATION_STAGES[pipelineCurrentStageIndex]?.model})
+                              Dispatched Agent: <strong style={{ color: "var(--neon-green)" }}>{DAG_GENERATION_STAGES[pipelineCurrentStageIndex]?.agent}</strong>{" "}
+                              <span style={{ display: "inline-flex", alignItems: "center", gap: 5, verticalAlign: "middle", marginLeft: 4 }}>
+                                {renderModelLogo(DAG_GENERATION_STAGES[pipelineCurrentStageIndex]?.model, 14)}
+                                <span style={{ opacity: 0.9 }}>({DAG_GENERATION_STAGES[pipelineCurrentStageIndex]?.model})</span>
+                              </span>
                             </span>
                           </div>
                         </div>
@@ -4217,7 +4250,10 @@ export default function Home() {
                                   <h4 className="stage-item-title">{st.label}</h4>
                                   <div className="stage-item-meta">
                                     <span className="stage-agent-name">{st.agent}</span>
-                                    <span className="stage-model-name">{st.model}</span>
+                                    <span className="stage-model-name" style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>
+                                      {renderModelLogo(st.model, 13)}
+                                      <span>{st.model}</span>
+                                    </span>
                                   </div>
                                   <p className="stage-item-desc">{st.desc}</p>
                                 </div>

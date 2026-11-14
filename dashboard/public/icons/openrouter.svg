@@ -1,0 +1,10 @@
+<svg role="img" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <title>OpenRouter</title>
+  <defs>
+    <linearGradient id="orGrad" x1="2" y1="2" x2="22" y2="22" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#6366F1"/>
+      <stop offset="100%" stop-color="#A855F7"/>
+    </linearGradient>
+  </defs>
+  <path d="M12 2L3 7.2v9.6L12 22l9-5.2V7.2L12 2zm0 3.3l6.2 3.6L12 12.5 5.8 8.9 12 5.3zm-7 5.2l6 3.5v7l-6-3.5v-7zm8 10.5v-7l6-3.5v7l-6 3.5z" fill="url(#orGrad)"/>
+</svg>

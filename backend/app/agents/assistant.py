@@ -58,7 +58,7 @@ def _get_node_content(project: Project, artifact_type: str) -> str:
 
 
 def answer_project_query(
-    project_id: UUID,
+    project_id: Any,
     query: str,
     history: Optional[List[Dict[str, str]]] = None,
     db: Session = None,
@@ -66,7 +66,10 @@ def answer_project_query(
     """
     Answers a natural language query about the project using full context.
     """
-    project = db.query(Project).filter(Project.id == project_id).first()
+    if isinstance(project_id, Project):
+        project = project_id
+    else:
+        project = db.query(Project).filter(Project.id == project_id).first()
     if not project:
         raise ValueError(f"Project {project_id} not found")
 
@@ -110,9 +113,9 @@ def answer_project_query(
     if not referenced_artifacts:
         referenced_artifacts = ["PRD", "SDD", "API_SPEC"]
 
-    # Generate response
+    # Generate response using best available live provider (Groq, OpenRouter, etc.)
     try:
-        chat_model = PROVIDER_REGISTRY.get_chat_model("anthropic", "claude-haiku-4-20250514")
+        chat_model = PROVIDER_REGISTRY.get_best_available_chat_model()
         res = chat_model.invoke(f"{system_prompt}\n\n{user_prompt}")
         reply_text = res.content if hasattr(res, "content") else str(res)
     except Exception:
@@ -268,12 +271,13 @@ def modify_project_via_chat(
         f"INSTRUCTIONS:\n"
         f"1. Return the COMPLETE updated text for this section.\n"
         f"2. Seamlessly integrate the requested modification while preserving existing format, structure, and indentation.\n"
-        f"3. Return ONLY the raw modified section content without markdown conversation wrappers or commentary."
+        f"3. Return ONLY the raw modified section content without markdown conversation wrappers or commentary.\n"
+        f"4. For SQL DDL (DB_SCHEMA), always use 'CREATE TABLE IF NOT EXISTS <table_name>' for table definitions."
     )
 
     new_content = ""
     try:
-        model = PROVIDER_REGISTRY.get_chat_model("anthropic", "claude-3-5-sonnet-20241022")
+        model = PROVIDER_REGISTRY.get_best_available_chat_model()
         res = model.invoke(modify_prompt)
         content_candidate = res.content if hasattr(res, "content") else str(res)
         if content_candidate and "Generated response" not in content_candidate and len(content_candidate.strip()) > 20:

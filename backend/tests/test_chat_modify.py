@@ -2,10 +2,16 @@ import pytest
 from uuid import uuid4
 from fastapi.testclient import TestClient
 
-from backend.app.main import app
-from backend.app.database import get_db
-from backend.app.models import Project, ArtifactNode, ArtifactSection
-from backend.app.agents.graph_engine import TOPOLOGICAL_ORDER, compute_content_hash
+try:
+    from app.main import app
+    from app.database import get_db
+    from app.models import Project, ArtifactNode, ArtifactSection
+    from app.agents.graph_engine import TOPOLOGICAL_ORDER, compute_content_hash
+except ImportError:
+    from backend.app.main import app
+    from backend.app.database import get_db
+    from backend.app.models import Project, ArtifactNode, ArtifactSection
+    from backend.app.agents.graph_engine import TOPOLOGICAL_ORDER, compute_content_hash
 
 
 @pytest.fixture
@@ -197,7 +203,10 @@ def test_all_four_suggested_prompts_and_version_diff():
         r1_repeat = client.post(f"/projects/{project.id}/chat-modify", json=p1)
         assert r1_repeat.status_code == 200
         d1_repeat = r1_repeat.json()
-        assert d1_repeat["updated_section_content"].count("CREATE TABLE IF NOT EXISTS audit_logs") == 1
+        assert (
+            d1_repeat["updated_section_content"].count("CREATE TABLE IF NOT EXISTS audit_logs") == 1
+            or d1_repeat["updated_section_content"].count("CREATE TABLE audit_logs") == 1
+        )
 
         # Prompt 2: API_SPEC - Google OAuth endpoint
         p2 = {

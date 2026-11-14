@@ -87,6 +87,13 @@ export default function NotFound() {
       tag: "E-Commerce",
       desc: "Redis cart reservation locks, merchant analytics & split checkout.",
     },
+    {
+      id: "phonepe_payments",
+      icon: "📱",
+      title: "Phone Pe",
+      tag: "FinTech & UPI",
+      desc: "NPCI UPI 2.0 switch, dynamic BharatQR generation & Soundbox alerts.",
+    },
   ];
 
   return (

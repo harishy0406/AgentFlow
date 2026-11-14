@@ -33,16 +33,41 @@ def parse_code_files(raw_text: str) -> Dict[str, str]:
     """
     files: Dict[str, str] = {}
     
-    # Pattern matching "### File: <path>\n```<lang>\n<code>\n```"
-    pattern = re.compile(
-        r"###\s+File:\s*([^\n\r]+)[\r\n]+```(?:[a-zA-Z0-9_-]+)?[\r\n]([\s\S]*?)```",
-        re.IGNORECASE
-    )
-    
-    matches = pattern.findall(raw_text)
-    for file_path, content in matches:
-        clean_path = file_path.strip().replace("\\", "/").lstrip("/")
-        files[clean_path] = content.strip()
+    # Split by ### File: headers to reliably handle files with embedded code blocks
+    if re.search(r"###\s+File:", raw_text, re.IGNORECASE):
+        file_chunks = re.split(r"(?mi)^###\s+File:\s*", raw_text)
+        for chunk in file_chunks[1:]:
+            if not chunk.strip():
+                continue
+            lines = chunk.split("\n", 1)
+            file_path = lines[0].strip().replace("\\", "/").lstrip("/")
+            body = lines[1] if len(lines) > 1 else ""
+
+            body = body.strip()
+            # Strip opening ```<lang> if present
+            if body.startswith("```"):
+                newline_idx = body.find("\n")
+                if newline_idx != -1:
+                    body = body[newline_idx + 1:]
+                else:
+                    body = ""
+            # Strip trailing ```
+            if body.endswith("```"):
+                body = body[:-3].rstrip()
+
+            if file_path:
+                files[file_path] = body
+
+    # Fallback to regex if header split didn't find multiple files
+    if not files and re.search(r"###\s+File:", raw_text, re.IGNORECASE):
+        pattern = re.compile(
+            r"###\s+File:\s*([^\n\r]+)[\r\n]+```(?:[a-zA-Z0-9_-]+)?[\r\n]([\s\S]*?)```",
+            re.IGNORECASE
+        )
+        matches = pattern.findall(raw_text)
+        for file_path, content in matches:
+            clean_path = file_path.strip().replace("\\", "/").lstrip("/")
+            files[clean_path] = content.strip()
 
     # Fallback if model generated raw code without "### File:" headers
     if not files and raw_text.strip():
