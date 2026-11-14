@@ -13,8 +13,17 @@ Each provider entry stores:
 """
 
 import os
+from pathlib import Path
 from typing import Dict, List, Optional, Callable, Any
 from dataclasses import dataclass, field
+from dotenv import load_dotenv
+
+# Ensure backend/.env is loaded across all execution contexts
+_env_backend = Path(__file__).resolve().parent.parent.parent / ".env"
+if _env_backend.exists():
+    load_dotenv(_env_backend, override=False)
+load_dotenv(override=False)
+
 from langchain_core.language_models.chat_models import BaseChatModel
 from langchain_core.messages import BaseMessage, AIMessage
 
@@ -46,11 +55,14 @@ class ProviderEntry:
     def is_available(self) -> bool:
         """Check if the provider's API key is configured and non-empty."""
         if self.name == "ollama":
-            return os.getenv("OLLAMA_ENABLED", "false").lower() in ("true", "1", "yes")
+            return (
+                os.getenv("OLLAMA_ENABLED", "false").lower() in ("true", "1", "yes")
+                or bool((os.getenv("OLLAMA_API_KEY") or "").strip())
+            )
 
         if self.name == "omniroute":
-            # OmniRoute runs locally as an AI proxy on port 20128
-            return True
+            # OmniRoute runs locally as an AI proxy on port 20128 only if explicitly enabled
+            return bool((os.getenv("OMNIROUTE_ENABLED") or "").lower() in ("true", "1", "yes"))
 
         key_map = {
             "openai": ["OPENAI_API_KEY"],
@@ -83,6 +95,85 @@ class MockChatModel(BaseChatModel):
     @property
     def _llm_type(self) -> str:
         return "mock-chat"
+
+
+class OpenAICompatibleChatModel(BaseChatModel):
+    """
+    Direct OpenAI-compatible ChatModel using the official openai Python client.
+    Avoids langchain-openai dependency conflicts while providing native LangChain
+    Runnable/pipe/chain compatibility.
+    """
+    model_name: str
+    base_url: str
+    api_key: str
+    timeout: float = 20.0
+    headers: Dict[str, str] = field(default_factory=dict)
+
+    def _generate(self, messages: List[BaseMessage], stop: Optional[List[str]] = None, **kwargs: Any) -> Any:
+        from langchain_core.outputs import ChatResult, ChatGeneration
+        formatted = []
+        for m in messages:
+            if hasattr(m, "type") and m.type == "system":
+                role = "system"
+            elif hasattr(m, "type") and m.type == "ai":
+                role = "assistant"
+            else:
+                role = "user"
+            content = m.content if hasattr(m, "content") else str(m)
+            formatted.append({"role": role, "content": content})
+
+        import openai
+        req_headers = {"User-Agent": "AgentFlow/1.0"}
+        if self.headers:
+            req_headers.update(self.headers)
+        client = openai.OpenAI(
+            base_url=self.base_url,
+            api_key=self.api_key,
+            timeout=self.timeout,
+            default_headers=req_headers,
+            max_retries=0,
+        )
+        resp = client.chat.completions.create(
+            model=self.model_name,
+            messages=formatted,
+            temperature=0,
+        )
+        text = resp.choices[0].message.content or ""
+        return ChatResult(generations=[ChatGeneration(message=AIMessage(content=text))])
+
+    @property
+    def _llm_type(self) -> str:
+        return "openai-compatible"
+
+
+class ResilientChatModel(BaseChatModel):
+    """
+    A LangChain BaseChatModel that chains candidate chat models in priority order.
+    If the primary model encounters a rate limit or network failure, it cascades
+    seamlessly to the next available provider.
+    """
+    models: List[BaseChatModel] = field(default_factory=list)
+    model_name: str = "resilient-llm"
+
+    def _generate(self, messages: List[BaseMessage], stop: Optional[List[str]] = None, **kwargs: Any) -> Any:
+        from langchain_core.outputs import ChatResult, ChatGeneration
+        for m in self.models:
+            try:
+                res = m._generate(messages, stop=stop, **kwargs)
+                if res and res.generations:
+                    content = res.generations[0].message.content
+                    if content and "Generated response for" not in content and len(content.strip()) > 0:
+                        return res
+            except Exception:
+                continue
+
+        # If all real models fail, fallback to mock result
+        last_content = messages[-1].content if messages else ""
+        return ChatResult(generations=[ChatGeneration(message=AIMessage(content=f"Generated response for: {last_content[:60]}..."))])
+
+    @property
+    def _llm_type(self) -> str:
+        return "resilient-chat"
 
 
 class ProviderRegistry:
@@ -131,6 +222,64 @@ class ProviderRegistry:
             raise ValueError(f"Provider '{provider_name}' not registered")
         return provider.factory(model_name)
 
+    def get_best_available_chat_model(self) -> BaseChatModel:
+        """
+        Instantiate and return the best available ChatModel configured in the system.
+        Prioritizes fast free-tier providers:
+          1. Groq (ultra-fast, active models openai/gpt-oss-120b, openai/gpt-oss-20b, qwen/qwen3.8-27b)
+          2. OpenRouter (free tier, active models nvidia/nemotron-3.5-lightning:free, meta-llama/llama-3.3-70b-instruct:free)
+          3. Gemini (gemini-2.0-flash)
+          4. OpenAI (gpt-4o-mini)
+          5. Anthropic (claude-3-5-haiku-20241022)
+          6. Ollama (llama3.2)
+          7. Fallback MockChatModel
+        Returns a ResilientChatModel wrapping configured candidates so runtime errors
+        automatically failover to the next provider.
+        """
+        candidates: List[BaseChatModel] = []
+
+        if bool((os.getenv("GROQ_API_KEY") or "").strip()):
+            p = self.get_provider("groq")
+            if p:
+                for m in ["openai/gpt-oss-20b", "qwen/qwen3.8-27b", "openai/gpt-oss-120b"]:
+                    candidates.append(p.factory(m))
+
+        if bool((os.getenv("OPENROUTER_API_KEY") or "").strip()):
+            p = self.get_provider("openrouter")
+            if p:
+                for m in [
+                    "nvidia/nemotron-3.5-lightning:free",
+                    "meta-llama/llama-3.3-70b-instruct:free",
+                    "liquid/lfm-2.5-2.6b:free",
+                    "mistralai/mistral-7b-instruct:free"
+                ]:
+                    candidates.append(p.factory(m))
+
+        if bool((os.getenv("GEMINI_API_KEY") or "").strip()) or bool((os.getenv("GOOGLE_API_KEY") or "").strip()):
+            p = self.get_provider("gemini")
+            if p:
+                candidates.append(p.factory("gemini-2.0-flash"))
+
+        if bool((os.getenv("OPENAI_API_KEY") or "").strip()):
+            p = self.get_provider("openai")
+            if p:
+                candidates.append(p.factory("gpt-4o-mini"))
+
+        if bool((os.getenv("ANTHROPIC_API_KEY") or "").strip()):
+            p = self.get_provider("anthropic")
+            if p:
+                candidates.append(p.factory("claude-3-5-haiku-20241022"))
+
+        if os.getenv("OLLAMA_ENABLED", "false").lower() in ("true", "1", "yes") or bool((os.getenv("OLLAMA_API_KEY") or "").strip()):
+            p = self.get_provider("ollama")
+            if p:
+                candidates.append(p.factory("llama3.2"))
+
+        if not candidates:
+            return MockChatModel(model_name="mock-llm")
+
+        return ResilientChatModel(models=candidates)
+
 
 # ---------------------------------------------------------------------------
 # Provider factory helpers
@@ -144,7 +293,12 @@ def _openai_factory(model_name: str) -> BaseChatModel:
         timeout = float(os.getenv("LLM_TIMEOUT_SECONDS", "5.0"))
         return ChatOpenAI(model=model_name, temperature=0, timeout=timeout, max_retries=1)
     except Exception:
-        return MockChatModel(model_name=model_name)
+        return OpenAICompatibleChatModel(
+            model_name=model_name,
+            base_url="https://api.openai.com/v1",
+            api_key=os.getenv("OPENAI_API_KEY", ""),
+            timeout=float(os.getenv("LLM_TIMEOUT_SECONDS", "15.0")),
+        )
 
 
 def _anthropic_factory(model_name: str) -> BaseChatModel:
@@ -162,7 +316,8 @@ def _create_openai_compatible_factory(
     provider_name: str,
     base_url: str,
     env_keys: List[str],
-    default_key: str = ""
+    default_key: str = "",
+    default_headers: Optional[Dict[str, str]] = None,
 ) -> Callable[[str], BaseChatModel]:
     """Generic factory for any provider exposing an OpenAI-compatible /v1/chat/completions endpoint."""
     def factory(model_name: str) -> BaseChatModel:
@@ -177,19 +332,22 @@ def _create_openai_compatible_factory(
             return MockChatModel(model_name=f"{provider_name}:{model_name}")
 
         resolved_base_url = os.getenv(f"{provider_name.upper()}_BASE_URL", base_url)
-        try:
-            from langchain_openai import ChatOpenAI
-            timeout = float(os.getenv("LLM_TIMEOUT_SECONDS", "5.0"))
-            return ChatOpenAI(
-                model=model_name,
-                base_url=resolved_base_url,
-                api_key=api_key,
-                temperature=0,
-                max_retries=1,
-                timeout=timeout,
-            )
-        except Exception:
-            return MockChatModel(model_name=f"{provider_name}:{model_name}")
+        timeout = float(os.getenv("LLM_TIMEOUT_SECONDS", "15.0"))
+
+        headers = dict(default_headers or {})
+        if provider_name == "groq" and "User-Agent" not in headers:
+            headers["User-Agent"] = "AgentFlow/1.0"
+        elif provider_name == "openrouter":
+            headers.setdefault("HTTP-Referer", "https://agentflow.dev")
+            headers.setdefault("X-Title", "AgentFlow")
+
+        return OpenAICompatibleChatModel(
+            model_name=model_name,
+            base_url=resolved_base_url,
+            api_key=api_key,
+            timeout=timeout,
+            headers=headers,
+        )
     return factory
 
 
@@ -207,15 +365,12 @@ def generate_text(prompt: str, model_name: Optional[str] = None) -> str:
                         break
                 if chat:
                     break
-        # Otherwise pick first available provider model
+        # Otherwise pick best available provider model
         if not chat:
-            for p in avail:
-                if p.is_available() and p.models:
-                    chat = p.factory(p.models[0].model_name)
-                    break
+            chat = PROVIDER_REGISTRY.get_best_available_chat_model()
 
     if chat is None:
-        chat = _openai_factory("gpt-4o-mini")
+        chat = PROVIDER_REGISTRY.get_best_available_chat_model()
 
     try:
         res = chat.invoke(prompt)
@@ -312,6 +467,27 @@ def build_default_registry() -> ProviderRegistry:
         models=[
             ModelEntry(
                 provider="groq",
+                model_name="openai/gpt-oss-20b",
+                cost_per_input_token=0.0,
+                cost_per_output_token=0.0,
+                max_context_tokens=128_000,
+            ),
+            ModelEntry(
+                provider="groq",
+                model_name="qwen/qwen3.8-27b",
+                cost_per_input_token=0.0,
+                cost_per_output_token=0.0,
+                max_context_tokens=128_000,
+            ),
+            ModelEntry(
+                provider="groq",
+                model_name="openai/gpt-oss-120b",
+                cost_per_input_token=0.0,
+                cost_per_output_token=0.0,
+                max_context_tokens=128_000,
+            ),
+            ModelEntry(
+                provider="groq",
                 model_name="llama-3.3-70b-versatile",
                 cost_per_input_token=0.0,
                 cost_per_output_token=0.0,
@@ -349,7 +525,8 @@ def build_default_registry() -> ProviderRegistry:
         factory=_create_openai_compatible_factory(
             "groq",
             "https://api.groq.com/openai/v1",
-            ["GROQ_API_KEY"]
+            ["GROQ_API_KEY"],
+            default_headers={"User-Agent": "AgentFlow/1.0"}
         ),
     ))
 
@@ -359,10 +536,31 @@ def build_default_registry() -> ProviderRegistry:
         models=[
             ModelEntry(
                 provider="openrouter",
+                model_name="nvidia/nemotron-3.5-lightning:free",
+                cost_per_input_token=0.0,
+                cost_per_output_token=0.0,
+                max_context_tokens=128_000,
+            ),
+            ModelEntry(
+                provider="openrouter",
                 model_name="meta-llama/llama-3.3-70b-instruct:free",
                 cost_per_input_token=0.0,
                 cost_per_output_token=0.0,
                 max_context_tokens=128_000,
+            ),
+            ModelEntry(
+                provider="openrouter",
+                model_name="liquid/lfm-2.5-2.6b:free",
+                cost_per_input_token=0.0,
+                cost_per_output_token=0.0,
+                max_context_tokens=32_768,
+            ),
+            ModelEntry(
+                provider="openrouter",
+                model_name="mistralai/mistral-7b-instruct:free",
+                cost_per_input_token=0.0,
+                cost_per_output_token=0.0,
+                max_context_tokens=32_768,
             ),
             ModelEntry(
                 provider="openrouter",
@@ -385,18 +583,12 @@ def build_default_registry() -> ProviderRegistry:
                 cost_per_output_token=0.0,
                 max_context_tokens=32_768,
             ),
-            ModelEntry(
-                provider="openrouter",
-                model_name="mistralai/mistral-7b-instruct:free",
-                cost_per_input_token=0.0,
-                cost_per_output_token=0.0,
-                max_context_tokens=32_768,
-            ),
         ],
         factory=_create_openai_compatible_factory(
             "openrouter",
             "https://openrouter.ai/api/v1",
-            ["OPENROUTER_API_KEY"]
+            ["OPENROUTER_API_KEY"],
+            default_headers={"HTTP-Referer": "https://agentflow.dev", "X-Title": "AgentFlow"}
         ),
     ))
 

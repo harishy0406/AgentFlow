@@ -25,19 +25,10 @@ from .scaffolder import scaffold_project_files
 
 def _get_llm_for_artifact(artifact_type: str):
     """
-    Phase 3: Select the best available model for the given artifact type.
-    During initial generation we don't have a DB session in the LangGraph
-    state, so we use a simplified version that picks the cheapest available
-    model (no historical scores yet on first run).
+    Select the best available model for the given artifact type.
+    Uses multi-provider resilient failover across Groq, OpenRouter, and configured LLMs.
     """
-    candidates = PROVIDER_REGISTRY.models_for(artifact_type)
-    if not candidates:
-        # Fallback
-        return PROVIDER_REGISTRY.get_chat_model("openai", "gpt-4o-mini")
-
-    # On first generation there's no history — pick cheapest available
-    cheapest = min(candidates, key=lambda m: m.avg_cost_per_token)
-    return PROVIDER_REGISTRY.get_chat_model(cheapest.provider, cheapest.model_name)
+    return PROVIDER_REGISTRY.get_best_available_chat_model()
 
 
 def business_analyst_node(state: AgentFlowState) -> AgentFlowState:
