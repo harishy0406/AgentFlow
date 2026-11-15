@@ -19,13 +19,15 @@ def test_devops_tools_endpoints():
     assert tools_res.status_code == 200
     data = tools_res.json()
     assert "tools" in data
-    assert len(data["tools"]) == 4
+    assert len(data["tools"]) == 6
 
     tool_ids = [t["id"] for t in data["tools"]]
     assert "github" in tool_ids
     assert "jenkins" in tool_ids
     assert "ansible" in tool_ids
     assert "terraform" in tool_ids
+    assert "docker" in tool_ids
+    assert "kubernetes" in tool_ids
 
     # Check structure
     github_tool = next(t for t in data["tools"] if t["id"] == "github")
@@ -35,6 +37,14 @@ def test_devops_tools_endpoints():
     assert "config" in github_tool
     assert "fields" in github_tool
 
+    docker_tool = next(t for t in data["tools"] if t["id"] == "docker")
+    assert docker_tool["name"] == "Docker Hub"
+    assert "scan_on_push" in docker_tool["config"]
+
+    k8s_tool = next(t for t in data["tools"] if t["id"] == "kubernetes")
+    assert k8s_tool["name"] == "Kubernetes"
+    assert "cluster_endpoint" in k8s_tool["config"]
+
     # 3. POST /projects/{id}/devops-tools/{tool_id}/test
     test_res = client.post(f"/projects/{p_id}/devops-tools/github/test")
     assert test_res.status_code == 200
@@ -43,6 +53,18 @@ def test_devops_tools_endpoints():
     assert "github" in test_data["message"].lower()
     assert "latency_ms" in test_data
 
+    # Test Docker ping
+    docker_ping = client.post(f"/projects/{p_id}/devops-tools/docker/test")
+    assert docker_ping.status_code == 200
+    assert docker_ping.json()["status"] == "success"
+    assert "docker" in docker_ping.json()["message"].lower()
+
+    # Test Kubernetes ping
+    k8s_ping = client.post(f"/projects/{p_id}/devops-tools/kubernetes/test")
+    assert k8s_ping.status_code == 200
+    assert k8s_ping.json()["status"] == "success"
+    assert "kubernetes" in k8s_ping.json()["message"].lower()
+
     # 4. POST /projects/{id}/devops-tools/{tool_id}/trigger
     trigger_res = client.post(f"/projects/{p_id}/devops-tools/jenkins/trigger", json={})
     assert trigger_res.status_code == 200
@@ -50,6 +72,16 @@ def test_devops_tools_endpoints():
     assert trigger_data["status"] == "success"
     assert "jenkins" in trigger_data["message"].lower()
     assert "log" in trigger_data
+
+    # Trigger Docker build
+    docker_trigger = client.post(f"/projects/{p_id}/devops-tools/docker/trigger", json={})
+    assert docker_trigger.status_code == 200
+    assert "docker" in docker_trigger.json()["message"].lower()
+
+    # Trigger K8s rollout
+    k8s_trigger = client.post(f"/projects/{p_id}/devops-tools/kubernetes/trigger", json={})
+    assert k8s_trigger.status_code == 200
+    assert "kubernetes" in k8s_trigger.json()["message"].lower()
 
     # 5. POST /projects/{id}/devops-tools/{tool_id}/configure
     new_config = {

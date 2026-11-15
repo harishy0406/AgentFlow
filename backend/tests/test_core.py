@@ -332,3 +332,49 @@ class TestArtifactNodeLifecycle:
             assert node.status == "fresh"
             assert node.quality_signal_score == 92.5
 
+
+# ---------------------------------------------------------------------------
+# 7. System Health & Provider Diagnostics Endpoints
+# ---------------------------------------------------------------------------
+
+class TestSystemHealthEndpoints:
+    def test_health_root_endpoint(self):
+        from fastapi.testclient import TestClient
+        from app.main import app
+
+        client = TestClient(app)
+        res = client.get("/health")
+        assert res.status_code == 200
+        data = res.json()
+        assert data["status"] in ["healthy", "degraded"]
+        assert data["version"] == "0.6.0"
+        assert "database_latency_ms" in data
+        assert "projects_count" in data
+        assert data["providers_count"] >= 4
+        assert data["templates_count"] >= 5
+
+    def test_health_v1_endpoint(self):
+        from fastapi.testclient import TestClient
+        from app.main import app
+
+        client = TestClient(app)
+        res = client.get("/api/v1/system/health")
+        assert res.status_code == 200
+        assert res.json()["status"] in ["healthy", "degraded"]
+
+    def test_system_diagnostics_endpoint(self):
+        from fastapi.testclient import TestClient
+        from app.main import app
+
+        client = TestClient(app)
+        res = client.get("/api/v1/system/diagnostics")
+        assert res.status_code == 200
+        data = res.json()
+        assert "database" in data
+        assert "status" in data["database"]
+        assert "providers" in data
+        assert len(data["providers"]) >= 4
+        assert "templates" in data
+        assert "phonepe_payments" in data["templates"]
+        assert "storage" in data
+

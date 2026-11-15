@@ -151,6 +151,8 @@ function renderDevopsToolIcon(tool, size = 24) {
   else if (toolId === "jenkins") iconSrc = "/icons/jenkins.svg";
   else if (toolId === "ansible") iconSrc = "/icons/ansible.svg";
   else if (toolId === "terraform") iconSrc = "/icons/terraform.svg";
+  else if (toolId === "docker") iconSrc = "/icons/docker.svg";
+  else if (toolId === "kubernetes" || toolId === "k8s") iconSrc = "/icons/kubernetes.svg";
   else if (tool.icon && (tool.icon.startsWith("/") || tool.icon.startsWith("http"))) {
     iconSrc = tool.icon;
   }
@@ -10869,7 +10871,7 @@ export default function Home() {
                           </span>
                         </div>
                         <p style={{ margin: "6px 0 0 0", fontSize: 13, color: "var(--text-secondary)" }}>
-                          Manage external integrations, inspect live execution logs, and trigger CI/CD pipelines across GitHub, Jenkins, Ansible, and Terraform.
+                          Manage external integrations, inspect live execution logs, and trigger CI/CD pipelines across GitHub, Jenkins, Ansible, Terraform, Docker Hub, and Kubernetes.
                         </p>
                       </div>
 

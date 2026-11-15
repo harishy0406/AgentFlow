@@ -162,6 +162,72 @@ def get_default_tools(project_id: str, project_name: str) -> List[Dict[str, Any]
                 {"timestamp": f"{now_iso}", "level": "SUCCESS", "message": "[Terraform Cloud] Authenticated workspace 'agentflow-enterprise' with remote state lock."},
             ],
         },
+        {
+            "id": "docker",
+            "name": "Docker Hub",
+            "category": "Container Registry & Security",
+            "status": "connected",
+            "badge_color": "#0284C7",
+            "icon": "/icons/docker.svg",
+            "summary": "Automated multi-architecture container image builds, Trivy CVE vulnerability scans, and registry push triggers.",
+            "latency_ms": 32,
+            "last_sync": "6m ago",
+            "config": {
+                "registry_url": "https://index.docker.io/v1/",
+                "repository": f"agentflow/{slug}",
+                "username": "agentflow-builder",
+                "auth_token": "dckr_pat_7x89q2b94c3e8a1f2d6e4b8c9d0a1b2c",
+                "default_tag": "latest",
+                "scan_on_push": True,
+            },
+            "fields": [
+                {"key": "registry_url", "label": "Container Registry URL", "type": "text", "placeholder": "https://index.docker.io/v1/"},
+                {"key": "repository", "label": "Target Repository Namespace", "type": "text", "placeholder": "org/app-name"},
+                {"key": "username", "label": "Registry Service Account Username", "type": "text", "placeholder": "builder"},
+                {"key": "auth_token", "label": "Registry Access Token (PAT)", "type": "password", "placeholder": "dckr_pat_..."},
+                {"key": "default_tag", "label": "Primary Image Tag", "type": "text", "placeholder": "latest"},
+                {"key": "scan_on_push", "label": "Automated CVE vulnerability scan on image push", "type": "checkbox"},
+            ],
+            "logs": [
+                {"timestamp": f"{now_iso}", "level": "SUCCESS", "message": f"[Docker Build] Multi-stage build completed for '{slug}:latest' (Image size: 124.8 MB)."},
+                {"timestamp": f"{now_iso}", "level": "INFO", "message": "[Docker Security] Trivy CVE vulnerability scan passed: 0 Critical, 0 High, 2 Low findings."},
+                {"timestamp": f"{now_iso}", "level": "INFO", "message": f"[Docker Registry] Pushed multi-arch manifests (amd64, arm64) to 'agentflow/{slug}:latest'."},
+                {"timestamp": f"{now_iso}", "level": "SUCCESS", "message": "[Docker Engine] Daemon connection healthy (Docker v27.1.1 API v1.46)."},
+            ],
+        },
+        {
+            "id": "kubernetes",
+            "name": "Kubernetes",
+            "category": "Orchestration & Cloud Native",
+            "status": "ready",
+            "badge_color": "#326CE5",
+            "icon": "/icons/kubernetes.svg",
+            "summary": "Automated deployment manifest generation, rolling update orchestration, namespace isolation, and pod health telemetry.",
+            "latency_ms": 24,
+            "last_sync": "1m ago",
+            "config": {
+                "cluster_endpoint": "https://k8s-prod.agentflow.internal:6443",
+                "namespace": f"prod-{slug}",
+                "service_account": "agentflow-deployer",
+                "auth_token": "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJrdWJlcm5ldGVzIn0...",
+                "replicas": 3,
+                "auto_rollback": True,
+            },
+            "fields": [
+                {"key": "cluster_endpoint", "label": "Kubernetes API Server Endpoint", "type": "text", "placeholder": "https://k8s.internal:6443"},
+                {"key": "namespace", "label": "Target Cluster Namespace", "type": "text", "placeholder": "production"},
+                {"key": "service_account", "label": "Service Account Name", "type": "text", "placeholder": "deployer"},
+                {"key": "auth_token", "label": "Service Account Bearer Token", "type": "password", "placeholder": "eyJhbG..."},
+                {"key": "replicas", "label": "Desired Pod Replicas", "type": "number", "placeholder": "3"},
+                {"key": "auto_rollback", "label": "Automated rollback on CrashLoopBackOff or probe failure", "type": "checkbox"},
+            ],
+            "logs": [
+                {"timestamp": f"{now_iso}", "level": "SUCCESS", "message": f"[K8s Controller] Deployment '{slug}-api' healthy: 3/3 pods Running with 0 restarts."},
+                {"timestamp": f"{now_iso}", "level": "INFO", "message": f"[K8s Ingress] TLS ingress route synchronized for host '{slug}.agentflow.dev' via Traefik."},
+                {"timestamp": f"{now_iso}", "level": "INFO", "message": "[K8s Metrics] Cluster resource utilization: CPU 12% (360m), Memory 24% (1.2 GiB)."},
+                {"timestamp": f"{now_iso}", "level": "SUCCESS", "message": "[K8s API] Connected to Kubernetes Master v1.31.0 (rbac:cluster-admin verified)."},
+            ],
+        },
     ]
 
     # Overlay user custom configurations and persisted logs
@@ -236,6 +302,8 @@ def trigger_tool_execution(project_id: str, project_name: str, tool_id: str, pay
         "jenkins": f"[Jenkins Build] Triggered build job '{slug}-multibranch-pipeline'. Build #49 running on executor-01.",
         "ansible": f"[Ansible Playbook] Initiated execution of 'deploy_stack.yml' on 12 production nodes.",
         "terraform": f"[Terraform Plan] Queued speculative cloud plan in workspace '{slug}-prod-infra'. Lock verified.",
+        "docker": f"[Docker Hub] Triggered multi-arch image build and Trivy vulnerability scan for 'agentflow/{slug}:latest'.",
+        "kubernetes": f"[Kubernetes] Initiated rolling rollout restart for deployment '{slug}-api' in namespace 'prod-{slug}'.",
     }
 
     action_msg = tool_actions.get(tool_id, f"[{tool_id.capitalize()}] Triggered execution successfully.")

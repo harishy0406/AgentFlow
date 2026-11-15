@@ -1,12 +1,13 @@
 from fastapi import FastAPI, Depends, HTTPException, Query, WebSocket, WebSocketDisconnect, Body
 from fastapi.responses import Response, PlainTextResponse, StreamingResponse
 from sqlalchemy.orm import Session
-from sqlalchemy import func
+from sqlalchemy import func, text
 from uuid import UUID
 from typing import List, Optional, Dict, Any
 from datetime import datetime, timezone
 import json
 import io
+import time
 import zipfile
 import os
 import hashlib
@@ -2851,6 +2852,93 @@ def trigger_project_devops_tool_endpoint(
 
     result = trigger_tool_execution(str(project.id), project.name, tool_id.lower().strip(), payload)
     return result
+
+
+# ---------------------------------------------------------------------------
+# Phase 20: System Health & Provider Diagnostics Engine
+# ---------------------------------------------------------------------------
+
+@app.get("/health", response_model=schemas.SystemHealthOut, tags=["System"])
+@app.get("/api/v1/system/health", response_model=schemas.SystemHealthOut, tags=["System"])
+def get_system_health(db: Session = Depends(get_db)):
+    """
+    Returns live system health status, DB round-trip latency, project counts,
+    and available AI providers.
+    """
+    t0 = time.perf_counter()
+    db_status = "connected"
+    try:
+        db.execute(text("SELECT 1"))
+        db_latency = round((time.perf_counter() - t0) * 1000, 2)
+    except Exception:
+        db_status = "degraded"
+        db_latency = -1.0
+
+    projects_count = db.query(models.Project).count()
+    all_p = PROVIDER_REGISTRY.all_providers()
+    avail_p = [p for p in all_p if p.is_available()]
+    templates = list_project_templates()
+
+    return schemas.SystemHealthOut(
+        status="healthy" if db_status == "connected" else "degraded",
+        version="0.6.0",
+        timestamp=datetime.now(timezone.utc).isoformat(),
+        database_status=db_status,
+        database_latency_ms=db_latency,
+        projects_count=projects_count,
+        providers_count=len(all_p),
+        available_providers_count=len(avail_p),
+        templates_count=len(templates),
+    )
+
+
+@app.get("/api/v1/system/diagnostics", response_model=schemas.SystemDiagnosticsOut, tags=["System"])
+def get_system_diagnostics(db: Session = Depends(get_db)):
+    """
+    Detailed multi-provider routing diagnostic telemetry and storage capacity checks.
+    """
+    t0 = time.perf_counter()
+    try:
+        db.execute(text("SELECT 1"))
+        db_latency = round((time.perf_counter() - t0) * 1000, 2)
+        db_conn = "connected"
+    except Exception as e:
+        db_latency = -1.0
+        db_conn = f"error: {str(e)}"
+
+    provider_items = []
+    for p in PROVIDER_REGISTRY.all_providers():
+        provider_items.append(
+            schemas.ProviderDiagnosticItem(
+                name=p.name,
+                models_count=len(p.models),
+                models=[m.model_name for m in p.models],
+                is_available=p.is_available(),
+            )
+        )
+
+    templates = [t.id for t in list_project_templates()]
+    scaffold_dir = Path("generated_projects")
+    scaffold_exists = scaffold_dir.exists()
+    project_folders = [d.name for d in scaffold_dir.iterdir() if d.is_dir()] if scaffold_exists else []
+
+    return schemas.SystemDiagnosticsOut(
+        status="healthy",
+        version="0.6.0",
+        timestamp=datetime.now(timezone.utc).isoformat(),
+        database={
+            "status": db_conn,
+            "engine": str(engine.url.drivername),
+            "latency_ms": db_latency,
+        },
+        providers=provider_items,
+        templates=templates,
+        storage={
+            "scaffold_dir_exists": scaffold_exists,
+            "scaffolded_projects_count": len(project_folders),
+            "projects_on_disk": project_folders[:10],
+        },
+    )
 
 
 

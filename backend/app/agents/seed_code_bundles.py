@@ -16,7 +16,7 @@ frontend components, unit/integration tests, Docker files, and configs.
 # ==============================================================================
 # 1. AI Code Reviewer Code Bundle (28+ files)
 # ==============================================================================
-AI_CODE_REVIEWER_BUNDLE = '''### File: backend/app/__init__.py
+AI_CODE_REVIEWER_BUNDLE = r'''### File: backend/app/__init__.py
 ```python
 """AI Code Reviewer Core Application Package."""
 __version__ = "1.0.0"
@@ -776,7 +776,7 @@ pytest tests/
 # ==============================================================================
 # 2. FinTech Escrow API Code Bundle (28+ files)
 # ==============================================================================
-FINTECH_ESCROW_BUNDLE = '''### File: backend/app/__init__.py
+FINTECH_ESCROW_BUNDLE = r'''### File: backend/app/__init__.py
 ```python
 """FinTech Escrow Engine Package."""
 __version__ = "1.0.0"
@@ -1387,7 +1387,7 @@ Enterprise multi-party milestone escrow platform with double-entry accounting le
 # ==============================================================================
 # 3. HIPAA Telehealth Suite Code Bundle (28+ files)
 # ==============================================================================
-HEALTHCARE_TELEHEALTH_BUNDLE = '''### File: backend/app/__init__.py
+HEALTHCARE_TELEHEALTH_BUNDLE = r'''### File: backend/app/__init__.py
 ```python
 """HIPAA Telehealth Application Suite."""
 __version__ = "1.0.0"
@@ -1907,7 +1907,7 @@ Encrypted WebRTC telehealth rooms, HL7 FHIR R4 interfaces, and WORM compliance a
 # ==============================================================================
 # 4. Multi-Vendor Marketplace Code Bundle (28+ files)
 # ==============================================================================
-ECOMMERCE_MARKETPLACE_BUNDLE = '''### File: backend/app/__init__.py
+ECOMMERCE_MARKETPLACE_BUNDLE = r'''### File: backend/app/__init__.py
 ```python
 """Multi-Vendor Marketplace Core Package."""
 __version__ = "1.0.0"
@@ -2395,7 +2395,7 @@ Multi-merchant product catalog with cart reservation locks and automated settlem
 # ==============================================================================
 # 5. Phone Pe UPI & Digital Payments Code Bundle (28+ files)
 # ==============================================================================
-PHONEPE_PAYMENTS_BUNDLE = '''### File: backend/app/__init__.py
+PHONEPE_PAYMENTS_BUNDLE = r'''### File: backend/app/__init__.py
 ```python
 """Phone Pe UPI & Digital Payments Core Engine Package."""
 __version__ = "1.0.0"

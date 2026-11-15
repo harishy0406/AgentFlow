@@ -986,3 +986,36 @@ class MarkdownBlueprintOut(BaseModel):
     sections_count: int
     generated_at: str
     download_url: str
+
+
+# ---------------------------------------------------------------------------
+# System Health & Provider Diagnostics Schemas
+# ---------------------------------------------------------------------------
+
+class SystemHealthOut(BaseModel):
+    status: str
+    version: str
+    timestamp: str
+    database_status: str
+    database_latency_ms: float
+    projects_count: int
+    providers_count: int
+    available_providers_count: int
+    templates_count: int
+
+
+class ProviderDiagnosticItem(BaseModel):
+    name: str
+    models_count: int
+    models: List[str]
+    is_available: bool
+
+
+class SystemDiagnosticsOut(BaseModel):
+    status: str
+    version: str
+    timestamp: str
+    database: Dict[str, Any]
+    providers: List[ProviderDiagnosticItem]
+    templates: List[str]
+    storage: Dict[str, Any]
