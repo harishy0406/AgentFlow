@@ -76,6 +76,7 @@ import {
   configureProjectDevopsTool,
   testProjectDevopsTool,
   triggerProjectDevopsTool,
+  getSystemHealth,
 } from "./lib/api";
 
 function RadialGauge({ value = 0, size = 110, strokeWidth = 10, label = "", color = "#00FF66", subtext = "" }) {
@@ -483,6 +484,27 @@ export default function Home() {
   const [toolTriggeringId, setToolTriggeringId] = useState(null);
   const [toolSaving, setToolSaving] = useState(false);
   const [toolSearchQuery, setToolSearchQuery] = useState("");
+
+  // Live System Health Telemetry state
+  const [systemHealth, setSystemHealth] = useState(null);
+
+  useEffect(() => {
+    let mounted = true;
+    const fetchHealth = async () => {
+      try {
+        const data = await getSystemHealth();
+        if (mounted) setSystemHealth(data);
+      } catch (_) {
+        if (mounted) setSystemHealth({ status: "offline", database_latency_ms: 0, providers_count: 0 });
+      }
+    };
+    fetchHealth();
+    const interval = setInterval(fetchHealth, 30000);
+    return () => {
+      mounted = false;
+      clearInterval(interval);
+    };
+  }, []);
 
   const downloadTextFile = (filename, text, mime = "text/plain") => {
     const blob = new Blob([text], { type: mime });
@@ -2069,6 +2091,41 @@ export default function Home() {
             </div>
           ) : currentProject ? (
             <div className="navbar-project-actions">
+              {/* System Health Telemetry Badge */}
+              <div
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 6,
+                  padding: "4px 10px",
+                  borderRadius: 14,
+                  fontSize: 11,
+                  fontWeight: 600,
+                  background: systemHealth?.status === "healthy" ? "rgba(16, 185, 129, 0.12)" : "rgba(245, 158, 11, 0.12)",
+                  color: systemHealth?.status === "healthy" ? "#10B981" : "#F59E0B",
+                  border: `1px solid ${systemHealth?.status === "healthy" ? "rgba(16, 185, 129, 0.3)" : "rgba(245, 158, 11, 0.3)"}`,
+                  letterSpacing: "0.02em",
+                  userSelect: "none"
+                }}
+                title={systemHealth ? `AgentFlow Engine v${systemHealth.version} • DB Latency: ${systemHealth.database_latency_ms}ms • Providers: ${systemHealth.available_providers_count}/${systemHealth.providers_count}` : "Connecting to backend..."}
+              >
+                <span
+                  style={{
+                    width: 7,
+                    height: 7,
+                    borderRadius: "50%",
+                    background: systemHealth?.status === "healthy" ? "#10B981" : "#F59E0B",
+                    boxShadow: systemHealth?.status === "healthy" ? "0 0 8px #10B981" : "0 0 8px #F59E0B",
+                    display: "inline-block"
+                  }}
+                />
+                <span>
+                  {systemHealth?.status === "healthy"
+                    ? `API Online • ${systemHealth.database_latency_ms}ms`
+                    : "Connecting..."}
+                </span>
+              </div>
+
               {/* Polished Project Health & Readiness Gauge */}
               {projectHealth && (
                 <div
@@ -2366,15 +2423,50 @@ export default function Home() {
               </div>
             </div>
           ) : (
-            <button
-              className="btn btn-primary btn-sm"
-              onClick={() => {
-                setSaasTab("studio");
-                setActiveTab("create");
-              }}
-            >
-              Get Started
-            </button>
+            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+              <div
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 6,
+                  padding: "4px 10px",
+                  borderRadius: 14,
+                  fontSize: 11,
+                  fontWeight: 600,
+                  background: systemHealth?.status === "healthy" ? "rgba(16, 185, 129, 0.12)" : "rgba(245, 158, 11, 0.12)",
+                  color: systemHealth?.status === "healthy" ? "#10B981" : "#F59E0B",
+                  border: `1px solid ${systemHealth?.status === "healthy" ? "rgba(16, 185, 129, 0.3)" : "rgba(245, 158, 11, 0.3)"}`,
+                  letterSpacing: "0.02em",
+                  userSelect: "none"
+                }}
+                title={systemHealth ? `AgentFlow Engine v${systemHealth.version} • DB Latency: ${systemHealth.database_latency_ms}ms • Providers: ${systemHealth.available_providers_count}/${systemHealth.providers_count}` : "Connecting to backend..."}
+              >
+                <span
+                  style={{
+                    width: 7,
+                    height: 7,
+                    borderRadius: "50%",
+                    background: systemHealth?.status === "healthy" ? "#10B981" : "#F59E0B",
+                    boxShadow: systemHealth?.status === "healthy" ? "0 0 8px #10B981" : "0 0 8px #F59E0B",
+                    display: "inline-block"
+                  }}
+                />
+                <span>
+                  {systemHealth?.status === "healthy"
+                    ? `API Online • ${systemHealth.database_latency_ms}ms`
+                    : "Connecting..."}
+                </span>
+              </div>
+              <button
+                className="btn btn-primary btn-sm"
+                onClick={() => {
+                  setSaasTab("studio");
+                  setActiveTab("create");
+                }}
+              >
+                Get Started
+              </button>
+            </div>
           )}
         </div>
       </nav>
