@@ -36,7 +36,8 @@ When engineering teams or monolithic LLMs author these artifacts:
 * **Artifact-Specific Model Routing**: Dispatches each node to the optimal LLM provider (OpenAI GPT-4o, Anthropic Claude 3.5 Sonnet, Claude 3 Haiku, or local Ollama instances) based on benchmarked domain competencies and quality-signal heuristics.
 * **Automated Consistency & Semantic Drift Auditing**: Evaluates 5 cross-artifact integrity rules to detect, classify, and surgically auto-resolve semantic mismatches via targeted micro-regenerations.
 * **Zero-AI Pure-Code Executive PDF Engines**: Deterministic ReportLab engines render complete, high-fidelity 10-slide architectural slide decks and 6-slide security audit reports in Letter Landscape format with zero LLM dependencies—ensuring 100% factual accuracy and zero hallucinations.
-* **Production-Grade Developer Ecosystem**: End-to-end platform featuring AST code verification, local disk scaffolding, dynamic mock API sandboxes, synthetic k6 load testing, multi-language client SDKs (TypeScript, Python, cURL), CloudEvents HMAC-SHA256 webhooks, OpenTelemetry APM instrumentation, and multi-cloud IaC.
+* **Enterprise DevOps Platform Connectors**: Connects directly with **GitHub Actions**, **Jenkins CI/CD**, **Ansible**, **Terraform**, **Docker Hub**, and **Kubernetes** with automated handshake checks, remote trigger dispatches, and live log telemetry.
+* **Production-Grade Developer Ecosystem**: End-to-end platform featuring AST code verification, local disk scaffolding, dynamic mock API sandboxes, synthetic k6 load testing, multi-language client SDKs (TypeScript, Python, cURL), CloudEvents HMAC-SHA256 webhooks, OpenTelemetry APM instrumentation, multi-cloud IaC, and real-time `/health` & `/api/v1/system/diagnostics` telemetry.
 
 ---
 
@@ -271,6 +272,7 @@ AgentFlow includes an executive cyber-dashboard built on **Next.js 16 (App Route
 15. **SDK Generator (`sdks`)**: Multi-language type-safe client SDK generator for TypeScript, Python, and cURL with bundle ZIP downloads.
 16. **Webhooks & APM (`webhooks-apm`)**: CloudEvents 1.0 event catalog, HMAC-SHA256 signature simulator, OpenTelemetry collector config, and Grafana dashboard JSON downloader.
 17. **Changelog & CloudOps (`changelog-cloudops`)**: Semantic API changelog with breaking change detection, Architecture Decision Records (ADR), GraphQL SDL/resolvers, API Gateway configs (Kong, Nginx, Envoy, Traefik), Synthetic Seed Data (SQL, FactoryBoy, Prisma), Architecture Blueprint markdown exporter (`ARCHITECTURE.md`), and the 10-slide Executive Landscape Presentation PDF Generator (Dark Midnight / Printable Slate).
+18. **DevOps Tools & Platform Connectors (`tools`)**: Live enterprise integrations for **GitHub Actions**, **Jenkins CI/CD**, **Ansible**, **Terraform**, **Docker Hub**, and **Kubernetes** with real-time ping latency checks, configuration editors, trigger dispatches, and live log telemetry.
 
 ---
 
@@ -280,6 +282,9 @@ The backend exposes an exhaustive, versioned RESTful and WebSocket API (`backend
 
 | Endpoint Route | Method | Description |
 |---|---|---|
+| `/health` | `GET` | Live system health status, DB latency, and AI provider availability |
+| `/api/v1/system/health` | `GET` | Versioned system health telemetry |
+| `/api/v1/system/diagnostics` | `GET` | Multi-provider routing diagnostics and scaffold disk metrics |
 | `/projects` | `POST` | Create a new project from raw user brief |
 | `/projects` | `GET` | List all existing projects with statistics |
 | `/projects/{id}` | `GET` | Retrieve complete project state & DAG nodes |

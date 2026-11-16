@@ -347,7 +347,7 @@ class TestSystemHealthEndpoints:
         assert res.status_code == 200
         data = res.json()
         assert data["status"] in ["healthy", "degraded"]
-        assert data["version"] == "0.6.0"
+        assert data["version"] == "1.0.0"
         assert "database_latency_ms" in data
         assert "projects_count" in data
         assert data["providers_count"] >= 4

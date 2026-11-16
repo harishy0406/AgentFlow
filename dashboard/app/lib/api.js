@@ -598,4 +598,16 @@ export async function triggerProjectDevopsTool(projectId, toolId, payload = {}) 
   });
 }
 
+// ---------------------------------------------------------------------------
+// System Health & Telemetry
+// ---------------------------------------------------------------------------
+
+export async function getSystemHealth() {
+  return request("/api/v1/system/health");
+}
+
+export async function getSystemDiagnostics() {
+  return request("/api/v1/system/diagnostics");
+}
+
 

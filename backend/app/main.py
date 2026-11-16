@@ -36,7 +36,54 @@ models.Base.metadata.create_all(bind=engine)
 
 from fastapi.middleware.cors import CORSMiddleware
 
-app = FastAPI(title="AgentFlow API", version="0.6.0")
+TAGS_METADATA = [
+    {
+        "name": "System",
+        "description": "Core system health, DB round-trip latency, and multi-provider routing diagnostics.",
+    },
+    {
+        "name": "Projects",
+        "description": "Software project lifecycle management, brief specification, and DAG orchestration.",
+    },
+    {
+        "name": "Artifacts",
+        "description": "Topological artifact graph nodes (PRD, SDD, DB_SCHEMA, API_SPEC, USER_STORIES, TASKS, CODE_GENERATION) and section diffs.",
+    },
+    {
+        "name": "DevOps Tools",
+        "description": "Enterprise platform connectors for GitHub, Jenkins, Ansible, Terraform, Docker Hub, and Kubernetes.",
+    },
+    {
+        "name": "Reports",
+        "description": "Zero-AI deterministic ReportLab executive landscape slide decks and security audit PDFs.",
+    },
+]
+
+app = FastAPI(
+    title="AgentFlow API",
+    summary="Dependency-Aware Multi-Agent Framework for Deterministic Software Engineering",
+    description="""
+AgentFlow is an autonomous 7-agent DAG fleet featuring artifact-specific model routing,
+breadth-first selective invalidation, static consistency auditing, and enterprise DevOps platform integrations.
+
+### Architecture Highlights
+- **7-Agent DAG Fleet**: PRD → SDD → DB_SCHEMA → API_SPEC → USER_STORIES → TASKS → CODE_GENERATION.
+- **Selective BFS Re-computation**: Only modified and downstream artifacts are regenerated.
+- **Enterprise DevOps Toolchain**: Connectors for GitHub, Jenkins, Ansible, Terraform, Docker Hub, and Kubernetes.
+- **Multi-Provider Resilient Routing**: Automatic fallback cascading across Groq, OpenRouter, OpenAI, and Ollama.
+- **Deterministic Reporting**: Zero-hallucination ReportLab executive slide decks and security audits.
+    """,
+    version="1.0.0",
+    openapi_tags=TAGS_METADATA,
+    contact={
+        "name": "AgentFlow Open Source",
+        "url": "https://github.com/harishy0406/AgentFlow",
+    },
+    license_info={
+        "name": "MIT License",
+        "url": "https://opensource.org/licenses/MIT",
+    },
+)
 
 app.add_middleware(
     CORSMiddleware,
@@ -1131,13 +1178,13 @@ def create_project_migrations(project_id: UUID, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail=str(e))
 
 
-@app.get("/projects/{project_id}/openapi.json")
-def get_project_openapi_spec(project_id: UUID, db: Session = Depends(get_db)):
+@app.get("/projects/{project_id}/download-openapi-spec", tags=["DevOps"])
+def download_project_openapi_spec(project_id: UUID, db: Session = Depends(get_db)):
     """
-    Exports a machine-readable OpenAPI 3.0.3 Swagger specification in JSON format.
+    Exports a machine-readable OpenAPI 3.0.3 Swagger specification in JSON format as a download attachment.
     """
     try:
-        spec = generate_openapi_spec(str(project_id), db)
+        spec = generate_openapi_spec(project_id, db)
         return Response(
             content=json.dumps(spec, indent=2),
             media_type="application/json",
@@ -2881,7 +2928,7 @@ def get_system_health(db: Session = Depends(get_db)):
 
     return schemas.SystemHealthOut(
         status="healthy" if db_status == "connected" else "degraded",
-        version="0.6.0",
+        version="1.0.0",
         timestamp=datetime.now(timezone.utc).isoformat(),
         database_status=db_status,
         database_latency_ms=db_latency,
@@ -2924,7 +2971,7 @@ def get_system_diagnostics(db: Session = Depends(get_db)):
 
     return schemas.SystemDiagnosticsOut(
         status="healthy",
-        version="0.6.0",
+        version="1.0.0",
         timestamp=datetime.now(timezone.utc).isoformat(),
         database={
             "status": db_conn,
