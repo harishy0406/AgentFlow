@@ -2822,6 +2822,7 @@ from .agents.devops_tools import (
     configure_tool,
     test_tool_connection,
     trigger_tool_execution,
+    clear_tool_logs,
 )
 
 
@@ -2899,6 +2900,22 @@ def trigger_project_devops_tool_endpoint(
 
     result = trigger_tool_execution(str(project.id), project.name, tool_id.lower().strip(), payload)
     return result
+
+
+@app.post("/projects/{project_id}/devops-tools/{tool_id}/logs/clear", tags=["DevOps Tools"])
+def clear_project_devops_tool_logs_endpoint(
+    project_id: UUID,
+    tool_id: str,
+    db: Session = Depends(get_db)
+):
+    """
+    Clears accumulated runtime execution logs for a specific DevOps tool connector.
+    """
+    project = db.query(models.Project).filter(models.Project.id == project_id).first()
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    return clear_tool_logs(str(project.id), project.name, tool_id.lower().strip())
 
 
 # ---------------------------------------------------------------------------
@@ -2986,6 +3003,34 @@ def get_system_diagnostics(db: Session = Depends(get_db)):
             "projects_on_disk": project_folders[:10],
         },
     )
+
+
+# ---------------------------------------------------------------------------
+# Phase 21: Cloud FinOps & Multi-Cloud Infrastructure Cost Estimator Engine
+# ---------------------------------------------------------------------------
+
+from .agents.cost_estimator import estimate_project_cloud_costs
+
+
+@app.get(
+    "/projects/{project_id}/cost-estimate",
+    response_model=schemas.ProjectCostEstimateOut,
+    tags=["Reports"],
+)
+def get_project_cost_estimate(
+    project_id: UUID,
+    tier: str = Query(default="growth", description="Deployment tier: startup, growth, or enterprise"),
+    db: Session = Depends(get_db),
+):
+    """
+    Computes deterministic multi-cloud monthly/annual infrastructure TCO estimates
+    across AWS, GCP, and Azure based on the project's SDD, DB_SCHEMA, and API_SPEC artifacts.
+    """
+    try:
+        result = estimate_project_cloud_costs(project_id=project_id, db=db, tier=tier)
+        return schemas.ProjectCostEstimateOut(**result)
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
 
 
 

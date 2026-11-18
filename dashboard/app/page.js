@@ -76,7 +76,10 @@ import {
   configureProjectDevopsTool,
   testProjectDevopsTool,
   triggerProjectDevopsTool,
+  clearProjectDevopsToolLogs,
   getSystemHealth,
+  getSystemDiagnostics,
+  getProjectCostEstimate,
 } from "./lib/api";
 
 function RadialGauge({ value = 0, size = 110, strokeWidth = 10, label = "", color = "#00FF66", subtext = "" }) {
@@ -487,6 +490,44 @@ export default function Home() {
 
   // Live System Health Telemetry state
   const [systemHealth, setSystemHealth] = useState(null);
+  const [showDiagnosticsModal, setShowDiagnosticsModal] = useState(false);
+  const [diagnosticsData, setDiagnosticsData] = useState(null);
+  const [diagnosticsLoading, setDiagnosticsLoading] = useState(false);
+
+  // Cloud FinOps Cost Estimator state
+  const [showCostModal, setShowCostModal] = useState(false);
+  const [costEstimateData, setCostEstimateData] = useState(null);
+  const [costEstimateLoading, setCostEstimateLoading] = useState(false);
+  const [costTier, setCostTier] = useState("growth");
+
+  const handleOpenDiagnostics = useCallback(async () => {
+    setShowDiagnosticsModal(true);
+    setDiagnosticsLoading(true);
+    try {
+      const [h, d] = await Promise.all([getSystemHealth(), getSystemDiagnostics()]);
+      setSystemHealth(h);
+      setDiagnosticsData(d);
+    } catch (_) {
+      setDiagnosticsData(null);
+    } finally {
+      setDiagnosticsLoading(false);
+    }
+  }, []);
+
+  const handleLoadCostEstimate = useCallback(async (projectId, tier = "growth") => {
+    if (!projectId) return;
+    setCostTier(tier);
+    setShowCostModal(true);
+    setCostEstimateLoading(true);
+    try {
+      const res = await getProjectCostEstimate(projectId, tier);
+      setCostEstimateData(res);
+    } catch (_) {
+      setCostEstimateData(null);
+    } finally {
+      setCostEstimateLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
     let mounted = true;
@@ -2105,9 +2146,11 @@ export default function Home() {
                   color: systemHealth?.status === "healthy" ? "#10B981" : "#F59E0B",
                   border: `1px solid ${systemHealth?.status === "healthy" ? "rgba(16, 185, 129, 0.3)" : "rgba(245, 158, 11, 0.3)"}`,
                   letterSpacing: "0.02em",
-                  userSelect: "none"
+                  userSelect: "none",
+                  cursor: "pointer"
                 }}
-                title={systemHealth ? `AgentFlow Engine v${systemHealth.version} • DB Latency: ${systemHealth.database_latency_ms}ms • Providers: ${systemHealth.available_providers_count}/${systemHealth.providers_count}` : "Connecting to backend..."}
+                onClick={handleOpenDiagnostics}
+                title={systemHealth ? `AgentFlow Engine v${systemHealth.version} • DB Latency: ${systemHealth.database_latency_ms}ms • Providers: ${systemHealth.available_providers_count}/${systemHealth.providers_count} (Click for Diagnostics)` : "Connecting to backend..."}
               >
                 <span
                   style={{
@@ -2266,6 +2309,21 @@ export default function Home() {
 
                     <div className="navbar-dropdown-divider" />
                     <div className="navbar-dropdown-header">Developer Toolkits</div>
+
+                    <button
+                      className="navbar-dropdown-item"
+                      disabled={costEstimateLoading}
+                      onClick={() => {
+                        setShowToolsDropdown(false);
+                        handleLoadCostEstimate(currentProject.id, costTier);
+                      }}
+                    >
+                      <span className="dropdown-item-icon">💰</span>
+                      <div className="dropdown-item-text">
+                        <span className="dropdown-item-title">{costEstimateLoading ? "Estimating..." : "Cloud FinOps Estimator"}</span>
+                        <span className="dropdown-item-desc">AWS, GCP &amp; Azure TCO breakdown</span>
+                      </div>
+                    </button>
 
                     <button
                       className="navbar-dropdown-item"
@@ -2437,9 +2495,11 @@ export default function Home() {
                   color: systemHealth?.status === "healthy" ? "#10B981" : "#F59E0B",
                   border: `1px solid ${systemHealth?.status === "healthy" ? "rgba(16, 185, 129, 0.3)" : "rgba(245, 158, 11, 0.3)"}`,
                   letterSpacing: "0.02em",
-                  userSelect: "none"
+                  userSelect: "none",
+                  cursor: "pointer"
                 }}
-                title={systemHealth ? `AgentFlow Engine v${systemHealth.version} • DB Latency: ${systemHealth.database_latency_ms}ms • Providers: ${systemHealth.available_providers_count}/${systemHealth.providers_count}` : "Connecting to backend..."}
+                onClick={handleOpenDiagnostics}
+                title={systemHealth ? `AgentFlow Engine v${systemHealth.version} • DB Latency: ${systemHealth.database_latency_ms}ms • Providers: ${systemHealth.available_providers_count}/${systemHealth.providers_count} (Click for Diagnostics)` : "Connecting to backend..."}
               >
                 <span
                   style={{
@@ -13661,6 +13721,244 @@ export default function Home() {
                 <span>{filteredCommandItems.length} results</span>
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* System Diagnostics & Provider Fleet Modal */}
+      {showDiagnosticsModal && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 10000,
+            background: "rgba(5, 8, 16, 0.78)",
+            backdropFilter: "blur(6px)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: 20,
+          }}
+          onClick={() => setShowDiagnosticsModal(false)}
+        >
+          <div
+            style={{
+              width: "100%",
+              maxWidth: 740,
+              maxHeight: "85vh",
+              overflowY: "auto",
+              background: "#0B0F1A",
+              border: "1px solid rgba(16, 185, 129, 0.35)",
+              borderRadius: 12,
+              padding: 24,
+              boxShadow: "0 20px 60px rgba(0, 0, 0, 0.65)",
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+              <div>
+                <h3 style={{ margin: 0, fontSize: 18, color: "#F8FAFC" }}>System Diagnostics &amp; Provider Fleet</h3>
+                <p style={{ margin: "4px 0 0 0", fontSize: 12, color: "#94A3B8" }}>
+                  Live database telemetry, multi-provider LLM failover registry, and scaffold storage health
+                </p>
+              </div>
+              <div style={{ display: "flex", gap: 8 }}>
+                <button className="btn btn-secondary btn-sm" onClick={handleOpenDiagnostics} disabled={diagnosticsLoading}>
+                  {diagnosticsLoading ? "Refreshing..." : "Refresh"}
+                </button>
+                <button className="btn btn-secondary btn-sm" onClick={() => setShowDiagnosticsModal(false)}>
+                  Close
+                </button>
+              </div>
+            </div>
+
+            {diagnosticsLoading && !diagnosticsData ? (
+              <div style={{ padding: 40, textAlign: "center", color: "#94A3B8" }}>Loading live diagnostics...</div>
+            ) : diagnosticsData ? (
+              <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12 }}>
+                  <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 8, padding: 12 }}>
+                    <div style={{ fontSize: 11, color: "#94A3B8" }}>Engine &amp; DB Latency</div>
+                    <div style={{ fontSize: 16, fontWeight: 700, color: "#10B981", marginTop: 4 }}>
+                      {diagnosticsData.database?.engine} • {diagnosticsData.database?.latency_ms}ms
+                    </div>
+                  </div>
+                  <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 8, padding: 12 }}>
+                    <div style={{ fontSize: 11, color: "#94A3B8" }}>Registered Templates</div>
+                    <div style={{ fontSize: 16, fontWeight: 700, color: "#38BDF8", marginTop: 4 }}>
+                      {(diagnosticsData.templates || []).length} Blueprints
+                    </div>
+                  </div>
+                  <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 8, padding: 12 }}>
+                    <div style={{ fontSize: 11, color: "#94A3B8" }}>Scaffolded Disk Repos</div>
+                    <div style={{ fontSize: 16, fontWeight: 700, color: "#A78BFA", marginTop: 4 }}>
+                      {diagnosticsData.storage?.scaffolded_projects_count || 0} Projects
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <h4 style={{ margin: "0 0 8px 0", fontSize: 13, color: "#E2E8F0" }}>LLM Provider Registry</h4>
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(210px, 1fr))", gap: 10 }}>
+                    {(diagnosticsData.providers || []).map((prov) => (
+                      <div
+                        key={prov.name}
+                        style={{
+                          background: "rgba(255,255,255,0.03)",
+                          border: `1px solid ${prov.is_available ? "rgba(16, 185, 129, 0.35)" : "rgba(255,255,255,0.08)"}`,
+                          borderRadius: 8,
+                          padding: 10,
+                        }}
+                      >
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                          <span style={{ fontSize: 13, fontWeight: 600, color: "#F8FAFC", textTransform: "capitalize" }}>{prov.name}</span>
+                          <span
+                            style={{
+                              fontSize: 10,
+                              fontWeight: 700,
+                              padding: "2px 6px",
+                              borderRadius: 10,
+                              background: prov.is_available ? "rgba(16,185,129,0.16)" : "rgba(148,163,184,0.14)",
+                              color: prov.is_available ? "#10B981" : "#94A3B8",
+                            }}
+                          >
+                            {prov.is_available ? "ACTIVE" : "STANDBY"}
+                          </span>
+                        </div>
+                        <div style={{ fontSize: 11, color: "#94A3B8", marginTop: 4 }}>
+                          {prov.models_count} configured model{prov.models_count === 1 ? "" : "s"}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div style={{ padding: 24, textAlign: "center", color: "#F59E0B" }}>Unable to reach backend diagnostics endpoint.</div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Cloud FinOps & Multi-Cloud Cost Estimator Modal */}
+      {showCostModal && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 10000,
+            background: "rgba(5, 8, 16, 0.78)",
+            backdropFilter: "blur(6px)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: 20,
+          }}
+          onClick={() => setShowCostModal(false)}
+        >
+          <div
+            style={{
+              width: "100%",
+              maxWidth: 920,
+              maxHeight: "88vh",
+              overflowY: "auto",
+              background: "#0B0F1A",
+              border: "1px solid rgba(56, 189, 248, 0.35)",
+              borderRadius: 12,
+              padding: 24,
+              boxShadow: "0 20px 60px rgba(0, 0, 0, 0.65)",
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12, marginBottom: 16 }}>
+              <div>
+                <h3 style={{ margin: 0, fontSize: 18, color: "#F8FAFC" }}>Cloud FinOps &amp; Multi-Cloud TCO Estimator</h3>
+                <p style={{ margin: "4px 0 0 0", fontSize: 12, color: "#94A3B8" }}>
+                  Deterministic AWS, GCP, and Azure infrastructure projections synthesized from SDD, DB_SCHEMA, and API_SPEC
+                </p>
+              </div>
+              <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                {["startup", "growth", "enterprise"].map((t) => (
+                  <button
+                    key={t}
+                    className={`btn btn-sm ${costTier === t ? "btn-primary" : "btn-secondary"}`}
+                    onClick={() => handleLoadCostEstimate(currentProject?.id, t)}
+                    disabled={costEstimateLoading}
+                    style={{ textTransform: "capitalize" }}
+                  >
+                    {t}
+                  </button>
+                ))}
+                <button className="btn btn-secondary btn-sm" onClick={() => setShowCostModal(false)}>
+                  Close
+                </button>
+              </div>
+            </div>
+
+            {costEstimateLoading ? (
+              <div style={{ padding: 48, textAlign: "center", color: "#94A3B8" }}>Calculating multi-cloud infrastructure projections...</div>
+            ) : costEstimateData ? (
+              <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12, background: "rgba(16, 185, 129, 0.08)", border: "1px solid rgba(16, 185, 129, 0.3)", borderRadius: 8, padding: "12px 16px" }}>
+                  <div>
+                    <div style={{ fontSize: 11, color: "#10B981", fontWeight: 700, textTransform: "uppercase" }}>
+                      Lowest TCO Recommendation • {costEstimateData.tier_label}
+                    </div>
+                    <div style={{ fontSize: 15, fontWeight: 700, color: "#F8FAFC", marginTop: 2 }}>
+                      {costEstimateData.recommended_provider} at ${costEstimateData.lowest_monthly_usd.toFixed(2)}/mo ({costEstimateData.estimated_rps})
+                    </div>
+                  </div>
+                  <div style={{ fontSize: 12, color: "#CBD5E1" }}>
+                    {costEstimateData.detected_signals?.tables_count} Tables • {costEstimateData.detected_signals?.endpoints_count} API Routes
+                  </div>
+                </div>
+
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 14 }}>
+                  {(costEstimateData.providers || []).map((prov) => (
+                    <div
+                      key={prov.provider}
+                      style={{
+                        background: "rgba(255,255,255,0.03)",
+                        border: prov.provider === costEstimateData.recommended_provider ? "1px solid rgba(16, 185, 129, 0.5)" : "1px solid rgba(255,255,255,0.08)",
+                        borderRadius: 10,
+                        padding: 16,
+                      }}
+                    >
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+                        <span style={{ fontSize: 16, fontWeight: 700, color: "#F8FAFC" }}>{prov.provider}</span>
+                        <span style={{ fontSize: 18, fontWeight: 800, color: "#38BDF8" }}>${prov.monthly_total_usd.toFixed(2)}/mo</span>
+                      </div>
+                      <div style={{ fontSize: 11, color: "#10B981", marginBottom: 12 }}>
+                        1-Yr Reserved: ${prov.annual_reserved_usd.toFixed(0)}/yr (Save ${prov.annual_savings_usd.toFixed(0)} • -{prov.reserved_discount_pct}%)
+                      </div>
+                      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                        {(prov.line_items || []).map((li, idx) => (
+                          <div key={idx} style={{ display: "flex", justifyContent: "space-between", fontSize: 12, borderBottom: "1px solid rgba(255,255,255,0.05)", paddingBottom: 4 }}>
+                            <span style={{ color: "#CBD5E1" }}>{li.category}</span>
+                            <span style={{ color: "#F8FAFC", fontWeight: 600 }}>${li.monthly_usd.toFixed(2)}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <div>
+                  <h4 style={{ margin: "0 0 8px 0", fontSize: 13, color: "#E2E8F0" }}>Tailored FinOps Optimization Recommendations</h4>
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 10 }}>
+                    {(costEstimateData.finops_recommendations || []).map((rec, idx) => (
+                      <div key={idx} style={{ background: "rgba(255,255,255,0.025)", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 8, padding: 12 }}>
+                        <div style={{ fontSize: 12, fontWeight: 700, color: "#F8FAFC" }}>{rec.title}</div>
+                        <div style={{ fontSize: 11, color: "#10B981", marginTop: 2 }}>{rec.impact}</div>
+                        <div style={{ fontSize: 11, color: "#94A3B8", marginTop: 4 }}>{rec.detail}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div style={{ padding: 24, textAlign: "center", color: "#F59E0B" }}>Unable to compute cost estimate for this project.</div>
+            )}
           </div>
         </div>
       )}

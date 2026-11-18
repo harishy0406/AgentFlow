@@ -598,6 +598,12 @@ export async function triggerProjectDevopsTool(projectId, toolId, payload = {}) 
   });
 }
 
+export async function clearProjectDevopsToolLogs(projectId, toolId) {
+  return request(`/projects/${projectId}/devops-tools/${toolId}/logs/clear`, {
+    method: "POST",
+  });
+}
+
 // ---------------------------------------------------------------------------
 // System Health & Telemetry
 // ---------------------------------------------------------------------------
@@ -608,6 +614,14 @@ export async function getSystemHealth() {
 
 export async function getSystemDiagnostics() {
   return request("/api/v1/system/diagnostics");
+}
+
+// ---------------------------------------------------------------------------
+// Cloud FinOps & Multi-Cloud Infrastructure Cost Estimator
+// ---------------------------------------------------------------------------
+
+export async function getProjectCostEstimate(projectId, tier = "growth") {
+  return request(`/projects/${projectId}/cost-estimate?tier=${encodeURIComponent(tier)}`);
 }
 
 

@@ -1019,3 +1019,44 @@ class SystemDiagnosticsOut(BaseModel):
     providers: List[ProviderDiagnosticItem]
     templates: List[str]
     storage: Dict[str, Any]
+
+
+# ---------------------------------------------------------------------------
+# Cloud FinOps & Multi-Cloud Infrastructure Cost Estimator Schemas
+# ---------------------------------------------------------------------------
+
+class CostLineItemOut(BaseModel):
+    category: str
+    service: str
+    monthly_usd: float
+    notes: str
+
+
+class CloudProviderCostOut(BaseModel):
+    provider: str
+    monthly_total_usd: float
+    annual_on_demand_usd: float
+    annual_reserved_usd: float
+    annual_savings_usd: float
+    reserved_discount_pct: int
+    line_items: List[CostLineItemOut]
+
+
+class FinOpsRecommendationOut(BaseModel):
+    title: str
+    impact: str
+    detail: str
+
+
+class ProjectCostEstimateOut(BaseModel):
+    project_id: str
+    project_name: str
+    tier: str
+    tier_label: str
+    estimated_rps: str
+    detected_signals: Dict[str, Any]
+    recommended_provider: str
+    lowest_monthly_usd: float
+    providers: List[CloudProviderCostOut]
+    finops_recommendations: List[FinOpsRecommendationOut]
+    generated_at: str

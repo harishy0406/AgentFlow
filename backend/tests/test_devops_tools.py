@@ -100,3 +100,11 @@ def test_devops_tools_endpoints():
     assert updated_tools_res.status_code == 200
     updated_github = next(t for t in updated_tools_res.json()["tools"] if t["id"] == "github")
     assert updated_github["config"]["branch"] == "develop"
+
+    # 6. POST /projects/{id}/devops-tools/{tool_id}/logs/clear
+    clear_res = client.post(f"/projects/{p_id}/devops-tools/github/logs/clear")
+    assert clear_res.status_code == 200
+    clear_data = clear_res.json()
+    assert clear_data["status"] == "success"
+    assert clear_data["tool_id"] == "github"
+    assert clear_data["cleared_count"] >= 2

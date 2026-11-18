@@ -322,3 +322,21 @@ def trigger_tool_execution(project_id: str, project_name: str, tool_id: str, pay
         "message": action_msg,
         "log": log_entry
     }
+
+
+def clear_tool_logs(project_id: str, project_name: str, tool_id: str) -> Dict[str, Any]:
+    """
+    Clears accumulated runtime execution logs for a specific DevOps tool.
+    """
+    k = _store_key(project_id, tool_id)
+    cleared_count = len(_TOOL_LOGS_STORE.get(k, []))
+    _TOOL_LOGS_STORE[k] = []
+
+    now_iso = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
+    return {
+        "status": "success",
+        "tool_id": tool_id,
+        "cleared_count": cleared_count,
+        "timestamp": now_iso,
+        "message": f"Cleared {cleared_count} runtime log entries for {tool_id.capitalize()}.",
+    }
