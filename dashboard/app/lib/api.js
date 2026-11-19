@@ -632,5 +632,44 @@ export function exportProjectCostEstimateJsonUrl(projectId, tier = "growth") {
   return `${API_BASE_URL}/projects/${projectId}/cost-estimate/export?format=json&tier=${encodeURIComponent(tier)}`;
 }
 
+// ---------------------------------------------------------------------------
+// Kubernetes Helm 3 Chart Generator
+// ---------------------------------------------------------------------------
+
+export async function getProjectHelmChart(projectId, { replicas = 2, port = 8000, format = "json" } = {}) {
+  return request(`/projects/${projectId}/helm-chart?replicas=${replicas}&port=${port}&format=${format}`);
+}
+
+export function getProjectHelmChartZipUrl(projectId, { replicas = 2, port = 8000 } = {}) {
+  return `${API_BASE_URL}/projects/${projectId}/helm-chart?replicas=${replicas}&port=${port}&format=zip`;
+}
+
+// ---------------------------------------------------------------------------
+// Architectural Velocity & Quality Signals
+// ---------------------------------------------------------------------------
+
+export async function getProjectVelocity(projectId) {
+  return request(`/projects/${projectId}/velocity`);
+}
+
+// ---------------------------------------------------------------------------
+// CloudEvents Webhook Cryptographic Sign & Verify
+// ---------------------------------------------------------------------------
+
+export async function signWebhookPayload(projectId, payload, secret, timestamp) {
+  return request(`/projects/${projectId}/webhooks/sign`, {
+    method: "POST",
+    body: JSON.stringify({ payload, secret, timestamp }),
+  });
+}
+
+export async function verifyWebhookSignature(projectId, payload, signature, secret, timestamp, toleranceSeconds = 300) {
+  return request(`/projects/${projectId}/webhooks/verify-signature`, {
+    method: "POST",
+    body: JSON.stringify({ payload, signature, secret, timestamp, tolerance_seconds: toleranceSeconds }),
+  });
+}
+
+
 
 
