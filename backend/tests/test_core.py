@@ -372,6 +372,10 @@ class TestSystemHealthEndpoints:
         data = res.json()
         assert "database" in data
         assert "status" in data["database"]
+        assert "latency_ms" in data["database"]
+        assert "latency_status" in data["database"]
+        assert "pool" in data["database"]
+        assert "class" in data["database"]["pool"]
         assert "providers" in data
         assert len(data["providers"]) >= 4
         assert "templates" in data

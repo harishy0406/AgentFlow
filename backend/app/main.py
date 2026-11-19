@@ -2970,6 +2970,16 @@ def get_system_diagnostics(db: Session = Depends(get_db)):
         db_latency = -1.0
         db_conn = f"error: {str(e)}"
 
+    pool = getattr(engine, "pool", None)
+    pool_info = {
+        "class": pool.__class__.__name__ if pool else "None",
+        "size": getattr(pool, "size", lambda: None)() if hasattr(pool, "size") else 5,
+        "checked_in": getattr(pool, "checkedin", lambda: None)() if hasattr(pool, "checkedin") else 0,
+        "checked_out": getattr(pool, "checkedout", lambda: None)() if hasattr(pool, "checkedout") else 0,
+        "overflow": getattr(pool, "overflow", lambda: None)() if hasattr(pool, "overflow") else 0,
+    }
+    latency_status = "optimal" if 0 <= db_latency < 25 else ("nominal" if db_latency < 100 else "degraded")
+
     provider_items = []
     for p in PROVIDER_REGISTRY.all_providers():
         provider_items.append(
@@ -2994,6 +3004,8 @@ def get_system_diagnostics(db: Session = Depends(get_db)):
             "status": db_conn,
             "engine": str(engine.url.drivername),
             "latency_ms": db_latency,
+            "latency_status": latency_status,
+            "pool": pool_info,
         },
         providers=provider_items,
         templates=templates,
