@@ -660,3 +660,118 @@ def simulate_webhook_dispatch(
             "dead_letter_queue": "arn:agentflow:dlq:webhooks-failed"
         }
     }
+
+
+def compute_webhook_signature(
+    payload: Union[str, bytes, Dict[str, Any]],
+    secret: str,
+    timestamp: Optional[Union[int, str]] = None,
+) -> Dict[str, Any]:
+    """
+    Computes an HMAC-SHA256 signature and standard CloudEvents webhook headers.
+    Supports either string, raw bytes, or dict payloads.
+    """
+    if isinstance(payload, dict):
+        raw_bytes = json.dumps(payload, separators=(",", ":"), sort_keys=True).encode("utf-8")
+    elif isinstance(payload, str):
+        raw_bytes = payload.encode("utf-8")
+    else:
+        raw_bytes = bytes(payload)
+
+    ts = int(timestamp) if timestamp is not None else int(datetime.now(timezone.utc).timestamp())
+    string_to_sign = f"{ts}.".encode("utf-8") + raw_bytes
+    v1_hex = hmac.new(secret.encode("utf-8"), string_to_sign, hashlib.sha256).hexdigest()
+    raw_hex = hmac.new(secret.encode("utf-8"), raw_bytes, hashlib.sha256).hexdigest()
+
+    return {
+        "timestamp": ts,
+        "signature": f"sha256={raw_hex}",
+        "versioned_signature": f"t={ts},v1={v1_hex}",
+        "raw_hex": raw_hex,
+        "v1_hex": v1_hex,
+    }
+
+
+def verify_webhook_signature(
+    payload: Union[str, bytes, Dict[str, Any]],
+    signature: str,
+    secret: str,
+    timestamp: Optional[Union[int, str]] = None,
+    tolerance_seconds: int = 300,
+) -> Dict[str, Any]:
+    """
+    Verifies incoming webhook payload signature using constant-time comparison.
+    Supports:
+    - Standard sha256=<hex> header
+    - Stripe/CloudEvents style t=<ts>,v1=<hex> header
+    - Raw 64-char hex strings
+    - Optional timestamp replay guard (rejects requests older than tolerance_seconds)
+    """
+    if not secret:
+        return {"valid": False, "reason": "Webhook secret is empty", "computed_signature": "", "timestamp_checked": False}
+
+    if not signature:
+        return {"valid": False, "reason": "Webhook signature header is missing or empty", "computed_signature": "", "timestamp_checked": False}
+
+    if isinstance(payload, dict):
+        raw_bytes = json.dumps(payload, separators=(",", ":"), sort_keys=True).encode("utf-8")
+    elif isinstance(payload, str):
+        raw_bytes = payload.encode("utf-8")
+    else:
+        raw_bytes = bytes(payload)
+
+    now_ts = int(datetime.now(timezone.utc).timestamp())
+    sig_str = signature.strip()
+
+    # Parse t=<timestamp>,v1=<hex> format if present
+    extracted_ts = None
+    target_hex = sig_str
+    if "t=" in sig_str and "v1=" in sig_str:
+        parts = sig_str.split(",")
+        for p in parts:
+            p = p.strip()
+            if p.startswith("t="):
+                try:
+                    extracted_ts = int(p[2:])
+                except ValueError:
+                    pass
+            elif p.startswith("v1="):
+                target_hex = p[3:]
+    elif sig_str.startswith("sha256="):
+        target_hex = sig_str[7:]
+
+    # Determine which timestamp to use
+    effective_ts = timestamp if timestamp is not None else extracted_ts
+
+    # Replay protection check
+    timestamp_checked = False
+    skew_seconds = None
+    if effective_ts is not None and tolerance_seconds > 0:
+        timestamp_checked = True
+        skew_seconds = abs(now_ts - int(effective_ts))
+        if skew_seconds > tolerance_seconds:
+            return {
+                "valid": False,
+                "reason": f"Timestamp drift ({skew_seconds}s) exceeds tolerance of {tolerance_seconds}s (replay attack detected)",
+                "computed_signature": "",
+                "timestamp_checked": True,
+                "skew_seconds": skew_seconds,
+            }
+
+    # If effective_ts was used in versioned signature calculation
+    if effective_ts is not None and ("t=" in sig_str or "v1=" in sig_str):
+        string_to_sign = f"{int(effective_ts)}.".encode("utf-8") + raw_bytes
+        computed = hmac.new(secret.encode("utf-8"), string_to_sign, hashlib.sha256).hexdigest()
+    else:
+        computed = hmac.new(secret.encode("utf-8"), raw_bytes, hashlib.sha256).hexdigest()
+
+    is_valid = hmac.compare_digest(target_hex.lower(), computed.lower())
+
+    return {
+        "valid": is_valid,
+        "reason": "Signature verified successfully" if is_valid else "Signature mismatch: verification failed",
+        "computed_signature": f"sha256={computed}",
+        "timestamp_checked": timestamp_checked,
+        "skew_seconds": skew_seconds,
+    }
+

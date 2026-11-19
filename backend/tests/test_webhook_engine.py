@@ -4,6 +4,8 @@ from app.main import app
 from app.agents.webhook_engine import (
     _compute_hmac_sha256,
     simulate_webhook_dispatch,
+    compute_webhook_signature,
+    verify_webhook_signature,
 )
 
 client = TestClient(app)
@@ -89,3 +91,86 @@ def test_webhook_api_endpoints():
     assert dispatch_data["hmac_signature"].startswith("sha256=")
     assert dispatch_data["status_code"] == 200
     assert dispatch_data["duration_ms"] > 0
+
+
+def test_webhook_signature_computation_and_verification():
+    secret = "whsec_test_secret_key_abcdef123456"
+    payload = {"event": "payment.succeeded", "amount": 4900, "currency": "INR"}
+
+    # 1. Compute signature
+    signed = compute_webhook_signature(payload, secret)
+    assert signed["signature"].startswith("sha256=")
+    assert "t=" in signed["versioned_signature"]
+    assert "v1=" in signed["versioned_signature"]
+
+    # 2. Verify valid standard signature
+    res_valid = verify_webhook_signature(payload, signed["signature"], secret)
+    assert res_valid["valid"] is True
+    assert "successfully" in res_valid["reason"].lower()
+
+    # 3. Verify valid versioned signature
+    res_v1_valid = verify_webhook_signature(payload, signed["versioned_signature"], secret)
+    assert res_v1_valid["valid"] is True
+
+    # 4. Tampered payload fails verification
+    tampered = {"event": "payment.succeeded", "amount": 999999, "currency": "INR"}
+    res_invalid = verify_webhook_signature(tampered, signed["signature"], secret)
+    assert res_invalid["valid"] is False
+
+    # 5. Wrong secret fails verification
+    res_wrong_secret = verify_webhook_signature(payload, signed["signature"], "wrong_secret_key")
+    assert res_wrong_secret["valid"] is False
+
+    # 6. Replay attack rejection when timestamp is too old
+    old_timestamp = signed["timestamp"] - 600  # 10 minutes ago
+    res_replay = verify_webhook_signature(
+        payload,
+        signed["signature"],
+        secret,
+        timestamp=old_timestamp,
+        tolerance_seconds=300,
+    )
+    assert res_replay["valid"] is False
+    assert "replay attack detected" in res_replay["reason"].lower()
+
+
+def test_webhook_sign_and_verify_api_endpoints():
+    # Create project
+    p_res = client.post("/projects/", json={
+        "name": "Webhook Signature API Test App",
+        "brief": "App for testing webhook sign and verify endpoints."
+    })
+    assert p_res.status_code == 200
+    p_id = p_res.json()["id"]
+
+    secret = "whsec_api_endpoint_secret_xyz"
+    payload = {"entity": "subscription", "status": "active"}
+
+    # Sign endpoint
+    sign_res = client.post(f"/projects/{p_id}/webhooks/sign", json={
+        "payload": payload,
+        "secret": secret
+    })
+    assert sign_res.status_code == 200
+    sign_data = sign_res.json()
+    assert sign_data["signature"].startswith("sha256=")
+
+    # Verify endpoint (success)
+    verify_res = client.post(f"/projects/{p_id}/webhooks/verify-signature", json={
+        "payload": payload,
+        "signature": sign_data["signature"],
+        "secret": secret
+    })
+    assert verify_res.status_code == 200
+    verify_data = verify_res.json()
+    assert verify_data["valid"] is True
+
+    # Verify endpoint (tampered failure)
+    tampered_res = client.post(f"/projects/{p_id}/webhooks/verify-signature", json={
+        "payload": {"entity": "subscription", "status": "canceled"},
+        "signature": sign_data["signature"],
+        "secret": secret
+    })
+    assert tampered_res.status_code == 200
+    assert tampered_res.json()["valid"] is False
+

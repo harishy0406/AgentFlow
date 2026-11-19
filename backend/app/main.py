@@ -2101,7 +2101,12 @@ def trigger_sdk_generation_endpoint(
 # Phase 9: Webhook & Event Broker Architecture Engine
 # ---------------------------------------------------------------------------
 
-from .agents.webhook_engine import generate_project_event_catalog, simulate_webhook_dispatch
+from .agents.webhook_engine import (
+    generate_project_event_catalog,
+    simulate_webhook_dispatch,
+    compute_webhook_signature,
+    verify_webhook_signature,
+)
 
 @app.get("/projects/{project_id}/events", response_model=schemas.EventCatalogOut)
 def get_project_events_endpoint(
@@ -2145,6 +2150,60 @@ def simulate_webhook_dispatch_endpoint(
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post(
+    "/projects/{project_id}/webhooks/sign",
+    response_model=schemas.WebhookSignResponse,
+    tags=["Webhooks"],
+    summary="Generate HMAC-SHA256 signature for webhook payload",
+)
+def sign_webhook_endpoint(
+    project_id: UUID,
+    body: schemas.WebhookSignRequest,
+    db: Session = Depends(get_db),
+):
+    """
+    Computes an HMAC-SHA256 signature and timestamp headers for outgoing webhooks.
+    """
+    project = db.query(models.Project).filter(models.Project.id == project_id).first()
+    if not project:
+        raise HTTPException(status_code=404, detail=f"Project {project_id} not found")
+
+    res = compute_webhook_signature(
+        payload=body.payload,
+        secret=body.secret,
+        timestamp=body.timestamp,
+    )
+    return schemas.WebhookSignResponse(**res)
+
+
+@app.post(
+    "/projects/{project_id}/webhooks/verify-signature",
+    response_model=schemas.WebhookVerifyResponse,
+    tags=["Webhooks"],
+    summary="Verify HMAC-SHA256 signature and replay tolerance of webhook payload",
+)
+def verify_webhook_signature_endpoint(
+    project_id: UUID,
+    body: schemas.WebhookVerifyRequest,
+    db: Session = Depends(get_db),
+):
+    """
+    Verifies the HMAC-SHA256 signature and validates timestamp replay attack tolerance.
+    """
+    project = db.query(models.Project).filter(models.Project.id == project_id).first()
+    if not project:
+        raise HTTPException(status_code=404, detail=f"Project {project_id} not found")
+
+    res = verify_webhook_signature(
+        payload=body.payload,
+        signature=body.signature,
+        secret=body.secret,
+        timestamp=body.timestamp,
+        tolerance_seconds=body.tolerance_seconds or 300,
+    )
+    return schemas.WebhookVerifyResponse(**res)
 
 
 # ---------------------------------------------------------------------------

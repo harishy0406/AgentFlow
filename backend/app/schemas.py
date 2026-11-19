@@ -1,4 +1,4 @@
-from typing import List, Optional, Dict, Any
+from typing import List, Optional, Dict, Any, Union
 from uuid import UUID
 from datetime import datetime
 from pydantic import BaseModel, ConfigDict
@@ -718,6 +718,37 @@ class WebhookDeliveryResult(BaseModel):
     duration_ms: float
     delivered: bool
     retry_policy: Dict[str, Any]
+
+
+class WebhookSignRequest(BaseModel):
+    payload: Union[Dict[str, Any], str]
+    secret: str
+    timestamp: Optional[int] = None
+
+
+class WebhookSignResponse(BaseModel):
+    timestamp: int
+    signature: str
+    versioned_signature: str
+    raw_hex: str
+    v1_hex: str
+
+
+class WebhookVerifyRequest(BaseModel):
+    payload: Union[Dict[str, Any], str]
+    signature: str
+    secret: str
+    timestamp: Optional[int] = None
+    tolerance_seconds: Optional[int] = 300
+
+
+class WebhookVerifyResponse(BaseModel):
+    valid: bool
+    reason: str
+    computed_signature: str
+    timestamp_checked: bool
+    skew_seconds: Optional[float] = None
+
 
 
 class EventCatalogOut(BaseModel):
