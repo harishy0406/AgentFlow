@@ -1107,3 +1107,30 @@ class HelmChartBundleOut(BaseModel):
     files: Dict[str, str]
     deployment_steps: List[str]
 
+
+# ---------------------------------------------------------------------------
+# Project Architectural Velocity & Quality Signal Schemas
+# ---------------------------------------------------------------------------
+
+class ArtifactQualityItem(BaseModel):
+    artifact_type: str
+    status: str
+    section_count: int
+    quality_score: float
+    grade: str
+
+
+class ProjectVelocityOut(BaseModel):
+    project_id: str
+    project_name: str
+    completion_pct: float
+    overall_quality_score: float
+    rating_badge: str
+    complexity_index: float
+    complexity_level: str
+    total_sections: int
+    total_words: int
+    artifact_breakdown: List[ArtifactQualityItem]
+    is_scaffold_ready: bool
+
+

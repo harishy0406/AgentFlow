@@ -3190,6 +3190,35 @@ def get_project_helm_chart(
     return schemas.HelmChartBundleOut(**bundle)
 
 
+# ---------------------------------------------------------------------------
+# Project Architectural Velocity & Quality Signal Endpoints
+# ---------------------------------------------------------------------------
+
+from .agents.quality_signals import calculate_project_velocity
+
+
+@app.get(
+    "/projects/{project_id}/velocity",
+    response_model=schemas.ProjectVelocityOut,
+    tags=["Reports"],
+    summary="Get Project Architectural Velocity & Quality Signal Summary",
+)
+def get_project_velocity_endpoint(
+    project_id: UUID,
+    db: Session = Depends(get_db),
+):
+    """
+    Computes architectural velocity, completion percentage, structural quality scores,
+    and complexity index across all artifacts of the project.
+    """
+    try:
+        velocity_data = calculate_project_velocity(project_id=project_id, db=db)
+        return schemas.ProjectVelocityOut(**velocity_data)
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+
+
+
 
 
 
