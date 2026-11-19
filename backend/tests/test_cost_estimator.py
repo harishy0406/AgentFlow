@@ -9,7 +9,7 @@ from fastapi.testclient import TestClient
 from app.main import app
 from app.database import get_db
 from app.models import Project, ArtifactNode, ArtifactSection
-from app.agents.cost_estimator import detect_infrastructure_signals
+from app.agents.cost_estimator import detect_infrastructure_signals, export_cost_estimate_csv
 
 client = TestClient(app)
 
@@ -119,3 +119,37 @@ class TestCostEstimatorEndpoint:
     def test_cost_estimate_404_for_unknown_project(self):
         res = client.get(f"/projects/{uuid4()}/cost-estimate")
         assert res.status_code == 404
+
+    def test_cost_estimate_csv_export(self):
+        db = next(get_db())
+        project = Project(
+            id=uuid4(),
+            name="Exportable FinOps App",
+            brief="Cloud application for testing CSV export.",
+        )
+        db.add(project)
+        db.commit()
+
+        # CSV format export
+        res_csv = client.get(f"/projects/{project.id}/cost-estimate/export?format=csv&tier=growth")
+        assert res_csv.status_code == 200
+        assert "text/csv" in res_csv.headers["content-type"]
+        assert f"cost_estimate_{project.id}_growth.csv" in res_csv.headers["content-disposition"]
+        csv_body = res_csv.text
+        assert "# AgentFlow FinOps Multi-Cloud Infrastructure Cost Estimate" in csv_body
+        assert "Exportable FinOps App" in csv_body
+        assert "AWS" in csv_body
+        assert "GCP" in csv_body
+        assert "Azure" in csv_body
+
+        # JSON format export
+        res_json = client.get(f"/projects/{project.id}/cost-estimate/export?format=json&tier=startup")
+        assert res_json.status_code == 200
+        assert "application/json" in res_json.headers["content-type"]
+        assert f"cost_estimate_{project.id}_startup.json" in res_json.headers["content-disposition"]
+        json_data = res_json.json()
+        assert json_data["tier"] == "startup"
+        assert len(json_data["providers"]) == 3
+
+        # 404 for unknown project
+        assert client.get(f"/projects/{uuid4()}/cost-estimate/export").status_code == 404

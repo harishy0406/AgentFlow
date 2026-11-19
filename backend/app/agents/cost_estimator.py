@@ -7,6 +7,8 @@ for Startup, Growth, and Enterprise deployment tiers, along with tailored FinOps
 cost-optimization recommendations.
 """
 
+import csv
+import io
 import re
 from datetime import datetime, timezone
 from typing import Dict, Any, List
@@ -306,3 +308,66 @@ def estimate_project_cloud_costs(
         "finops_recommendations": _generate_finops_recommendations(signals, normalized_tier),
         "generated_at": datetime.now(timezone.utc).isoformat(),
     }
+
+
+def export_cost_estimate_csv(cost_data: Dict[str, Any]) -> str:
+    """
+    Exports the multi-cloud cost estimate into a structured, RFC-4180 compliant CSV string.
+    Includes executive metadata, provider comparison summary, itemized line-by-line service
+    breakdowns, and tailored architectural FinOps recommendations.
+    """
+    output = io.StringIO()
+    writer = csv.writer(output, lineterminator="\n")
+
+    # Header / Meta summary
+    writer.writerow(["# AgentFlow FinOps Multi-Cloud Infrastructure Cost Estimate"])
+    writer.writerow(["Project ID", cost_data.get("project_id", "")])
+    writer.writerow(["Project Name", cost_data.get("project_name", "")])
+    writer.writerow(["Deployment Tier", cost_data.get("tier_label", cost_data.get("tier", ""))])
+    writer.writerow(["Estimated Workload RPS", cost_data.get("estimated_rps", "")])
+    writer.writerow(["Recommended Provider", cost_data.get("recommended_provider", "")])
+    writer.writerow(["Lowest Monthly USD", f"${cost_data.get('lowest_monthly_usd', 0):.2f}"])
+    writer.writerow(["Generated At (UTC)", cost_data.get("generated_at", "")])
+    writer.writerow([])
+
+    # Table 1: Provider Comparison Summary
+    writer.writerow(["--- Provider Annual Summary ---"])
+    writer.writerow(["Provider", "Monthly On-Demand (USD)", "Annual On-Demand (USD)", "Reserved Discount (%)", "Annual Reserved (USD)", "Annual Savings (USD)"])
+    for p in cost_data.get("providers", []):
+        writer.writerow([
+            p.get("provider", ""),
+            f"{p.get('monthly_total_usd', 0):.2f}",
+            f"{p.get('annual_on_demand_usd', 0):.2f}",
+            f"{p.get('reserved_discount_pct', 0)}%",
+            f"{p.get('annual_reserved_usd', 0):.2f}",
+            f"{p.get('annual_savings_usd', 0):.2f}",
+        ])
+    writer.writerow([])
+
+    # Table 2: Itemized Line Items Breakdown
+    writer.writerow(["--- Itemized Line Items Breakdown ---"])
+    writer.writerow(["Provider", "Category", "Service Component", "Monthly Cost (USD)", "Sizing / Architecture Notes"])
+    for p in cost_data.get("providers", []):
+        prov_name = p.get("provider", "")
+        for item in p.get("line_items", []):
+            writer.writerow([
+                prov_name,
+                item.get("category", ""),
+                item.get("service", ""),
+                f"{item.get('monthly_usd', 0):.2f}",
+                item.get("notes", ""),
+            ])
+    writer.writerow([])
+
+    # Table 3: FinOps Architectural Recommendations
+    writer.writerow(["--- FinOps Architectural Recommendations ---"])
+    writer.writerow(["Recommendation Title", "Estimated Cost Impact", "Architecture Implementation Detail"])
+    for rec in cost_data.get("finops_recommendations", []):
+        writer.writerow([
+            rec.get("title", ""),
+            rec.get("impact", ""),
+            rec.get("detail", ""),
+        ])
+
+    return output.getvalue()
+

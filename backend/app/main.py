@@ -3009,7 +3009,7 @@ def get_system_diagnostics(db: Session = Depends(get_db)):
 # Phase 21: Cloud FinOps & Multi-Cloud Infrastructure Cost Estimator Engine
 # ---------------------------------------------------------------------------
 
-from .agents.cost_estimator import estimate_project_cloud_costs
+from .agents.cost_estimator import estimate_project_cloud_costs, export_cost_estimate_csv
 
 
 @app.get(
@@ -3031,6 +3031,46 @@ def get_project_cost_estimate(
         return schemas.ProjectCostEstimateOut(**result)
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
+
+
+@app.get(
+    "/projects/{project_id}/cost-estimate/export",
+    tags=["Reports"],
+    summary="Export FinOps Cloud Cost Estimate as CSV or JSON",
+)
+def export_project_cost_estimate(
+    project_id: UUID,
+    tier: str = Query(default="growth", description="Deployment tier: startup, growth, or enterprise"),
+    format: str = Query(default="csv", description="Export format: csv or json"),
+    db: Session = Depends(get_db),
+):
+    """
+    Exports deterministic multi-cloud infrastructure cost estimates as a downloadable CSV or JSON file.
+    """
+    try:
+        data = estimate_project_cloud_costs(project_id=project_id, db=db, tier=tier)
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+
+    fmt = (format or "csv").lower().strip()
+    if fmt == "json":
+        return Response(
+            content=json.dumps(data, indent=2),
+            media_type="application/json",
+            headers={
+                "Content-Disposition": f'attachment; filename="cost_estimate_{project_id}_{tier}.json"'
+            },
+        )
+
+    csv_content = export_cost_estimate_csv(data)
+    return Response(
+        content=csv_content,
+        media_type="text/csv; charset=utf-8",
+        headers={
+            "Content-Disposition": f'attachment; filename="cost_estimate_{project_id}_{tier}.csv"'
+        },
+    )
+
 
 
 

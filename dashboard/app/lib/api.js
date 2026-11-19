@@ -624,4 +624,13 @@ export async function getProjectCostEstimate(projectId, tier = "growth") {
   return request(`/projects/${projectId}/cost-estimate?tier=${encodeURIComponent(tier)}`);
 }
 
+export function exportProjectCostEstimateCsvUrl(projectId, tier = "growth") {
+  return `${API_BASE_URL}/projects/${projectId}/cost-estimate/export?format=csv&tier=${encodeURIComponent(tier)}`;
+}
+
+export function exportProjectCostEstimateJsonUrl(projectId, tier = "growth") {
+  return `${API_BASE_URL}/projects/${projectId}/cost-estimate/export?format=json&tier=${encodeURIComponent(tier)}`;
+}
+
+
 
