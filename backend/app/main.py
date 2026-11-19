@@ -3084,6 +3084,54 @@ def export_project_cost_estimate(
     )
 
 
+# ---------------------------------------------------------------------------
+# Kubernetes Helm Chart Generator Endpoints
+# ---------------------------------------------------------------------------
+
+from .agents.helm_generator import generate_helm_chart_bundle, generate_helm_chart_zip
+
+
+@app.get(
+    "/projects/{project_id}/helm-chart",
+    tags=["DevOps"],
+    summary="Generate Kubernetes Helm 3 Chart Bundle for Microservices",
+)
+def get_project_helm_chart(
+    project_id: UUID,
+    replicas: int = Query(default=2, ge=1, le=20, description="Default replica count"),
+    port: int = Query(default=8000, ge=1, le=65535, description="Container service port"),
+    format: str = Query(default="json", description="Output format: json or zip"),
+    db: Session = Depends(get_db),
+):
+    """
+    Generates a production-grade Kubernetes Helm 3 chart bundle including Chart.yaml,
+    values.yaml, deployment, service, ingress, HPA, configmap, and secrets templates.
+    """
+    try:
+        bundle = generate_helm_chart_bundle(
+            project_id=project_id,
+            db=db,
+            replica_count=replicas,
+            service_port=port,
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+
+    fmt = (format or "json").lower().strip()
+    if fmt == "zip":
+        zip_bytes = generate_helm_chart_zip(bundle)
+        return Response(
+            content=zip_bytes,
+            media_type="application/zip",
+            headers={
+                "Content-Disposition": f'attachment; filename="{bundle["chart_name"]}-helm-chart.zip"'
+            },
+        )
+
+    return schemas.HelmChartBundleOut(**bundle)
+
+
+
 
 
 

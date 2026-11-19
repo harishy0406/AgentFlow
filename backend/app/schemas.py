@@ -1060,3 +1060,19 @@ class ProjectCostEstimateOut(BaseModel):
     providers: List[CloudProviderCostOut]
     finops_recommendations: List[FinOpsRecommendationOut]
     generated_at: str
+
+
+# ---------------------------------------------------------------------------
+# Kubernetes Helm Chart Generator Schemas
+# ---------------------------------------------------------------------------
+
+class HelmChartBundleOut(BaseModel):
+    project_id: str
+    project_name: str
+    chart_name: str
+    version: str
+    app_version: str
+    file_count: int
+    files: Dict[str, str]
+    deployment_steps: List[str]
+
