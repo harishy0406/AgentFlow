@@ -248,6 +248,10 @@ To eliminate LLM hallucinations in executive deliverables, AgentFlow generates a
 | **Multi-Project Workspaces** | Orchestrates multi-repo distributed architectures; validates cross-service contracts and foreign entity alignment. |
 | **Database Migration Engine** | Generates Alembic Python migration scripts and Flyway SQL versioned files directly from `DB_SCHEMA` DDL. |
 | **CI/CD Pipeline Generator** | Generates production GitHub Actions and GitLab CI workflows with linting, testing, Docker build, and deployment stages. |
+| **Kubernetes Helm 3 Generator** | Synthesizes complete Helm 3 microservice charts (`Chart.yaml`, `values.yaml`, templates for deployment, service, ingress, HPA, configmap, secrets) as JSON or downloadable `.zip`. |
+| **Cloud FinOps Cost Estimator** | Itemized TCO projections across AWS, GCP, and Azure across Startup, Growth, and Enterprise tiers with RFC-4180 CSV export and FinOps architectural recommendations. |
+| **CloudEvents Webhook Engine** | CloudEvents 1.0 event catalogs, cryptographic HMAC-SHA256 outbound signing, and constant-time signature verification with replay attack timestamp protection. |
+| **Architectural Velocity & Quality** | Real-time tracking of specification completeness, complexity index, section word density, and architectural health grading (`A+`, `A`, `B+`, `B`, `C`). |
 
 ---
 
@@ -333,6 +337,12 @@ The backend exposes an exhaustive, versioned RESTful and WebSocket API (`backend
 | `/projects/{id}/assistant/ask` | `POST` | Conversational Q&A over project specifications |
 | `/projects/{id}/assistant/chat-modify` | `POST` | Natural-language conversational DAG mutation |
 | `/projects/{id}/health` | `GET` | Overall project health scorecard (0-100) |
+| `/projects/{id}/cost-estimate` | `GET` | Multi-cloud TCO estimates across AWS, GCP, and Azure |
+| `/projects/{id}/cost-estimate/export` | `GET` | Download itemized cost projections in RFC-4180 CSV or JSON |
+| `/projects/{id}/helm-chart` | `GET` | Production Kubernetes Helm 3 microservice chart bundle (JSON/ZIP) |
+| `/projects/{id}/webhooks/sign` | `POST` | Cryptographic HMAC-SHA256 signature generator for webhooks |
+| `/projects/{id}/webhooks/verify-signature` | `POST` | Constant-time signature & replay tolerance validator |
+| `/projects/{id}/velocity` | `GET` | Real-time architectural velocity, quality scorecards, and complexity index |
 | `/workspaces` | `GET` / `POST` | List and create multi-project workspaces |
 | `/workspaces/{id}/validate-contracts` | `GET` | Validate cross-service API & schema contracts |
 | `/ws/{project_id}` | `WS` | Real-time WebSocket connection for live events |
