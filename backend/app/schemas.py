@@ -1134,3 +1134,31 @@ class ProjectVelocityOut(BaseModel):
     is_scaffold_ready: bool
 
 
+# ---------------------------------------------------------------------------
+# Bruno API Collection Generator Schemas
+# ---------------------------------------------------------------------------
+
+class BrunoRequestItem(BaseModel):
+    name: str
+    method: str
+    path: str
+    folder: str
+    seq: int
+    sample_body: Dict[str, Any]
+    file_path: str
+
+
+class BrunoCollectionOut(BaseModel):
+    project_id: str
+    project_name: str
+    collection_name: str
+    slug: str
+    requests_count: int
+    folders_count: int
+    environments: List[str]
+    files_count: int
+    files: Dict[str, str]
+    requests: List[BrunoRequestItem]
+
+
+

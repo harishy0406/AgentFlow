@@ -1232,6 +1232,43 @@ def create_project_postman_collection(project_id: UUID, db: Session = Depends(ge
         raise HTTPException(status_code=404, detail=str(e))
 
 
+from .agents.bruno_generator import generate_bruno_collection, generate_bruno_zip
+
+
+@app.get(
+    "/projects/{project_id}/bruno-collection",
+    response_model=schemas.BrunoCollectionOut,
+    tags=["DevOps"],
+    summary="Generate Bruno Git-Friendly API Collection (JSON or ZIP)",
+)
+def get_project_bruno_collection(
+    project_id: UUID,
+    format: str = Query(default="json", description="Export format: json or zip"),
+    db: Session = Depends(get_db),
+):
+    """
+    Generates a full Bruno collection (https://usebruno.com) with bruno.json manifest,
+    environments, collection.bru, and declarative .bru request files.
+    """
+    try:
+        bundle = generate_bruno_collection(project_id, db)
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+
+    fmt = (format or "json").lower().strip()
+    if fmt == "zip":
+        zip_bytes = generate_bruno_zip(bundle)
+        return Response(
+            content=zip_bytes,
+            media_type="application/zip",
+            headers={
+                "Content-Disposition": f'attachment; filename="{bundle["slug"]}-bruno-collection.zip"'
+            },
+        )
+
+    return schemas.BrunoCollectionOut(**bundle)
+
+
 @app.get("/projects/{project_id}/cicd-pipeline")
 def get_project_cicd_pipeline(project_id: UUID, db: Session = Depends(get_db)):
     """
