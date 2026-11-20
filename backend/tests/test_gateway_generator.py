@@ -47,7 +47,7 @@ def test_gateway_generator_direct_logic():
 
         assert catalog.project_id == project.id
         assert catalog.project_name == project.name
-        assert set(catalog.available_targets) == {"kong", "nginx", "envoy", "traefik"}
+        assert set(catalog.available_targets) == {"kong", "nginx", "envoy", "traefik", "caddy"}
 
         # Kong Checks
         kong = catalog.configs["kong"]
@@ -76,6 +76,13 @@ def test_gateway_generator_direct_logic():
         assert "PathPrefix" in traefik.content
         assert "rateLimit" in traefik.content
 
+        # Caddy Checks
+        caddy = catalog.configs["caddy"]
+        assert caddy.filename == "Caddyfile"
+        assert "reverse_proxy" in caddy.content
+        assert "tls internal" in caddy.content
+        assert "encode zstd gzip" in caddy.content
+
         assert "# API Gateway Policies Catalog" in catalog.summary_markdown
     finally:
         db.delete(project)
@@ -100,8 +107,9 @@ def test_gateway_api_endpoints():
         res = client.get(f"/projects/{project.id}/gateway-configs")
         assert res.status_code == 200
         data = res.json()
-        assert len(data["available_targets"]) == 4
+        assert len(data["available_targets"]) == 5
         assert "kong" in data["configs"]
+        assert "caddy" in data["configs"]
 
         # 2. Download Kong Config
         res_kong = client.get(f"/projects/{project.id}/gateway-configs/kong/download")
@@ -115,14 +123,21 @@ def test_gateway_api_endpoints():
         assert "nginx.conf" in res_nginx.headers["content-disposition"]
         assert "worker_processes" in res_nginx.text
 
-        # 4. Invalid target (404)
-        res_bad_target = client.get(f"/projects/{project.id}/gateway-configs/caddy/download")
+        # 4. Download Caddyfile Config
+        res_caddy = client.get(f"/projects/{project.id}/gateway-configs/caddy/download")
+        assert res_caddy.status_code == 200
+        assert "Caddyfile" in res_caddy.headers["content-disposition"]
+        assert "reverse_proxy" in res_caddy.text
+
+        # 5. Invalid target (404)
+        res_bad_target = client.get(f"/projects/{project.id}/gateway-configs/haproxy/download")
         assert res_bad_target.status_code == 404
 
-        # 5. Invalid project (404)
+        # 6. Invalid project (404)
         random_id = uuid4()
         res_bad_proj = client.get(f"/projects/{random_id}/gateway-configs")
         assert res_bad_proj.status_code == 404
+
     finally:
         db.delete(project)
         db.commit()
