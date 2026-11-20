@@ -243,7 +243,8 @@ To eliminate LLM hallucinations in executive deliverables, AgentFlow generates a
 | **Multi-Cloud IaC Engine** | Generates production Terraform (AWS ECS, GCP Cloud Run), Kubernetes deployment manifests, and Docker Compose services. |
 | **Architecture Decision Records (ADRs)** | Synthesizes formal MADR-format Architecture Decision Records documenting context, options considered, and trade-offs. |
 | **GraphQL Schema & Resolvers** | Converts SQL DDL to GraphQL SDL types, queries, mutations, and Strawberry Python / Apollo TypeScript resolvers. |
-| **API Gateway Config Generator** | Generates edge reverse-proxy configurations for **Kong** (declarative), **Nginx**, **Envoy**, and **Traefik** with rate-limiting and CORS. |
+| **API Gateway Config Generator** | Generates edge reverse-proxy configurations for **Kong** (declarative), **Nginx**, **Envoy**, **Traefik**, and **Caddy** (auto-TLS & gzip/zstd) with rate-limiting and CORS. |
+| **Bruno API Collection Engine** | Synthesizes git-friendly Bruno collections (`bruno.json`, environments, declarative `.bru` request files, and assertions) as JSON or downloadable `.zip`. |
 | **Synthetic Seed Data Generator** | Analyzes entity relationships; generates SQL inserts, FactoryBoy Python classes, and Prisma seed scripts. |
 | **Multi-Project Workspaces** | Orchestrates multi-repo distributed architectures; validates cross-service contracts and foreign entity alignment. |
 | **Database Migration Engine** | Generates Alembic Python migration scripts and Flyway SQL versioned files directly from `DB_SCHEMA` DDL. |
@@ -330,6 +331,9 @@ The backend exposes an exhaustive, versioned RESTful and WebSocket API (`backend
 | `/projects/{id}/seed-data` | `GET` | Get synthetic seed data entities (SQL/JSON) |
 | `/projects/{id}/openapi-spec` | `GET` | Download OpenAPI 3.0 YAML specification |
 | `/projects/{id}/postman-collection` | `GET` | Download Postman Collection v2.1 JSON |
+| `/projects/{id}/bruno-collection` | `GET` | Download git-friendly Bruno API collection (JSON or ZIP) |
+| `/projects/{id}/gateway-configs` | `GET` | List edge reverse-proxy configs (Kong, Nginx, Envoy, Traefik, Caddy) |
+| `/projects/{id}/gateway-configs/{target}/download` | `GET` | Download individual gateway config (e.g. Caddyfile, nginx.conf) |
 | `/projects/{id}/cicd-pipeline` | `GET` | Get GitHub Actions & GitLab CI workflows |
 | `/projects/{id}/migrations` | `GET` | Get Alembic & Flyway DB migration scripts |
 | `/projects/{id}/mock-routes` | `GET` | List interactive mock HTTP sandbox endpoints |

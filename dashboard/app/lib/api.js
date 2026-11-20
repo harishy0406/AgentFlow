@@ -670,6 +670,32 @@ export async function verifyWebhookSignature(projectId, payload, signature, secr
   });
 }
 
+// ---------------------------------------------------------------------------
+// Bruno Git-Friendly API Collection Generator
+// ---------------------------------------------------------------------------
+
+export async function getProjectBrunoCollection(projectId, format = "json") {
+  return request(`/projects/${projectId}/bruno-collection?format=${format}`);
+}
+
+export function getProjectBrunoCollectionZipUrl(projectId) {
+  return `${API_BASE_URL}/projects/${projectId}/bruno-collection?format=zip`;
+}
+
+// ---------------------------------------------------------------------------
+// API Gateway & Edge Reverse-Proxy Configurations
+// ---------------------------------------------------------------------------
+
+export async function getProjectGatewayConfigs(projectId) {
+  return request(`/projects/${projectId}/gateway-configs`);
+}
+
+export function getGatewayConfigDownloadUrl(projectId, target) {
+  return `${API_BASE_URL}/projects/${projectId}/gateway-configs/${encodeURIComponent(target)}/download`;
+}
+
+
+
 
 
 

@@ -82,6 +82,7 @@ import {
   getProjectCostEstimate,
   exportProjectCostEstimateCsvUrl,
   getProjectHelmChartZipUrl,
+  getProjectBrunoCollectionZipUrl,
   getProjectVelocity,
 } from "./lib/api";
 
@@ -2467,6 +2468,23 @@ export default function Home() {
                       <div className="dropdown-item-text">
                         <span className="dropdown-item-title">Kubernetes Helm Chart</span>
                         <span className="dropdown-item-desc">Production Helm 3 microservice package (.zip)</span>
+                      </div>
+                    </a>
+
+                    <a
+                      className="navbar-dropdown-item"
+                      href={currentProject ? getProjectBrunoCollectionZipUrl(currentProject.id) : "#"}
+                      download
+                      onClick={() => {
+                        setShowToolsDropdown(false);
+                        showToast("Downloading Bruno git-friendly API collection (.zip)...", "info");
+                      }}
+                      style={{ textDecoration: "none" }}
+                    >
+                      <span className="dropdown-item-icon">🐶</span>
+                      <div className="dropdown-item-text">
+                        <span className="dropdown-item-title">Bruno API Collection</span>
+                        <span className="dropdown-item-desc">Git-friendly .bru declarative requests (.zip)</span>
                       </div>
                     </a>
 
